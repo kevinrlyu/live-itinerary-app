@@ -32,7 +32,7 @@ const SYSTEM_PROMPT = `You are a travel itinerary parser. Given raw text from a 
 Rules:
 - Include ALL activities, restaurants, hotels, transport, and notable stops
 - Convert times to 24-hour HH:MM format
-- If a date cannot be determined, make a reasonable guess from context
+- IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.
 - Return ONLY the JSON object, no other text`;
 
 export async function parseItineraryText(text: string): Promise<Trip> {
