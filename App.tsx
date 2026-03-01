@@ -9,6 +9,7 @@ import {
   loadTripList, saveTripList,
   loadActiveTripId, saveActiveTripId,
   deleteTrip as deleteTripFromStorage,
+  migrateOldStorage,
 } from './src/utils/storage';
 import { fetchDocText } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
@@ -57,6 +58,7 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
+      await migrateOldStorage();
       const [list, activeId] = await Promise.all([loadTripList(), loadActiveTripId()]);
       setTripList(list);
       if (activeId) {
