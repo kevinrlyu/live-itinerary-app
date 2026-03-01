@@ -121,7 +121,12 @@ export default function App() {
   }, [trip, tripList]);
 
   const handleReimport = useCallback(async () => {
-    if (!trip?.docUrl) return;
+    if (!trip?.docUrl) {
+      // Legacy trip with no saved URL — open import screen so user can paste it
+      setDrawerOpen(false);
+      setShowImport(true);
+      return;
+    }
     setReimporting(true);
     try {
       const text = await fetchDocText(trip.docUrl);
