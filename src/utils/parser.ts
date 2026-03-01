@@ -39,43 +39,45 @@ function generateId(): string {
   return `trip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-const DAY_NAME_TO_INDEX: Record<string, number> = {
-  sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6,
+const MONTH_MAP: Record<string, number> = {
+  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+};
+const DOW_MAP: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
 };
 
-// If Claude guessed the wrong year, correct it by matching the day-of-week
-// from the label (e.g. "Wed, Dec 10") against the parsed date.
-function correctYear(days: Trip['days']): Trip['days'] {
-  for (const day of days) {
-    const labelWord = day.label.split(/[,\s]/)[0].toLowerCase().slice(0, 3);
-    const expectedDow = DAY_NAME_TO_INDEX[labelWord];
-    if (expectedDow === undefined) continue;
-
-    const [yyyy, mm, dd] = day.date.split('-').map(Number);
-    const actual = new Date(`${day.date}T12:00:00`);
-    if (actual.getDay() === expectedDow) continue; // already correct
-
-    // Search ±5 years from the parsed year for a match
-    for (let delta = -5; delta <= 5; delta++) {
-      if (delta === 0) continue;
-      const candidate = `${yyyy + delta}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-      if (new Date(`${candidate}T12:00:00`).getDay() === expectedDow) {
-        day.date = candidate;
-        break;
-      }
+// Scan raw text for "Month Day (Dayname)" patterns and return the year that
+// makes those date+day-of-week pairs consistent (e.g. "December 10 (Wednesday)" → 2025).
+function detectYearFromText(text: string): number | null {
+  const pattern = /(\w+)\s+(\d{1,2})\s*[\(,]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/gi;
+  const currentYear = new Date().getFullYear();
+  for (const m of text.matchAll(pattern)) {
+    const month = MONTH_MAP[m[1].toLowerCase()];
+    const day = parseInt(m[2]);
+    const dow = DOW_MAP[m[3].toLowerCase()];
+    if (month === undefined || isNaN(day) || dow === undefined) continue;
+    for (let year = currentYear - 2; year <= currentYear + 5; year++) {
+      const d = new Date(year, month, day);
+      if (d.getMonth() === month && d.getDay() === dow) return year;
     }
   }
-  return days;
+  return null;
 }
 
 export async function parseItineraryText(text: string, docUrl: string): Promise<Trip> {
+  const detectedYear = detectYearFromText(text);
+  const yearHint = detectedYear
+    ? `IMPORTANT: The dates in this itinerary are from the year ${detectedYear}. Use ${detectedYear} for all dates.\n\n`
+    : '';
+
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 4096,
     messages: [
       {
         role: 'user',
-        content: `Parse this travel itinerary into JSON:\n\n${text}`,
+        content: `${yearHint}Parse this travel itinerary into JSON:\n\n${text}`,
       },
     ],
     system: SYSTEM_PROMPT,
@@ -87,7 +89,6 @@ export async function parseItineraryText(text: string, docUrl: string): Promise<
   try {
     const cleaned = content.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
     const parsed = JSON.parse(cleaned);
-    parsed.days = correctYear(parsed.days ?? []);
     return { ...parsed, id: generateId(), docUrl } as Trip;
   } catch {
     throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
