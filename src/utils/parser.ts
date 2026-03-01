@@ -55,6 +55,6 @@ export async function parseItineraryText(text: string): Promise<Trip> {
     const cleaned = content.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
     return JSON.parse(cleaned) as Trip;
   } catch {
-    throw new Error('AI returned invalid data. Please try again.');
+    throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
   }
 }
