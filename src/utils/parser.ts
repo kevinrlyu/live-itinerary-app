@@ -35,7 +35,11 @@ Rules:
 - IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.
 - Return ONLY the JSON object, no other text`;
 
-export async function parseItineraryText(text: string): Promise<Trip> {
+function generateId(): string {
+  return `trip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export async function parseItineraryText(text: string, docUrl: string): Promise<Trip> {
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 4096,
@@ -53,7 +57,8 @@ export async function parseItineraryText(text: string): Promise<Trip> {
 
   try {
     const cleaned = content.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    return JSON.parse(cleaned) as Trip;
+    const parsed = JSON.parse(cleaned);
+    return { ...parsed, id: generateId(), docUrl } as Trip;
   } catch {
     throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
   }
