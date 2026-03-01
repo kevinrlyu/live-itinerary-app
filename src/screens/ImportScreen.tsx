@@ -5,14 +5,26 @@ import {
 } from 'react-native';
 import { fetchDocText } from '../utils/googleDocs';
 import { parseItineraryText } from '../utils/parser';
-import { saveTrip } from '../utils/storage';
-import { Trip } from '../types';
+import { saveTripFull, saveTripList, loadTripList, saveActiveTripId } from '../utils/storage';
+import { Trip, TripMeta } from '../types';
 
 interface Props {
   onImport: (trip: Trip) => void;
+  onCancel?: () => void;
 }
 
-export default function ImportScreen({ onImport }: Props) {
+function buildDateRange(trip: Trip): string {
+  if (trip.days.length === 0) return '';
+  const first = trip.days[0].date;
+  const last = trip.days[trip.days.length - 1].date;
+  const fmt = (d: string) => {
+    const dt = new Date(`${d}T12:00:00`);
+    return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()]} ${dt.getDate()}`;
+  };
+  return first === last ? fmt(first) : `${fmt(first)}–${fmt(last)}`;
+}
+
+export default function ImportScreen({ onImport, onCancel }: Props) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,8 +36,17 @@ export default function ImportScreen({ onImport }: Props) {
     setLoading(true);
     try {
       const text = await fetchDocText(url.trim());
-      const trip = await parseItineraryText(text);
-      await saveTrip(trip);
+      const trip = await parseItineraryText(text, url.trim());
+      await saveTripFull(trip);
+      const meta: TripMeta = {
+        id: trip.id,
+        title: trip.title,
+        dateRange: buildDateRange(trip),
+        docUrl: url.trim(),
+      };
+      const list = await loadTripList();
+      await saveTripList([...list, meta]);
+      await saveActiveTripId(trip.id);
       onImport(trip);
     } catch (err: any) {
       Alert.alert('Import Failed', err.message || 'Something went wrong. Please try again.');
@@ -54,6 +75,11 @@ export default function ImportScreen({ onImport }: Props) {
           <Text style={styles.buttonText}>Import Itinerary</Text>
         )}
       </TouchableOpacity>
+      {onCancel && (
+        <TouchableOpacity onPress={onCancel} disabled={loading}>
+          <Text style={styles.cancel}>Cancel</Text>
+        </TouchableOpacity>
+      )}
       <Text style={styles.hint}>
         Make sure your Google Doc is shared with "Anyone with the link can view"
       </Text>
@@ -74,8 +100,9 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#007AFF', borderRadius: 12,
-    padding: 16, alignItems: 'center', marginBottom: 16,
+    padding: 16, alignItems: 'center', marginBottom: 12,
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  hint: { fontSize: 12, color: '#999', textAlign: 'center' },
+  cancel: { color: '#007AFF', fontSize: 15, textAlign: 'center', marginBottom: 16 },
+  hint: { fontSize: 12, color: '#999', textAlign: 'center', marginTop: 8 },
 });
