@@ -1,6 +1,6 @@
 export interface Activity {
   id: string;
-  time: string | null;       // "14:30" in 24h format, or null if no time given
+  time: string | null;
   title: string;
   location: string | null;
   notes: string | null;
@@ -8,13 +8,22 @@ export interface Activity {
 }
 
 export interface Day {
-  date: string;              // "2024-12-10"
-  label: string;             // "Wed, Dec 10"
-  theme: string;             // "Tokyo" or "Pre-Arrival"
+  date: string;
+  label: string;
+  theme: string;
   activities: Activity[];
 }
 
 export interface Trip {
+  id: string;         // unique identifier
+  docUrl: string;     // original Google Doc URL for re-import
   title: string;
   days: Day[];
+}
+
+export interface TripMeta {
+  id: string;
+  title: string;
+  dateRange: string;  // e.g. "Dec 10–13"
+  docUrl: string;
 }
