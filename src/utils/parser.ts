@@ -52,7 +52,8 @@ export async function parseItineraryText(text: string): Promise<Trip> {
   if (content.type !== 'text') throw new Error('Unexpected response from AI');
 
   try {
-    return JSON.parse(content.text) as Trip;
+    const cleaned = content.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    return JSON.parse(cleaned) as Trip;
   } catch {
     throw new Error('AI returned invalid data. Please try again.');
   }
