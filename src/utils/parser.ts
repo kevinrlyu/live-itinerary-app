@@ -87,8 +87,10 @@ export async function parseItineraryText(text: string, docUrl: string): Promise<
   if (content.type !== 'text') throw new Error('Unexpected response from AI');
 
   try {
-    const cleaned = content.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    const parsed = JSON.parse(cleaned);
+    // Extract JSON from a code block if present, otherwise find the raw object
+    const codeBlock = content.text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const jsonText = codeBlock ? codeBlock[1].trim() : (content.text.match(/\{[\s\S]*\}/) ?? [''])[0];
+    const parsed = JSON.parse(jsonText);
     return { ...parsed, id: generateId(), docUrl } as Trip;
   } catch {
     throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
