@@ -49,7 +49,8 @@ Rules:
 - Use the description field ONLY for a brief inline note about a single activity (not for listing sub-items)
 - Extract hours from sub-bullets that mention hours of operation (e.g. "Open 9am–5pm", "Closes at 17:00")
 - IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.
-- Return ONLY the JSON object, no other text`;
+- IMPORTANT: To keep the output compact, OMIT any field whose value is null. Do not include "field": null — just leave that field out entirely.
+- Return ONLY the raw JSON object. Do NOT wrap it in a code block or add any text before or after it.`;
 
 function generateId(): string {
   return `trip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -129,11 +130,17 @@ export async function parseItineraryText(
   console.log("Claude response length:", content.text.length, "chars");
 
   try {
-    // Extract JSON from a code block if present, otherwise find the raw object
+    // Extract JSON: handle code blocks (complete or truncated), or raw object
+    let jsonText = "";
     const codeBlock = content.text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const jsonText = codeBlock
-      ? codeBlock[1].trim()
-      : (content.text.match(/\{[\s\S]*\}/) ?? [""])[0];
+    if (codeBlock) {
+      jsonText = codeBlock[1].trim();
+    } else if (content.text.trimStart().startsWith("```")) {
+      // Truncated code block (no closing ```) — strip the opening marker
+      jsonText = content.text.replace(/^[\s]*```(?:json)?[\s]*/, "").trim();
+    } else {
+      jsonText = (content.text.match(/\{[\s\S]*\}/) ?? [""])[0];
+    }
     const parsed = JSON.parse(jsonText);
     if (docTitle) parsed.title = docTitle;
 
