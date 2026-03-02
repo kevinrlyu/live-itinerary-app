@@ -121,7 +121,7 @@ export async function parseItineraryText(
   const model = isLarge ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
   const maxTokens = isLarge ? 32768 : 8192;
 
-  const message = await client.messages.create({
+  const stream = client.messages.stream({
     model,
     max_tokens: maxTokens,
     messages: [
@@ -132,11 +132,10 @@ export async function parseItineraryText(
     ],
     system: SYSTEM_PROMPT,
   });
+  const message = await stream.finalMessage();
 
   const content = message.content[0];
-  console.log("Claude stop_reason:", message.stop_reason);
   if (content.type !== "text") throw new Error("Unexpected response from AI");
-  console.log("Claude response length:", content.text.length, "chars");
 
   try {
     // Extract JSON: handle code blocks (complete or truncated), or raw object
