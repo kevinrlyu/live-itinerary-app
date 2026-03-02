@@ -113,7 +113,7 @@ export async function parseItineraryText(
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 16384,
+    max_tokens: 8192,
     messages: [
       {
         role: "user",
