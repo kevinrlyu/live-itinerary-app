@@ -11,8 +11,8 @@ export async function fetchDocTitle(docUrl: string): Promise<string | null> {
   const docId = extractDocId(docUrl);
   if (!docId) return null;
   try {
-    const htmlUrl = `https://docs.google.com/document/d/${docId}/export?format=html`;
-    const response = await fetch(htmlUrl, { redirect: 'follow' });
+    const editUrl = `https://docs.google.com/document/d/${docId}/edit`;
+    const response = await fetch(editUrl, { redirect: 'follow' });
     if (!response.ok) return null;
     const html = await response.text();
     const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);

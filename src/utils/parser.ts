@@ -91,6 +91,9 @@ export async function parseItineraryText(
   const yearHint = detectedYear
     ? `IMPORTANT: The dates in this itinerary are from the year ${detectedYear}. Use ${detectedYear} for all dates.\n\n`
     : "";
+  const titleHint = docTitle
+    ? `IMPORTANT: The title of this document is "${docTitle}". Use this exact string as the "title" field.\n\n`
+    : "";
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -98,7 +101,7 @@ export async function parseItineraryText(
     messages: [
       {
         role: "user",
-        content: `${yearHint}Parse this travel itinerary into JSON:\n\n${text}`,
+        content: `${yearHint}${titleHint}Parse this travel itinerary into JSON:\n\n${text}`,
       },
     ],
     system: SYSTEM_PROMPT,
