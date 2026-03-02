@@ -39,6 +39,7 @@ const SYSTEM_PROMPT = `You are a travel itinerary parser. Given raw text from a 
 
 Rules:
 - Include ALL activities, restaurants, hotels, transport, and notable stops
+- IMPORTANT: Preserve the exact order of activities as they appear in the document. Do NOT reorder, sort, or rearrange activities within a day.
 - Convert times to 24-hour HH:MM format
 - IDs must be globally unique across the ENTIRE trip (count up: 'a1', 'a2', 'a3', ... never reuse a number)
 - Use type "transport" for any transit instruction: driving, flying, taking a train/bus/subway/taxi/shuttle, transfers between locations, boarding a flight, etc.
