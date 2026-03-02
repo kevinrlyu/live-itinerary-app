@@ -52,6 +52,7 @@ Rules:
 - Use the description field ONLY for a brief inline note about a single activity (not for listing sub-items). The description must NOT repeat or restate the activity title.
 - Extract hours from sub-bullets that mention hours of operation (e.g. "Open 9am–5pm", "Closes at 17:00")
 - IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.
+- Preserve draft placeholders exactly as they appear: keep "__" (double underscore), "[spontaneous]", and any bracketed restaurant/time markers like "[Ajino Sapporo Oonishi]" or "[7:30pm]" in the output. These indicate the itinerary is still being planned.
 - IMPORTANT: To keep the output compact, OMIT any field whose value is null. Do not include "field": null — just leave that field out entirely.
 - Return ONLY the raw JSON object. Do NOT wrap it in a code block or add any text before or after it.`;
 
@@ -115,9 +116,14 @@ export async function parseItineraryText(
     ? `IMPORTANT: The title of this document is "${docTitle}". Use this exact string as the "title" field.\n\n`
     : "";
 
+  // Use Sonnet for large itineraries (more output tokens), Haiku for smaller ones
+  const isLarge = text.length > 10000;
+  const model = isLarge ? "claude-sonnet-4-5-20241022" : "claude-haiku-4-5-20251001";
+  const maxTokens = isLarge ? 16384 : 8192;
+
   const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 8192,
+    model,
+    max_tokens: maxTokens,
     messages: [
       {
         role: "user",
