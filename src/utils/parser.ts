@@ -119,7 +119,7 @@ export async function parseItineraryText(
   // Use Sonnet for large itineraries (more output tokens), Haiku for smaller ones
   const isLarge = text.length > 10000;
   const model = isLarge ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
-  const maxTokens = isLarge ? 16384 : 8192;
+  const maxTokens = isLarge ? 32768 : 8192;
 
   const message = await client.messages.create({
     model,
