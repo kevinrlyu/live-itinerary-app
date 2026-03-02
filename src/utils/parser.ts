@@ -1,9 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { fetch as expoFetch } from "expo/fetch";
 import { Trip } from "../types";
 
 const client = new Anthropic({
   apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
   dangerouslyAllowBrowser: true,
+  fetch: expoFetch as unknown as typeof globalThis.fetch,
 });
 
 const SYSTEM_PROMPT = `You are a travel itinerary parser. Given raw text from a travel itinerary document, extract all information and return it as a JSON object matching this exact structure:
