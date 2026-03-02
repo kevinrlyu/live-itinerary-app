@@ -113,7 +113,7 @@ export async function parseItineraryText(
 
   const message = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 8192,
+    max_tokens: 16384,
     messages: [
       {
         role: "user",
@@ -124,7 +124,9 @@ export async function parseItineraryText(
   });
 
   const content = message.content[0];
+  console.log("Claude stop_reason:", message.stop_reason);
   if (content.type !== "text") throw new Error("Unexpected response from AI");
+  console.log("Claude response length:", content.text.length, "chars");
 
   try {
     // Extract JSON from a code block if present, otherwise find the raw object
