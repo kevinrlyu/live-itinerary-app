@@ -2,6 +2,12 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
 import { Activity } from '../types';
 
+const ACCENT_COLORS: Record<string, string> = {
+  default: '#007AFF',
+  hotel: '#E91E63',
+  meal: '#E53935',
+};
+
 interface Props {
   activity: Activity;
   isCurrent: boolean;
@@ -16,27 +22,27 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
   };
 
+  const accent = ACCENT_COLORS[activity.category ?? 'default'] ?? ACCENT_COLORS.default;
+
   const formatTimeRange = () => {
     if (!activity.time) return null;
     if (activity.timeEnd) return `${activity.time} – ${activity.timeEnd}`;
     return activity.time;
   };
 
-  // Transport items: faint row, no checkbox, directions button if location exists
+  // Transport: faint tappable row — entire row opens Google Maps
   if (activity.type === 'transport') {
     return (
-      <View style={styles.transportRow}>
-        <View style={styles.transportContent}>
-          {activity.time && <Text style={styles.transportTime}>{activity.time}</Text>}
-          <Text style={styles.transportTitle}>→  {activity.title}</Text>
-          {activity.notes && <Text style={styles.transportNotes}>{activity.notes}</Text>}
-        </View>
-        {activity.location && (
-          <TouchableOpacity onPress={openDirections} style={styles.transportDirBtn}>
-            <Text style={styles.transportDirText}>Directions</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <TouchableOpacity
+        style={styles.transportRow}
+        onPress={activity.location ? openDirections : undefined}
+        activeOpacity={activity.location ? 0.6 : 1}
+      >
+        {activity.time && <Text style={styles.transportTime}>{activity.time}  </Text>}
+        <Text style={styles.transportTitle} numberOfLines={2}>
+          →  {activity.title}
+        </Text>
+      </TouchableOpacity>
     );
   }
 
@@ -45,17 +51,21 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
   return (
     <View style={[
       styles.card,
-      isCurrent && styles.currentCard,
+      isCurrent && [styles.currentCard, { borderLeftColor: accent }],
       activity.completed && styles.completedCard,
       isChild && styles.childCard,
     ]}>
       <View style={styles.row}>
         <TouchableOpacity testID="toggle-button" onPress={() => onToggle(activity.id)} style={styles.checkbox}>
-          <Text style={styles.checkboxText}>{activity.completed ? '✓' : '○'}</Text>
+          <Text style={[styles.checkboxText, { color: accent }]}>
+            {activity.completed ? '✓' : '○'}
+          </Text>
         </TouchableOpacity>
         <View style={styles.content}>
           {timeLabel && <Text style={styles.time}>{timeLabel}</Text>}
-          <Text style={[styles.title, activity.completed && styles.completedText]}>{activity.title}</Text>
+          <Text style={[styles.title, activity.completed && styles.completedText]}>
+            {activity.title}
+          </Text>
           {activity.location && <Text style={styles.location}>{activity.location}</Text>}
           {activity.description && <Text style={styles.description}>{activity.description}</Text>}
           {activity.hours && <Text style={styles.hours}>Hours: {activity.hours}</Text>}
@@ -63,7 +73,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
         </View>
       </View>
       {activity.location && (
-        <TouchableOpacity onPress={openDirections} style={styles.directionsButton}>
+        <TouchableOpacity onPress={openDirections} style={[styles.directionsButton, { backgroundColor: accent }]}>
           <Text style={styles.directionsText}>Directions</Text>
         </TouchableOpacity>
       )}
@@ -86,7 +96,6 @@ const styles = StyleSheet.create({
   },
   currentCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
   },
   completedCard: {
     opacity: 0.5,
@@ -108,7 +117,6 @@ const styles = StyleSheet.create({
   },
   checkboxText: {
     fontSize: 20,
-    color: '#007AFF',
   },
   content: {
     flex: 1,
@@ -152,7 +160,6 @@ const styles = StyleSheet.create({
   directionsButton: {
     marginTop: 10,
     alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 8,
@@ -166,40 +173,17 @@ const styles = StyleSheet.create({
   transportRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 2,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  transportContent: {
-    flex: 1,
+    marginHorizontal: 20,
+    marginVertical: 1,
+    paddingVertical: 4,
   },
   transportTime: {
     fontSize: 11,
     color: '#bbb',
-    marginBottom: 1,
   },
   transportTitle: {
-    fontSize: 13,
+    flex: 1,
+    fontSize: 12,
     color: '#aaa',
-    fontStyle: 'italic',
-  },
-  transportNotes: {
-    fontSize: 12,
-    color: '#bbb',
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  transportDirBtn: {
-    backgroundColor: '#e8e8e8',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-  transportDirText: {
-    color: '#666',
-    fontSize: 12,
-    fontWeight: '600',
   },
 });

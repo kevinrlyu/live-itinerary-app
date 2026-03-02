@@ -1,6 +1,7 @@
 export interface Activity {
   id: string;
-  type?: 'activity' | 'transport';  // transport = transit instruction (faint, tappable for directions)
+  type?: 'activity' | 'transport';  // transport = transit instruction (tappable faint row)
+  category?: 'hotel' | 'meal' | null; // hotel = pink accent, meal = red accent
   time: string | null;              // HH:MM start time
   timeEnd?: string | null;          // HH:MM end time (for group headers with a time range)
   title: string;
