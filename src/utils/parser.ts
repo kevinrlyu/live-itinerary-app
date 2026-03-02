@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { Trip } from '../types';
+import Anthropic from "@anthropic-ai/sdk";
+import { Trip } from "../types";
 
 const client = new Anthropic({
   apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
@@ -40,17 +40,34 @@ function generateId(): string {
 }
 
 const MONTH_MAP: Record<string, number> = {
-  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+  january: 0,
+  february: 1,
+  march: 2,
+  april: 3,
+  may: 4,
+  june: 5,
+  july: 6,
+  august: 7,
+  september: 8,
+  october: 9,
+  november: 10,
+  december: 11,
 };
 const DOW_MAP: Record<string, number> = {
-  sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
 };
 
 // Scan raw text for "Month Day (Dayname)" patterns and return the year that
 // makes those date+day-of-week pairs consistent (e.g. "December 10 (Wednesday)" → 2025).
 function detectYearFromText(text: string): number | null {
-  const pattern = /(\w+)\s+(\d{1,2})\s*[\(,]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/gi;
+  const pattern =
+    /(\w+)\s+(\d{1,2})\s*[\(,]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/gi;
   const currentYear = new Date().getFullYear();
   for (const m of text.matchAll(pattern)) {
     const month = MONTH_MAP[m[1].toLowerCase()];
@@ -65,32 +82,40 @@ function detectYearFromText(text: string): number | null {
   return null;
 }
 
-export async function parseItineraryText(text: string, docUrl: string): Promise<Trip> {
+export async function parseItineraryText(
+  text: string,
+  docUrl: string,
+  docTitle?: string,
+): Promise<Trip> {
   const detectedYear = detectYearFromText(text);
   const yearHint = detectedYear
     ? `IMPORTANT: The dates in this itinerary are from the year ${detectedYear}. Use ${detectedYear} for all dates.\n\n`
-    : '';
+    : "";
 
   const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 8192,
     messages: [
       {
-        role: 'user',
+        role: "user",
         content: `${yearHint}Parse this travel itinerary into JSON:\n\n${text}`,
       },
     ],
     system: SYSTEM_PROMPT,
   });
 
+  console.log("Anthropic client request");
   const content = message.content[0];
-  if (content.type !== 'text') throw new Error('Unexpected response from AI');
+  if (content.type !== "text") throw new Error("Unexpected response from AI");
 
   try {
     // Extract JSON from a code block if present, otherwise find the raw object
     const codeBlock = content.text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    const jsonText = codeBlock ? codeBlock[1].trim() : (content.text.match(/\{[\s\S]*\}/) ?? [''])[0];
+    const jsonText = codeBlock
+      ? codeBlock[1].trim()
+      : (content.text.match(/\{[\s\S]*\}/) ?? [""])[0];
     const parsed = JSON.parse(jsonText);
+    if (docTitle) parsed.title = docTitle;
     return { ...parsed, id: generateId(), docUrl } as Trip;
   } catch {
     throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);

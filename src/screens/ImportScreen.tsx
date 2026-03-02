@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   ActivityIndicator, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { fetchDocText } from '../utils/googleDocs';
+import { fetchDocText, fetchDocTitle } from '../utils/googleDocs';
 import { parseItineraryText } from '../utils/parser';
 import { saveTripFull, saveTripList, loadTripList, saveActiveTripId } from '../utils/storage';
 import { Trip, TripMeta } from '../types';
@@ -35,8 +35,11 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
     }
     setLoading(true);
     try {
-      const text = await fetchDocText(url.trim());
-      const trip = await parseItineraryText(text, url.trim());
+      const [text, docTitle] = await Promise.all([
+        fetchDocText(url.trim()),
+        fetchDocTitle(url.trim()),
+      ]);
+      const trip = await parseItineraryText(text, url.trim(), docTitle ?? undefined);
       await saveTripFull(trip);
       const meta: TripMeta = {
         id: trip.id,

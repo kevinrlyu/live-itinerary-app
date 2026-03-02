@@ -11,7 +11,7 @@ import {
   deleteTrip as deleteTripFromStorage,
   migrateOldStorage,
 } from './src/utils/storage';
-import { fetchDocText } from './src/utils/googleDocs';
+import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
 import ImportScreen from './src/screens/ImportScreen';
 import DayScreen from './src/screens/DayScreen';
@@ -129,8 +129,11 @@ export default function App() {
     }
     setReimporting(true);
     try {
-      const text = await fetchDocText(trip.docUrl);
-      const updated = await parseItineraryText(text, trip.docUrl);
+      const [text, docTitle] = await Promise.all([
+        fetchDocText(trip.docUrl),
+        fetchDocTitle(trip.docUrl),
+      ]);
+      const updated = await parseItineraryText(text, trip.docUrl, docTitle ?? undefined);
       const refreshed: Trip = { ...updated, id: trip.id };
       await saveTripFull(refreshed);
       const newMeta: TripMeta = {
