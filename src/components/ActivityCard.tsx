@@ -59,6 +59,11 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
 
   const timeLabel = formatTimeRange();
 
+  // Hide location text if it's already contained in the title (or vice versa)
+  const showLocationText = activity.location &&
+    !activity.title.toLowerCase().includes(activity.location.toLowerCase()) &&
+    !activity.location.toLowerCase().includes(activity.title.toLowerCase());
+
   return (
     <View style={[
       styles.card,
@@ -77,7 +82,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
           <Text style={[styles.title, activity.completed && styles.completedText]}>
             {activity.title}
           </Text>
-          {activity.location && <Text style={styles.location}>{activity.location}</Text>}
+          {showLocationText && <Text style={styles.location}>{activity.location}</Text>}
           {activity.description && <Text style={styles.description}>{activity.description}</Text>}
           {activity.hours && <Text style={styles.hours}>Hours: {activity.hours}</Text>}
           {activity.notes && <Text style={styles.notes}>{activity.notes}</Text>}

@@ -47,6 +47,7 @@ Rules:
 - Set category "meal" for any restaurant, meal, drinks, café, dining, or food-related activity
 - Set category null for everything else (sightseeing, transport, general activities)
 - IMPORTANT: When a general activity header (like "Explore Shinbashi") is followed by bulleted sub-items that are distinct locations or activities, create EACH sub-item as its own separate activity entry with parentId pointing to the header's id. Do NOT fold sub-items into the parent's description field. Each sub-item should be a full activity object with its own id, title, location, description, hours, etc.
+- Each activity's "location" must be the SPECIFIC place name suitable for Google Maps search. For child activities under a group header, use the child's own specific place (e.g. "Shizuoka City Museum of Art"), NEVER the parent's location (e.g. NOT "Shizuoka Station").
 - For group headers that have a time range (e.g. "6:30pm–8:00pm: Explore Shinbashi"), set time to the start and timeEnd to the end
 - Use the description field ONLY for a brief inline note about a single activity (not for listing sub-items). The description must NOT repeat or restate the activity title.
 - Extract hours from sub-bullets that mention hours of operation (e.g. "Open 9am–5pm", "Closes at 17:00")
@@ -146,10 +147,26 @@ export async function parseItineraryText(
     const parsed = JSON.parse(jsonText);
     if (docTitle) parsed.title = docTitle;
 
-    // Post-process: infer type and category from keywords when Claude didn't set them
+    // Post-process: infer type/category, fix child locations
     for (const day of parsed.days ?? []) {
+      const actById: Record<string, any> = {};
       for (const act of day.activities ?? []) {
+        actById[act.id] = act;
         inferActivityFields(act);
+      }
+      // If a child's location matches its parent's, use the child's title instead
+      for (const act of day.activities ?? []) {
+        if (act.parentId && actById[act.parentId]) {
+          const parentLoc = (actById[act.parentId].location || '').toLowerCase();
+          const childLoc = (act.location || '').toLowerCase();
+          if (childLoc && parentLoc && childLoc === parentLoc) {
+            act.location = act.title;
+          }
+        }
+        // If no location set on a child, default to its title (it's usually a place name)
+        if (act.parentId && !act.location) {
+          act.location = act.title;
+        }
       }
     }
 
