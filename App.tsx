@@ -172,7 +172,7 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <TripHeader title={trip.title} onOpenDrawer={() => setDrawerOpen(true)} />
-        <NavigationContainer>
+        <NavigationContainer key={trip.id}>
           <Tab.Navigator
             initialRouteName={getTodayTabName(trip) as any}
             screenOptions={{
