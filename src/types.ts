@@ -1,10 +1,15 @@
 export interface Activity {
   id: string;
-  time: string | null;
+  type?: 'activity' | 'transport';  // transport = transit instruction (faint, tappable for directions)
+  time: string | null;              // HH:MM start time
+  timeEnd?: string | null;          // HH:MM end time (for group headers with a time range)
   title: string;
   location: string | null;
+  description?: string | null;      // short description from sub-bullets
+  hours?: string | null;            // hours of operation from sub-bullets
   notes: string | null;
   completed: boolean;
+  parentId?: string | null;         // set when this activity is a sub-item under a group header
 }
 
 export interface Day {

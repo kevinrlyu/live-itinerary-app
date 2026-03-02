@@ -17,12 +17,17 @@ const SYSTEM_PROMPT = `You are a travel itinerary parser. Given raw text from a 
       "theme": "short description of the day like 'Tokyo' or 'Pre-Arrival'",
       "activities": [
         {
-          "id": "unique string like '1', '2', etc.",
-          "time": "HH:MM in 24-hour format, or null if no time specified",
+          "id": "globally unique string across the entire trip — use 'a1', 'a2', 'a3', ... counting up across ALL days",
+          "type": "'activity' or 'transport'",
+          "time": "HH:MM in 24-hour format (start time), or null if no time specified",
+          "timeEnd": "HH:MM in 24-hour format (end time, only for group headers that show a time range like '6:30pm–8:00pm'), or null",
           "title": "activity name",
           "location": "place name or address, or null",
-          "notes": "any extra detail, or null",
-          "completed": false
+          "description": "short 1-2 sentence description of the activity or place from sub-bullets, or null",
+          "hours": "hours of operation extracted from sub-bullets (e.g. '9:00–17:00'), or null",
+          "notes": "any remaining details not captured in description or hours, or null",
+          "completed": false,
+          "parentId": "id of the parent group-header activity if this is a sub-item under a general activity description, or null"
         }
       ]
     }
@@ -32,6 +37,13 @@ const SYSTEM_PROMPT = `You are a travel itinerary parser. Given raw text from a 
 Rules:
 - Include ALL activities, restaurants, hotels, transport, and notable stops
 - Convert times to 24-hour HH:MM format
+- IDs must be globally unique across the ENTIRE trip (count up: 'a1', 'a2', 'a3', ... never reuse a number)
+- Use type "transport" for any transit instruction: driving, flying, taking a train/bus/subway/taxi/shuttle, transfers between locations, boarding a flight, etc. These are typically phrased like "Take the X to Y", "Drive to Z", "Board the X flight", "Transfer to hotel", etc.
+- Use type "activity" for everything else (sightseeing, meals, hotels, check-in, etc.)
+- For a general header activity followed by bulleted sub-items (e.g. "Explore Shinbashi" with a list of specific spots below it), set the header's parentId to null and each sub-item's parentId to the header's id
+- For group headers that have a time range (e.g. "6:30pm–8:00pm: Explore Shinbashi"), set time to the start and timeEnd to the end
+- Extract description from sub-bullets that describe what a place is or what you do there
+- Extract hours from sub-bullets that mention hours of operation (e.g. "Open 9am–5pm", "Closes at 17:00")
 - IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.
 - Return ONLY the JSON object, no other text`;
 

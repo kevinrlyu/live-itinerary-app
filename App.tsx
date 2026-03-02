@@ -77,16 +77,18 @@ export default function App() {
     setDrawerOpen(false);
   }, []);
 
-  const handleToggle = useCallback((activityId: string) => {
+  const handleToggle = useCallback((dayDate: string, activityId: string) => {
     if (!trip) return;
     const updated: Trip = {
       ...trip,
-      days: trip.days.map((day) => ({
-        ...day,
-        activities: day.activities.map((a) =>
-          a.id === activityId ? { ...a, completed: !a.completed } : a
-        ),
-      })),
+      days: trip.days.map((day) =>
+        day.date !== dayDate ? day : {
+          ...day,
+          activities: day.activities.map((a) =>
+            a.id === activityId ? { ...a, completed: !a.completed } : a
+          ),
+        }
+      ),
     };
     setTrip(updated);
     saveTripFull(updated);
