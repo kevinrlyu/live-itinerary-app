@@ -123,7 +123,6 @@ export async function parseItineraryText(
     system: SYSTEM_PROMPT,
   });
 
-  console.log("Anthropic client request");
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response from AI");
 
@@ -135,8 +134,55 @@ export async function parseItineraryText(
       : (content.text.match(/\{[\s\S]*\}/) ?? [""])[0];
     const parsed = JSON.parse(jsonText);
     if (docTitle) parsed.title = docTitle;
+
+    // Post-process: infer type and category from keywords when Claude didn't set them
+    for (const day of parsed.days ?? []) {
+      for (const act of day.activities ?? []) {
+        inferActivityFields(act);
+      }
+    }
+
     return { ...parsed, id: generateId(), docUrl } as Trip;
   } catch {
     throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
+  }
+}
+
+const TRANSPORT_KEYWORDS = [
+  'take the', 'drive to', 'fly to', 'board the', 'transfer to',
+  'taxi to', 'bus to', 'train to', 'shuttle', 'shinkansen',
+  'flight to', 'depart', 'walk to', 'head to', 'ride to',
+  'bullet train', 'metro to', 'subway to',
+];
+const HOTEL_KEYWORDS = [
+  'hotel', 'check-in', 'check-out', 'checkout', 'check in',
+  'accommodation', 'hostel', 'airbnb', 'ryokan', 'inn',
+];
+const MEAL_KEYWORDS = [
+  'breakfast', 'lunch', 'dinner', 'restaurant', 'café', 'cafe',
+  'drinks', 'bar', 'dining', 'meal', 'food hall', 'izakaya',
+  'ramen', 'sushi', 'brunch',
+];
+
+function inferActivityFields(act: any): void {
+  const title = (act.title || '').toLowerCase();
+
+  // Infer type
+  if (!act.type || act.type === 'activity') {
+    if (TRANSPORT_KEYWORDS.some((kw) => title.includes(kw))) {
+      act.type = 'transport';
+    }
+  }
+  if (!act.type) act.type = 'activity';
+
+  // Infer category
+  if (!act.category) {
+    if (HOTEL_KEYWORDS.some((kw) => title.includes(kw))) {
+      act.category = 'hotel';
+    } else if (MEAL_KEYWORDS.some((kw) => title.includes(kw))) {
+      act.category = 'meal';
+    } else {
+      act.category = null;
+    }
   }
 }

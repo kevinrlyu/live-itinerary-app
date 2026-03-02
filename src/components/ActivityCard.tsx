@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   childCard: {
-    marginLeft: 28,
+    marginHorizontal: 0,
     marginTop: 2,
     marginBottom: 2,
     borderRadius: 8,

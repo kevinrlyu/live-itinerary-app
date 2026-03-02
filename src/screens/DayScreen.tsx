@@ -86,21 +86,23 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   list: { paddingBottom: 32 },
-  group: {},
+  group: {
+    marginBottom: 4,
+  },
   childrenWrapper: {
     flexDirection: 'row',
-    marginLeft: 28,
+    marginLeft: 32,
     marginRight: 16,
   },
   groupLine: {
     width: 2,
-    backgroundColor: '#ddd',
+    backgroundColor: '#ccc',
     borderRadius: 1,
-    marginLeft: 8,
-    marginTop: -4,
-    marginBottom: 4,
+    marginTop: -2,
+    marginBottom: 6,
   },
   childrenList: {
     flex: 1,
+    marginLeft: 6,
   },
 });
