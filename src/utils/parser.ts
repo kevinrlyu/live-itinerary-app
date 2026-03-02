@@ -190,8 +190,7 @@ const TRANSPORT_KEYWORDS = [
   'bullet train', 'metro to', 'subway to',
 ];
 const HOTEL_KEYWORDS = [
-  'hotel', 'check-in', 'check-out', 'checkout', 'check in',
-  'accommodation', 'hostel', 'airbnb', 'ryokan', 'inn',
+  'check-in', 'check-out', 'checkout', 'check in',
 ];
 const MEAL_KEYWORDS = [
   'breakfast', 'lunch', 'dinner', 'restaurant', 'café', 'cafe',

@@ -173,7 +173,13 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <TripHeader title={trip.title} onOpenDrawer={() => setDrawerOpen(true)} />
         <NavigationContainer>
-          <Tab.Navigator initialRouteName={getTodayTabName(trip) as any}>
+          <Tab.Navigator
+            initialRouteName={getTodayTabName(trip) as any}
+            screenOptions={{
+              tabBarScrollEnabled: true,
+              tabBarItemStyle: { width: 70 },
+            }}
+          >
             {trip.days.map((day) => {
               const { dayOfWeek, monthDay } = formatDayLabel(day.date);
               return (

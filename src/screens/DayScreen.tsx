@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Day, Activity } from '../types';
 import ActivityCard from '../components/ActivityCard';
 import { getCurrentActivityIndex } from '../utils/tracking';
@@ -11,6 +11,7 @@ interface Props {
 
 export default function DayScreen({ day, onToggle }: Props) {
   const [now, setNow] = useState(new Date());
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60_000);
@@ -34,6 +35,10 @@ export default function DayScreen({ day, onToggle }: Props) {
 
   const toggle = (activityId: string) => onToggle(day.date, activityId);
 
+  const toggleCollapse = useCallback((headerId: string) => {
+    setCollapsed((prev) => ({ ...prev, [headerId]: !prev[headerId] }));
+  }, []);
+
   const renderActivity = (activity: Activity, isChild = false) => (
     <ActivityCard
       key={activity.id}
@@ -44,17 +49,29 @@ export default function DayScreen({ day, onToggle }: Props) {
     />
   );
 
-  const renderGroup = (header: Activity, children: Activity[]) => (
-    <View key={header.id} style={styles.group}>
-      {renderActivity(header)}
-      <View style={styles.childrenWrapper}>
-        <View style={styles.groupLine} />
-        <View style={styles.childrenList}>
-          {children.map((child) => renderActivity(child, true))}
-        </View>
+  const renderGroup = (header: Activity, children: Activity[]) => {
+    const isCollapsed = collapsed[header.id] ?? false;
+    return (
+      <View key={header.id} style={styles.group}>
+        <TouchableOpacity activeOpacity={0.8} onPress={() => toggleCollapse(header.id)}>
+          <View style={styles.headerRow}>
+            {renderActivity(header)}
+            <View style={styles.chevronBadge}>
+              <Text style={styles.chevronText}>{isCollapsed ? '▸' : '▾'} {children.length}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        {!isCollapsed && (
+          <View style={styles.childrenWrapper}>
+            <View style={styles.groupLine} />
+            <View style={styles.childrenList}>
+              {children.map((child) => renderActivity(child, true))}
+            </View>
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
   // Render top-level activities (skip children — they render under their parent)
   const topLevel = day.activities.filter((a) => !a.parentId);
@@ -88,6 +105,22 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 32 },
   group: {
     marginBottom: 4,
+  },
+  headerRow: {
+    position: 'relative',
+  },
+  chevronBadge: {
+    position: 'absolute',
+    right: 24,
+    top: 12,
+    backgroundColor: '#eee',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  chevronText: {
+    fontSize: 12,
+    color: '#888',
   },
   childrenWrapper: {
     flexDirection: 'row',
