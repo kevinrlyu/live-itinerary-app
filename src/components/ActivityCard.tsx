@@ -15,6 +15,17 @@ interface Props {
   isChild?: boolean;
 }
 
+// Convert "HH:MM" (24h) to "h:mmam/pm" (12h)
+function to12h(time: string): string {
+  const [hStr, mStr] = time.split(':');
+  let h = parseInt(hStr, 10);
+  const m = mStr || '00';
+  const suffix = h >= 12 ? 'pm' : 'am';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${m}${suffix}`;
+}
+
 export default function ActivityCard({ activity, isCurrent, onToggle, isChild }: Props) {
   const openDirections = () => {
     if (!activity.location) return;
@@ -26,22 +37,22 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
 
   const formatTimeRange = () => {
     if (!activity.time) return null;
-    if (activity.timeEnd) return `${activity.time} – ${activity.timeEnd}`;
-    return activity.time;
+    if (activity.timeEnd) return `${to12h(activity.time)} – ${to12h(activity.timeEnd)}`;
+    return to12h(activity.time);
   };
 
   // Transport: faint tappable row — entire row opens Google Maps
   if (activity.type === 'transport') {
+    const label = activity.time
+      ? `${to12h(activity.time)}: ${activity.title}`
+      : activity.title;
     return (
       <TouchableOpacity
         style={styles.transportRow}
         onPress={activity.location ? openDirections : undefined}
         activeOpacity={activity.location ? 0.6 : 1}
       >
-        {activity.time && <Text style={styles.transportTime}>{activity.time}  </Text>}
-        <Text style={styles.transportTitle} numberOfLines={2}>
-          →  {activity.title}
-        </Text>
+        <Text style={styles.transportTitle} numberOfLines={2}>{label}</Text>
       </TouchableOpacity>
     );
   }
