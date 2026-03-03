@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
 
 const ACCENT_COLORS: Record<string, string> = {
@@ -59,11 +60,6 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
 
   const timeLabel = formatTimeRange();
 
-  // Hide location text if it's already contained in the title (or vice versa)
-  const showLocationText = activity.location &&
-    !activity.title.toLowerCase().includes(activity.location.toLowerCase()) &&
-    !activity.location.toLowerCase().includes(activity.title.toLowerCase());
-
   return (
     <View style={[
       styles.card,
@@ -72,7 +68,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
       isChild && styles.childCard,
     ]}>
       <View style={styles.row}>
-        <TouchableOpacity testID="toggle-button" onPress={() => onToggle(activity.id)} style={styles.checkbox}>
+        <TouchableOpacity testID="toggle-button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(activity.id); }} style={styles.checkbox}>
           <Text style={[styles.checkboxText, { color: accent }]}>
             {activity.completed ? '✓' : '○'}
           </Text>
@@ -82,7 +78,6 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
           <Text style={[styles.title, activity.completed && styles.completedText]}>
             {activity.title}
           </Text>
-          {showLocationText && <Text style={styles.location}>{activity.location}</Text>}
           {activity.description && <Text style={styles.description}>{activity.description}</Text>}
           {activity.hours && <Text style={styles.hours}>Hours: {activity.hours}</Text>}
           {activity.notes && <Text style={styles.notes}>{activity.notes}</Text>}
@@ -150,11 +145,6 @@ const styles = StyleSheet.create({
   completedText: {
     textDecorationLine: 'line-through',
     color: '#999',
-  },
-  location: {
-    fontSize: 13,
-    color: '#555',
-    marginTop: 2,
   },
   description: {
     fontSize: 13,
