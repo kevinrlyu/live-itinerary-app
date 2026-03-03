@@ -14,6 +14,7 @@ interface Props {
   isCurrent: boolean;
   onToggle: (id: string) => void;
   isChild?: boolean;
+  isGroupHeader?: boolean;
 }
 
 // Convert "HH:MM" (24h) to "h:mmam/pm" (12h)
@@ -27,7 +28,7 @@ function to12h(time: string): string {
   return `${h}:${m}${suffix}`;
 }
 
-export default function ActivityCard({ activity, isCurrent, onToggle, isChild }: Props) {
+export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader }: Props) {
   const openDirections = () => {
     if (!activity.location) return;
     const query = encodeURIComponent(activity.location);
@@ -66,6 +67,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild }:
       isCurrent && [styles.currentCard, { borderLeftColor: accent }],
       activity.completed && styles.completedCard,
       isChild && styles.childCard,
+      isGroupHeader && styles.groupHeaderCard,
     ]}>
       <View style={styles.row}>
         <TouchableOpacity testID="toggle-button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(activity.id); }} style={styles.checkbox}>
@@ -117,6 +119,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     borderRadius: 8,
     shadowOpacity: 0.05,
+  },
+  groupHeaderCard: {
+    paddingRight: 56,
   },
   row: {
     flexDirection: 'row',

@@ -39,13 +39,14 @@ export default function DayScreen({ day, onToggle }: Props) {
     setCollapsed((prev) => ({ ...prev, [headerId]: !prev[headerId] }));
   }, []);
 
-  const renderActivity = (activity: Activity, isChild = false) => (
+  const renderActivity = (activity: Activity, isChild = false, isGroupHeader = false) => (
     <ActivityCard
       key={activity.id}
       activity={activity}
       isCurrent={flatIndexMap[activity.id] === currentIndex}
       onToggle={toggle}
       isChild={isChild}
+      isGroupHeader={isGroupHeader}
     />
   );
 
@@ -55,7 +56,7 @@ export default function DayScreen({ day, onToggle }: Props) {
       <View key={header.id} style={styles.group}>
         <TouchableOpacity activeOpacity={0.8} onPress={() => toggleCollapse(header.id)}>
           <View style={styles.headerRow}>
-            {renderActivity(header)}
+            {renderActivity(header, false, true)}
             <View style={styles.chevronBadge}>
               <Text style={styles.chevronText}>{isCollapsed ? '▸' : '▾'} {children.length}</Text>
             </View>
