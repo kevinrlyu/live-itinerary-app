@@ -27,6 +27,7 @@ function buildDateRange(trip: Trip): string {
 export default function ImportScreen({ onImport, onCancel }: Props) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState('');
 
   const handleImport = async () => {
     if (!url.trim()) {
@@ -34,12 +35,14 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
       return;
     }
     setLoading(true);
+    setProgress('Fetching document...');
     try {
       const [text, docTitle] = await Promise.all([
         fetchDocText(url.trim()),
         fetchDocTitle(url.trim()),
       ]);
-      const trip = await parseItineraryText(text, url.trim(), docTitle ?? undefined);
+      setProgress('Starting parse...');
+      const trip = await parseItineraryText(text, url.trim(), docTitle ?? undefined, setProgress);
       await saveTripFull(trip);
       const meta: TripMeta = {
         id: trip.id,
@@ -73,7 +76,10 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
       />
       <TouchableOpacity style={styles.button} onPress={handleImport} disabled={loading}>
         {loading ? (
-          <ActivityIndicator color="#fff" />
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color="#fff" />
+            {progress ? <Text style={styles.progressText}>{progress}</Text> : null}
+          </View>
         ) : (
           <Text style={styles.buttonText}>Import Itinerary</Text>
         )}
@@ -106,6 +112,8 @@ const styles = StyleSheet.create({
     padding: 16, alignItems: 'center', marginBottom: 12,
   },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  progressText: { color: '#fff', fontSize: 14, marginLeft: 10 },
   cancel: { color: '#007AFF', fontSize: 15, textAlign: 'center', marginBottom: 16 },
   hint: { fontSize: 12, color: '#999', textAlign: 'center', marginTop: 8 },
 });
