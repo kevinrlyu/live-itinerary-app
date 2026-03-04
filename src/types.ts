@@ -11,6 +11,7 @@ export interface Activity {
   notes: string | null;
   completed: boolean;
   parentId?: string | null;         // set when this activity is a sub-item under a group header
+  expense?: { amount: number; currency: string } | null;
 }
 
 export interface Day {
@@ -25,6 +26,7 @@ export interface Trip {
   docUrl: string;     // original Google Doc URL for re-import
   title: string;
   days: Day[];
+  defaultCurrency: string;  // e.g. "JPY", "CNY", "USD"
 }
 
 export interface TripMeta {

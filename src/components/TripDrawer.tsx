@@ -1,12 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Modal, Animated,
+  View, Text, TouchableOpacity, Animated,
   FlatList, StyleSheet, Dimensions, Alert,
 } from 'react-native';
 import { TripMeta } from '../types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
+
+const CURRENCIES = ['USD', 'JPY', 'CNY', 'EUR', 'GBP', 'KRW', 'TWD', 'THB', 'CAD', 'AUD'];
 
 interface Props {
   visible: boolean;
@@ -18,20 +20,50 @@ interface Props {
   onReimportCurrent: () => void;
   onDeleteTrip: (id: string) => void;
   reimporting: boolean;
+  reimportProgress?: string;
+  onViewExpenses?: () => void;
+  defaultCurrency?: string;
+  onSetCurrency?: (currency: string) => void;
 }
 
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
-  onSelectTrip, onImportNew, onReimportCurrent, onDeleteTrip, reimporting,
+  onSelectTrip, onImportNew, onReimportCurrent, onDeleteTrip, reimporting, reimportProgress,
+  onViewExpenses, defaultCurrency, onSetCurrency,
 }: Props) {
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: visible ? 0 : DRAWER_WIDTH,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
+    if (visible) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: DRAWER_WIDTH,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setMounted(false));
+    }
   }, [visible]);
 
   const confirmDelete = (trip: TripMeta) => {
@@ -45,9 +77,13 @@ export default function TripDrawer({
     );
   };
 
+  if (!mounted) return null;
+
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+    <View style={styles.overlay} pointerEvents="box-none">
+      <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+      </Animated.View>
       <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
         <Text style={styles.drawerTitle}>My Itineraries</Text>
 
@@ -57,9 +93,30 @@ export default function TripDrawer({
           disabled={reimporting}
         >
           <Text style={styles.actionButtonText}>
-            {reimporting ? 'Re-importing…' : '↻  Re-import Current'}
+            {reimporting ? (reimportProgress || 'Re-importing…') : '↻  Re-import Current'}
           </Text>
         </TouchableOpacity>
+
+        {onViewExpenses && (
+          <TouchableOpacity style={styles.actionButton} onPress={onViewExpenses}>
+            <Text style={styles.actionButtonText}>💵  Trip Expenses</Text>
+          </TouchableOpacity>
+        )}
+
+        {onSetCurrency && defaultCurrency && (
+          <View style={styles.currencyRow}>
+            <Text style={styles.currencyLabel}>Default Currency</Text>
+            <TouchableOpacity
+              style={styles.currencyValue}
+              onPress={() => {
+                const idx = CURRENCIES.indexOf(defaultCurrency);
+                onSetCurrency(CURRENCIES[(idx + 1) % CURRENCIES.length]);
+              }}
+            >
+              <Text style={styles.currencyValueText}>{defaultCurrency}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <FlatList
           data={trips}
@@ -88,11 +145,15 @@ export default function TripDrawer({
           <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
         </TouchableOpacity>
       </Animated.View>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -142,6 +203,29 @@ const styles = StyleSheet.create({
   checkmark: { fontSize: 16, color: '#007AFF', fontWeight: '700' },
   deleteButton: { padding: 4 },
   deleteText: { fontSize: 14, color: '#FF3B30' },
+  currencyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    marginBottom: 12,
+  },
+  currencyLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  currencyValue: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  currencyValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
   importButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,

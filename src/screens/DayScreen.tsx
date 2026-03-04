@@ -7,9 +7,11 @@ import { getCurrentActivityIndex } from '../utils/tracking';
 interface Props {
   day: Day;
   onToggle: (dayDate: string, activityId: string) => void;
+  defaultCurrency?: string;
+  onExpense?: (dayDate: string, activityId: string, expense: { amount: number; currency: string } | null) => void;
 }
 
-export default function DayScreen({ day, onToggle }: Props) {
+export default function DayScreen({ day, onToggle, defaultCurrency, onExpense }: Props) {
   const [now, setNow] = useState(new Date());
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -18,7 +20,9 @@ export default function DayScreen({ day, onToggle }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  const currentIndex = getCurrentActivityIndex(day.activities, now);
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const isToday = day.date === todayStr;
+  const currentIndex = isToday ? getCurrentActivityIndex(day.activities, now) : -1;
 
   // Map each activity id to its flat index (for isCurrent tracking)
   const flatIndexMap: Record<string, number> = {};
@@ -33,7 +37,21 @@ export default function DayScreen({ day, onToggle }: Props) {
     }
   }
 
+  // If the current activity is a child, its parent should also glow
+  const currentActivity = currentIndex >= 0 ? day.activities[currentIndex] : null;
+  const currentParentId = currentActivity?.parentId ?? null;
+
+  const isActivityCurrent = (activity: Activity) => {
+    if (flatIndexMap[activity.id] === currentIndex) return true;
+    // Parent glows if any of its children is current
+    if (currentParentId && activity.id === currentParentId) return true;
+    return false;
+  };
+
   const toggle = (activityId: string) => onToggle(day.date, activityId);
+  const handleExpense = onExpense
+    ? (id: string, expense: { amount: number; currency: string } | null) => onExpense(day.date, id, expense)
+    : undefined;
 
   const toggleCollapse = useCallback((headerId: string) => {
     setCollapsed((prev) => ({ ...prev, [headerId]: !prev[headerId] }));
@@ -43,10 +61,12 @@ export default function DayScreen({ day, onToggle }: Props) {
     <ActivityCard
       key={activity.id}
       activity={activity}
-      isCurrent={flatIndexMap[activity.id] === currentIndex}
+      isCurrent={isActivityCurrent(activity)}
       onToggle={toggle}
       isChild={isChild}
       isGroupHeader={isGroupHeader}
+      defaultCurrency={defaultCurrency}
+      onExpense={handleExpense}
     />
   );
 
@@ -54,14 +74,16 @@ export default function DayScreen({ day, onToggle }: Props) {
     const isCollapsed = collapsed[header.id] ?? false;
     return (
       <View key={header.id} style={styles.group}>
-        <TouchableOpacity activeOpacity={0.8} onPress={() => toggleCollapse(header.id)}>
-          <View style={styles.headerRow}>
-            {renderActivity(header, false, true)}
-            <View style={styles.chevronBadge}>
-              <Text style={styles.chevronText}>{isCollapsed ? '▸' : '▾'} {children.length}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.headerRow}>
+          {renderActivity(header, false, true)}
+          <TouchableOpacity
+            activeOpacity={0.6}
+            onPress={() => toggleCollapse(header.id)}
+            style={styles.chevronBadge}
+          >
+            <Text style={styles.chevronText}>{isCollapsed ? '▸' : '▾'} {children.length}</Text>
+          </TouchableOpacity>
+        </View>
         {!isCollapsed && (
           <View style={styles.childrenWrapper}>
             <View style={styles.groupLine} />
@@ -112,12 +134,12 @@ const styles = StyleSheet.create({
   },
   chevronBadge: {
     position: 'absolute',
-    right: 24,
-    top: 12,
+    right: 32,
+    top: 16,
     backgroundColor: '#eee',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 3,
   },
   chevronText: {
     fontSize: 12,
@@ -125,7 +147,7 @@ const styles = StyleSheet.create({
   },
   childrenWrapper: {
     flexDirection: 'row',
-    marginLeft: 32,
+    marginLeft: 24,
     marginRight: 16,
   },
   groupLine: {

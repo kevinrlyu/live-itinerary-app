@@ -11,7 +11,11 @@ export default function TripHeader({ title, onOpenDrawer }: Props) {
     <View style={styles.container}>
       <Text style={styles.title} numberOfLines={1}>{title}</Text>
       <TouchableOpacity onPress={onOpenDrawer} style={styles.menuButton} testID="menu-button">
-        <Text style={styles.menuIcon}>≡</Text>
+        <View style={styles.menuIconContainer}>
+          <View style={styles.menuBar} />
+          <View style={styles.menuBar} />
+          <View style={styles.menuBar} />
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -36,10 +40,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   menuButton: {
-    padding: 4,
+    padding: 8,
   },
-  menuIcon: {
-    fontSize: 22,
-    color: '#007AFF',
+  menuIconContainer: {
+    width: 22,
+    height: 18,
+    justifyContent: 'space-between',
+  },
+  menuBar: {
+    width: 22,
+    height: 2.5,
+    backgroundColor: '#007AFF',
+    borderRadius: 1,
   },
 });

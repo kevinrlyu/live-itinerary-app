@@ -21,6 +21,7 @@ const mockTrip: Trip = {
   docUrl: 'https://docs.google.com/document/d/abc/edit',
   title: 'Tokyo Trip',
   days: [],
+  defaultCurrency: 'USD',
 };
 
 const mockMeta: TripMeta = {

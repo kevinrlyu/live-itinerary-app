@@ -18,6 +18,7 @@ describe('Types', () => {
       id: 'abc123',
       docUrl: 'https://docs.google.com/document/d/abc/edit',
       title: 'Tokyo Trip',
+      defaultCurrency: 'USD',
       days: [
         {
           date: '2025-12-10',

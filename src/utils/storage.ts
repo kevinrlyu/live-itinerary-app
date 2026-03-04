@@ -11,7 +11,10 @@ export async function saveTripFull(trip: Trip): Promise<void> {
 
 export async function loadTripFull(id: string): Promise<Trip | null> {
   const json = await AsyncStorage.getItem(tripKey(id));
-  return json ? (JSON.parse(json) as Trip) : null;
+  if (!json) return null;
+  const trip = JSON.parse(json) as Trip;
+  if (!trip.defaultCurrency) trip.defaultCurrency = 'USD';
+  return trip;
 }
 
 export async function deleteTrip(id: string): Promise<void> {
@@ -63,6 +66,7 @@ export async function migrateOldStorage(): Promise<void> {
     docUrl: oldTrip.docUrl ?? '',
     title: oldTrip.title ?? 'My Trip',
     days: oldTrip.days ?? [],
+    defaultCurrency: 'USD',
   };
 
   await saveTripFull(trip);

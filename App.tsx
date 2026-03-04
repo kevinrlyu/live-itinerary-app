@@ -15,6 +15,7 @@ import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
 import ImportScreen from './src/screens/ImportScreen';
 import DayScreen from './src/screens/DayScreen';
+import ExpenseSummaryScreen from './src/screens/ExpenseSummaryScreen';
 import TripHeader from './src/components/TripHeader';
 import TripDrawer from './src/components/TripDrawer';
 
@@ -55,6 +56,8 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [reimporting, setReimporting] = useState(false);
+  const [reimportProgress, setReimportProgress] = useState('');
+  const [showExpenses, setShowExpenses] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -130,13 +133,32 @@ export default function App() {
       return;
     }
     setReimporting(true);
+    setReimportProgress('Fetching document...');
     try {
       const [text, docTitle] = await Promise.all([
         fetchDocText(trip.docUrl),
         fetchDocTitle(trip.docUrl),
       ]);
-      const updated = await parseItineraryText(text, trip.docUrl, docTitle ?? undefined);
-      const refreshed: Trip = { ...updated, id: trip.id };
+      setReimportProgress('Starting parse...');
+      const updated = await parseItineraryText(text, trip.docUrl, docTitle ?? undefined, setReimportProgress, trip.id);
+      // Preserve expenses from old trip
+      const oldExpenses: Record<string, { amount: number; currency: string }> = {};
+      for (const day of trip.days) {
+        for (const a of day.activities) {
+          if (a.expense) oldExpenses[a.id] = a.expense;
+        }
+      }
+      const refreshed: Trip = {
+        ...updated,
+        id: trip.id,
+        defaultCurrency: trip.defaultCurrency,
+        days: updated.days.map((day) => ({
+          ...day,
+          activities: day.activities.map((a) =>
+            oldExpenses[a.id] ? { ...a, expense: oldExpenses[a.id] } : a
+          ),
+        })),
+      };
       await saveTripFull(refreshed);
       const newMeta: TripMeta = {
         id: trip.id,
@@ -155,6 +177,30 @@ export default function App() {
       setReimporting(false);
     }
   }, [trip, tripList]);
+
+  const handleExpense = useCallback((dayDate: string, activityId: string, expense: { amount: number; currency: string } | null) => {
+    if (!trip) return;
+    const updated: Trip = {
+      ...trip,
+      days: trip.days.map((day) =>
+        day.date !== dayDate ? day : {
+          ...day,
+          activities: day.activities.map((a) =>
+            a.id === activityId ? { ...a, expense } : a
+          ),
+        }
+      ),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleSetCurrency = useCallback((currency: string) => {
+    if (!trip) return;
+    const updated: Trip = { ...trip, defaultCurrency: currency };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
 
   if (!loaded) return null;
 
@@ -186,7 +232,7 @@ export default function App() {
                 <Tab.Screen
                   key={day.date}
                   name={day.date}
-                  children={() => <DayScreen day={day} onToggle={handleToggle} />}
+                  children={() => <DayScreen day={day} onToggle={handleToggle} defaultCurrency={trip.defaultCurrency} onExpense={handleExpense} />}
                   options={{
                     tabBarLabel: () => (
                       <View style={styles.tabLabel}>
@@ -211,6 +257,10 @@ export default function App() {
           onReimportCurrent={handleReimport}
           onDeleteTrip={handleDeleteTrip}
           reimporting={reimporting}
+          reimportProgress={reimportProgress}
+          onViewExpenses={() => { setDrawerOpen(false); setShowExpenses(true); }}
+          defaultCurrency={trip.defaultCurrency}
+          onSetCurrency={handleSetCurrency}
         />
 
         <Modal visible={showImport} animationType="slide">
@@ -219,6 +269,12 @@ export default function App() {
               onImport={handleImport}
               onCancel={() => setShowImport(false)}
             />
+          </SafeAreaView>
+        </Modal>
+
+        <Modal visible={showExpenses} animationType="slide">
+          <SafeAreaView style={styles.container}>
+            <ExpenseSummaryScreen trip={trip} onClose={() => setShowExpenses(false)} />
           </SafeAreaView>
         </Modal>
       </SafeAreaView>
