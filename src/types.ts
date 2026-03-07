@@ -21,12 +21,23 @@ export interface Day {
   activities: Activity[];
 }
 
+export interface CulinaryItem {
+  name: string;
+  checked: boolean;
+}
+
+export interface CulinaryRegion {
+  region: string;
+  items: CulinaryItem[];
+}
+
 export interface Trip {
   id: string;         // unique identifier
   docUrl: string;     // original Google Doc URL for re-import
   title: string;
   days: Day[];
   defaultCurrency: string;  // e.g. "JPY", "CNY", "USD"
+  culinarySpecialties?: CulinaryRegion[];
 }
 
 export interface TripMeta {

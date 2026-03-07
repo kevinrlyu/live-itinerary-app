@@ -16,8 +16,10 @@ import { parseItineraryText } from './src/utils/parser';
 import ImportScreen from './src/screens/ImportScreen';
 import DayScreen from './src/screens/DayScreen';
 import ExpenseSummaryScreen from './src/screens/ExpenseSummaryScreen';
+import CulinaryScreen from './src/screens/CulinaryScreen';
 import TripHeader from './src/components/TripHeader';
 import TripDrawer from './src/components/TripDrawer';
+import ExpenseInput, { ExpenseInputTarget } from './src/components/ExpenseInput';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -58,6 +60,8 @@ export default function App() {
   const [reimporting, setReimporting] = useState(false);
   const [reimportProgress, setReimportProgress] = useState('');
   const [showExpenses, setShowExpenses] = useState(false);
+  const [showCulinary, setShowCulinary] = useState(false);
+  const [expenseTarget, setExpenseTarget] = useState<{ dayDate: string; target: ExpenseInputTarget } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -148,10 +152,26 @@ export default function App() {
           if (a.expense) oldExpenses[a.id] = a.expense;
         }
       }
+      // Preserve culinary checked states by region+name
+      const oldChecked = new Set<string>();
+      for (const region of trip.culinarySpecialties ?? []) {
+        for (const item of region.items) {
+          if (item.checked) oldChecked.add(`${region.region}::${item.name}`);
+        }
+      }
+      const newCulinary = updated.culinarySpecialties?.map((region) => ({
+        ...region,
+        items: region.items.map((item) => ({
+          ...item,
+          checked: oldChecked.has(`${region.region}::${item.name}`),
+        })),
+      }));
+
       const refreshed: Trip = {
         ...updated,
         id: trip.id,
         defaultCurrency: trip.defaultCurrency,
+        culinarySpecialties: newCulinary || trip.culinarySpecialties,
         days: updated.days.map((day) => ({
           ...day,
           activities: day.activities.map((a) =>
@@ -178,8 +198,22 @@ export default function App() {
     }
   }, [trip, tripList]);
 
-  const handleExpense = useCallback((dayDate: string, activityId: string, expense: { amount: number; currency: string } | null) => {
+  const handleOpenExpense = useCallback((dayDate: string, activity: import('./src/types').Activity) => {
     if (!trip) return;
+    setExpenseTarget({
+      dayDate,
+      target: {
+        activityId: activity.id,
+        activityTitle: activity.title,
+        existingExpense: activity.expense ?? null,
+        defaultCurrency: trip.defaultCurrency,
+      },
+    });
+  }, [trip]);
+
+  const handleExpenseSave = useCallback((activityId: string, expense: { amount: number; currency: string } | null) => {
+    if (!trip || !expenseTarget) return;
+    const dayDate = expenseTarget.dayDate;
     const updated: Trip = {
       ...trip,
       days: trip.days.map((day) =>
@@ -193,11 +227,28 @@ export default function App() {
     };
     setTrip(updated);
     saveTripFull(updated);
-  }, [trip]);
+  }, [trip, expenseTarget]);
 
   const handleSetCurrency = useCallback((currency: string) => {
     if (!trip) return;
     const updated: Trip = { ...trip, defaultCurrency: currency };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleToggleCulinaryItem = useCallback((regionIndex: number, itemIndex: number) => {
+    if (!trip?.culinarySpecialties) return;
+    const updated: Trip = {
+      ...trip,
+      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
+        rIdx !== regionIndex ? region : {
+          ...region,
+          items: region.items.map((item, iIdx) =>
+            iIdx !== itemIndex ? item : { ...item, checked: !item.checked }
+          ),
+        }
+      ),
+    };
     setTrip(updated);
     saveTripFull(updated);
   }, [trip]);
@@ -232,7 +283,7 @@ export default function App() {
                 <Tab.Screen
                   key={day.date}
                   name={day.date}
-                  children={() => <DayScreen day={day} onToggle={handleToggle} defaultCurrency={trip.defaultCurrency} onExpense={handleExpense} />}
+                  children={() => <DayScreen day={day} onToggle={handleToggle} onOpenExpense={handleOpenExpense} />}
                   options={{
                     tabBarLabel: () => (
                       <View style={styles.tabLabel}>
@@ -258,6 +309,7 @@ export default function App() {
           onDeleteTrip={handleDeleteTrip}
           reimporting={reimporting}
           reimportProgress={reimportProgress}
+          onViewCulinary={trip.culinarySpecialties?.length ? () => { setDrawerOpen(false); setShowCulinary(true); } : undefined}
           onViewExpenses={() => { setDrawerOpen(false); setShowExpenses(true); }}
           defaultCurrency={trip.defaultCurrency}
           onSetCurrency={handleSetCurrency}
@@ -273,10 +325,24 @@ export default function App() {
         </Modal>
 
         <Modal visible={showExpenses} animationType="slide">
-          <SafeAreaView style={styles.container}>
-            <ExpenseSummaryScreen trip={trip} onClose={() => setShowExpenses(false)} />
-          </SafeAreaView>
+          <ExpenseSummaryScreen trip={trip} onClose={() => setShowExpenses(false)} />
         </Modal>
+
+        <Modal visible={showCulinary} animationType="slide">
+          <CulinaryScreen
+            regions={trip.culinarySpecialties ?? []}
+            onToggle={handleToggleCulinaryItem}
+            onClose={() => setShowCulinary(false)}
+          />
+        </Modal>
+
+        {expenseTarget && (
+          <ExpenseInput
+            target={expenseTarget.target}
+            onSave={handleExpenseSave}
+            onClose={() => setExpenseTarget(null)}
+          />
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );

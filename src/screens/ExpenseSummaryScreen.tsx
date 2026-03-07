@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Share, Platform,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Share,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip, Activity } from '../types';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
+  const insets = useSafeAreaInsets();
   // Collect all activities with expenses
   const allExpenses: { activity: Activity; dayLabel: string; dayDate: string }[] = [];
   for (const day of trip.days) {
@@ -88,12 +90,11 @@ export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.headerTitle} numberOfLines={1}>Trip Expenses</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Trip Expenses</Text>
-        <View style={{ width: 60 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -175,13 +176,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   closeButton: {
-    width: 60,
+    paddingLeft: 12,
   },
   closeText: {
     fontSize: 16,
@@ -193,7 +194,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1a1a1a',
     flex: 1,
-    textAlign: 'center',
   },
   scrollContent: {
     padding: 16,

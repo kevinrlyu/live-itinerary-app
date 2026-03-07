@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import {
-  View, Text, TouchableOpacity, Linking, StyleSheet,
-  Modal, TextInput, Pressable,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
 
@@ -12,12 +10,41 @@ const ACCENT_COLORS: Record<string, string> = {
   meal: '#E53935',
 };
 
-const CURRENCIES = ['USD', 'JPY', 'CNY', 'EUR', 'GBP', 'KRW', 'TWD', 'THB', 'CAD', 'AUD'];
-
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
-  KRW: '₩', TWD: 'NT$', THB: '฿', CAD: 'C$', AUD: 'A$',
+  KRW: '₩', TWD: 'NT$', CHF: 'Fr', CAD: 'C$',
 };
+
+// Bill/receipt icon drawn with Views
+function BillIcon({ size = 16, color = '#666' }: { size?: number; color?: string }) {
+  const w = size;
+  const h = size * 1.2;
+  return (
+    <View style={{ width: w, height: h, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{
+        width: w, height: h, borderRadius: 2, borderWidth: 1.5, borderColor: color,
+        paddingTop: h * 0.2, paddingHorizontal: w * 0.15, justifyContent: 'flex-start',
+      }}>
+        <View style={{ width: '100%', height: 1.5, backgroundColor: color, marginBottom: 2.5 }} />
+        <View style={{ width: '70%', height: 1.5, backgroundColor: color, marginBottom: 2.5 }} />
+        <View style={{ width: '85%', height: 1.5, backgroundColor: color }} />
+      </View>
+    </View>
+  );
+}
+
+// Google Maps-style pin: teardrop shape with a circle inside
+function MapPinIcon({ size = 16, color = '#fff', holeColor }: { size?: number; color?: string; holeColor?: string }) {
+  return (
+    <Svg width={size} height={size * 1.4} viewBox="0 0 24 34">
+      <Path
+        d="M12 0C5.4 0 0 5.4 0 12c0 9 12 22 12 22s12-13 12-22C24 5.4 18.6 0 12 0z"
+        fill={color}
+      />
+      <Circle cx="12" cy="12" r="5" fill={holeColor || '#00000022'} />
+    </Svg>
+  );
+}
 
 function formatExpense(amount: number, currency: string): string {
   const sym = CURRENCY_SYMBOLS[currency] || currency + ' ';
@@ -35,8 +62,7 @@ interface Props {
   onToggle: (id: string) => void;
   isChild?: boolean;
   isGroupHeader?: boolean;
-  defaultCurrency?: string;
-  onExpense?: (id: string, expense: { amount: number; currency: string } | null) => void;
+  onOpenExpense?: (activity: Activity) => void;
 }
 
 // Convert "HH:MM" (24h) to "h:mmam/pm" (12h)
@@ -61,14 +87,9 @@ function convertTimesIn(text: string): string {
   });
 }
 
-export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, defaultCurrency, onExpense }: Props) {
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [expenseCurrency, setExpenseCurrency] = useState(defaultCurrency || 'USD');
-
+export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense }: Props) {
   const openDirections = () => {
-    if (!activity.location) return;
-    const query = encodeURIComponent(activity.location);
+    const query = encodeURIComponent(activity.location || activity.title);
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
   };
 
@@ -80,30 +101,6 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
     return to12h(activity.time);
   };
 
-  const openExpenseInput = () => {
-    if (activity.expense) {
-      setExpenseAmount(String(activity.expense.amount));
-      setExpenseCurrency(activity.expense.currency);
-    } else {
-      setExpenseAmount('');
-      setExpenseCurrency(defaultCurrency || 'USD');
-    }
-    setShowExpenseModal(true);
-  };
-
-  const saveExpense = () => {
-    const parsed = parseFloat(expenseAmount);
-    if (!isNaN(parsed) && parsed > 0 && onExpense) {
-      onExpense(activity.id, { amount: parsed, currency: expenseCurrency });
-    }
-    setShowExpenseModal(false);
-  };
-
-  const deleteExpense = () => {
-    if (onExpense) onExpense(activity.id, null);
-    setShowExpenseModal(false);
-  };
-
   // Transport: faint tappable row — entire row opens Google Maps
   if (activity.type === 'transport') {
     const label = activity.time
@@ -112,8 +109,8 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
     return (
       <TouchableOpacity
         style={styles.transportRow}
-        onPress={activity.location ? openDirections : undefined}
-        activeOpacity={activity.location ? 0.6 : 1}
+        onPress={openDirections}
+        activeOpacity={0.6}
       >
         <Text style={styles.transportTitle} numberOfLines={2}>{label}</Text>
       </TouchableOpacity>
@@ -147,68 +144,21 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
         </View>
       </View>
       <View style={styles.buttonRow}>
-        {onExpense && (
-          <TouchableOpacity onPress={openExpenseInput} style={styles.iconButton}>
+        {onOpenExpense && (
+          <TouchableOpacity onPress={() => onOpenExpense(activity)} style={[styles.iconButton, { backgroundColor: accent }]}>
             {activity.expense ? (
               <Text style={styles.expenseAmountText}>
                 {formatExpense(activity.expense.amount, activity.expense.currency)}
               </Text>
             ) : (
-              <Text style={styles.iconButtonText}>💵</Text>
+              <BillIcon size={14} color="#fff" />
             )}
           </TouchableOpacity>
         )}
-        {activity.location && (
-          <TouchableOpacity onPress={openDirections} style={[styles.iconButton, { backgroundColor: accent }]}>
-            <Text style={styles.iconButtonText}>📍</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity onPress={openDirections} style={[styles.iconButton, { backgroundColor: accent }]}>
+          <MapPinIcon size={14} color="#fff" holeColor={accent} />
+        </TouchableOpacity>
       </View>
-
-      <Modal visible={showExpenseModal} transparent animationType="fade">
-        <Pressable style={styles.modalBackdrop} onPress={() => setShowExpenseModal(false)}>
-          <Pressable style={styles.modalCard} onPress={() => {}}>
-            <Text style={styles.modalTitle}>Expense</Text>
-            <Text style={styles.modalSubtitle} numberOfLines={1}>{activity.title}</Text>
-
-            <View style={styles.inputRow}>
-              <TouchableOpacity
-                style={styles.currencyButton}
-                onPress={() => {
-                  const idx = CURRENCIES.indexOf(expenseCurrency);
-                  setExpenseCurrency(CURRENCIES[(idx + 1) % CURRENCIES.length]);
-                }}
-              >
-                <Text style={styles.currencyButtonText}>{expenseCurrency}</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={styles.amountInput}
-                placeholder="0"
-                placeholderTextColor="#ccc"
-                keyboardType="decimal-pad"
-                value={expenseAmount}
-                onChangeText={setExpenseAmount}
-                autoFocus
-              />
-            </View>
-
-            <View style={styles.modalActions}>
-              {activity.expense && (
-                <TouchableOpacity onPress={deleteExpense} style={styles.deleteButton}>
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              )}
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity onPress={() => setShowExpenseModal(false)} style={styles.cancelButton}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={saveExpense} style={styles.saveButton}>
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -306,17 +256,16 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
-  },
-  iconButtonText: {
-    fontSize: 16,
   },
   expenseAmountText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2e7d32',
+    color: '#fff',
   },
   // Transport styles
   transportRow: {
@@ -334,92 +283,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: '#aaa',
-  },
-  // Expense modal
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: '85%',
-    maxWidth: 340,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    color: '#888',
-    marginBottom: 20,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  currencyButton: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginRight: 10,
-  },
-  currencyButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
-    paddingVertical: 6,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  deleteButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  deleteButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF3B30',
-  },
-  cancelButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#888',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
   },
 });

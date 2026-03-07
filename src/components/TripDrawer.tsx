@@ -8,7 +8,7 @@ import { TripMeta } from '../types';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
 
-const CURRENCIES = ['USD', 'JPY', 'CNY', 'EUR', 'GBP', 'KRW', 'TWD', 'THB', 'CAD', 'AUD'];
+const CURRENCIES = ['CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'TWD', 'USD'];
 
 interface Props {
   visible: boolean;
@@ -21,15 +21,53 @@ interface Props {
   onDeleteTrip: (id: string) => void;
   reimporting: boolean;
   reimportProgress?: string;
+  onViewCulinary?: () => void;
   onViewExpenses?: () => void;
   defaultCurrency?: string;
   onSetCurrency?: (currency: string) => void;
 }
 
+function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={styles.currencyRow}>
+      <Text style={styles.currencyLabel}>Default Currency</Text>
+      <View>
+        <TouchableOpacity
+          style={styles.currencyValue}
+          onPress={() => setOpen(!open)}
+        >
+          <Text style={styles.currencyValueText}>{value}</Text>
+          <Text style={styles.currencyChevron}>▾</Text>
+        </TouchableOpacity>
+        {open && (
+          <View style={styles.currencyDropdown}>
+            {CURRENCIES.map((cur) => (
+              <TouchableOpacity
+                key={cur}
+                style={[
+                  styles.currencyOption,
+                  cur === value && styles.currencyOptionSelected,
+                ]}
+                onPress={() => { onChange(cur); setOpen(false); }}
+              >
+                <Text style={[
+                  styles.currencyOptionText,
+                  cur === value && styles.currencyOptionTextSelected,
+                ]}>{cur}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
   onSelectTrip, onImportNew, onReimportCurrent, onDeleteTrip, reimporting, reimportProgress,
-  onViewExpenses, defaultCurrency, onSetCurrency,
+  onViewCulinary, onViewExpenses, defaultCurrency, onSetCurrency,
 }: Props) {
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -97,25 +135,23 @@ export default function TripDrawer({
           </Text>
         </TouchableOpacity>
 
+        {onViewCulinary && (
+          <TouchableOpacity style={styles.actionButton} onPress={onViewCulinary}>
+            <Text style={styles.actionButtonText}>Culinary Guide</Text>
+          </TouchableOpacity>
+        )}
+
         {onViewExpenses && (
           <TouchableOpacity style={styles.actionButton} onPress={onViewExpenses}>
-            <Text style={styles.actionButtonText}>💵  Trip Expenses</Text>
+            <Text style={styles.actionButtonText}>$  Trip Expenses</Text>
           </TouchableOpacity>
         )}
 
         {onSetCurrency && defaultCurrency && (
-          <View style={styles.currencyRow}>
-            <Text style={styles.currencyLabel}>Default Currency</Text>
-            <TouchableOpacity
-              style={styles.currencyValue}
-              onPress={() => {
-                const idx = CURRENCIES.indexOf(defaultCurrency);
-                onSetCurrency(CURRENCIES[(idx + 1) % CURRENCIES.length]);
-              }}
-            >
-              <Text style={styles.currencyValueText}>{defaultCurrency}</Text>
-            </TouchableOpacity>
-          </View>
+          <CurrencyPicker
+            value={defaultCurrency}
+            onChange={onSetCurrency}
+          />
         )}
 
         <FlatList
@@ -220,11 +256,49 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   currencyValueText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#007AFF',
+  },
+  currencyChevron: {
+    fontSize: 11,
+    color: '#888',
+    marginLeft: 4,
+  },
+  currencyDropdown: {
+    position: 'absolute',
+    top: 36,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 10,
+    minWidth: 80,
+  },
+  currencyOption: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#eee',
+  },
+  currencyOptionSelected: {
+    backgroundColor: '#E8F0FE',
+  },
+  currencyOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  currencyOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   importButton: {
     backgroundColor: '#007AFF',

@@ -7,11 +7,10 @@ import { getCurrentActivityIndex } from '../utils/tracking';
 interface Props {
   day: Day;
   onToggle: (dayDate: string, activityId: string) => void;
-  defaultCurrency?: string;
-  onExpense?: (dayDate: string, activityId: string, expense: { amount: number; currency: string } | null) => void;
+  onOpenExpense?: (dayDate: string, activity: Activity) => void;
 }
 
-export default function DayScreen({ day, onToggle, defaultCurrency, onExpense }: Props) {
+export default function DayScreen({ day, onToggle, onOpenExpense }: Props) {
   const [now, setNow] = useState(new Date());
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -49,8 +48,8 @@ export default function DayScreen({ day, onToggle, defaultCurrency, onExpense }:
   };
 
   const toggle = (activityId: string) => onToggle(day.date, activityId);
-  const handleExpense = onExpense
-    ? (id: string, expense: { amount: number; currency: string } | null) => onExpense(day.date, id, expense)
+  const handleOpenExpense = onOpenExpense
+    ? (activity: Activity) => onOpenExpense(day.date, activity)
     : undefined;
 
   const toggleCollapse = useCallback((headerId: string) => {
@@ -65,8 +64,7 @@ export default function DayScreen({ day, onToggle, defaultCurrency, onExpense }:
       onToggle={toggle}
       isChild={isChild}
       isGroupHeader={isGroupHeader}
-      defaultCurrency={defaultCurrency}
-      onExpense={handleExpense}
+      onOpenExpense={handleOpenExpense}
     />
   );
 

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { fetch as expoFetch } from "expo/fetch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Day, Trip } from "../types";
+import { Day, Trip, CulinaryRegion } from "../types";
 
 const client = new Anthropic({
   apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
@@ -48,6 +48,7 @@ Rules:
 - Set category "meal" for any restaurant, meal, drinks, café, dining, or food-related activity
 - Set category null for everything else (sightseeing, transport, general activities)
 - IMPORTANT: When a general activity header (like "Explore Shinbashi") is followed by bulleted sub-items that are distinct locations or activities, create EACH sub-item as its own separate activity entry with parentId pointing to the header's id. Do NOT fold sub-items into the parent's description field. Each sub-item should be a full activity object with its own id, title, location, description, hours, etc.
+- When a hotel/accommodation activity (like "Relax at Hotel", "Hotel morning", "Free time at resort") is followed by sub-activities at the same location (breakfast, pool, spa, onsen, checkout, etc.), these sub-activities should be children with parentId set to the hotel activity's id.
 - Each activity's "location" must be the SPECIFIC place name suitable for Google Maps search. For child activities under a group header, use the child's own specific place (e.g. "Shizuoka City Museum of Art"), NEVER the parent's location (e.g. NOT "Shizuoka Station").
 - For group headers that have a time range (e.g. "6:30pm–8:00pm: Explore Shinbashi"), set time to the start and timeEnd to the end
 - Use the description field ONLY for a brief inline note about a single activity (not for listing sub-items). The description must NOT repeat or restate the activity title.
@@ -96,7 +97,8 @@ function detectYearFromText(text: string): number | null {
 
 // Split raw document text into per-day chunks.
 // Looks for day header patterns like "December 10 (Wednesday)" or "Day 1 — December 10".
-function splitTextByDay(text: string): string[] {
+// Returns { preamble, dayChunks } where preamble is text before the first day header.
+function splitTextByDay(text: string): { preamble: string; dayChunks: string[] } {
   // Match lines that start a new day: "Month Day" possibly followed by day-of-week
   const dayHeaderPattern = new RegExp(
     `^(?:day\\s+\\d+[^\\n]*)?\\s*(?:${MONTH_NAMES.join('|')})\\s+\\d{1,2}`,
@@ -111,26 +113,22 @@ function splitTextByDay(text: string): string[] {
 
   if (matches.length <= 1) {
     // Can't split reliably — return the whole text
-    return [text];
+    return { preamble: '', dayChunks: [text] };
   }
 
-  const chunks: string[] = [];
+  const preamble = matches[0].index > 0
+    ? text.slice(0, matches[0].index).trim()
+    : '';
+
+  const dayChunks: string[] = [];
   for (let i = 0; i < matches.length; i++) {
     const start = matches[i].index;
     const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
     const chunk = text.slice(start, end).trim();
-    if (chunk) chunks.push(chunk);
+    if (chunk) dayChunks.push(chunk);
   }
 
-  // If there's text before the first day header (preamble), prepend it to the first chunk
-  if (matches.length > 0 && matches[0].index > 0) {
-    const preamble = text.slice(0, matches[0].index).trim();
-    if (preamble) {
-      chunks[0] = preamble + '\n\n' + chunks[0];
-    }
-  }
-
-  return chunks;
+  return { preamble, dayChunks };
 }
 
 // Simple hash for cache comparison
@@ -233,7 +231,7 @@ export async function parseItineraryText(
     ? `IMPORTANT: The dates in this itinerary are from the year ${detectedYear}. Use ${detectedYear} for all dates.\n\n`
     : "";
 
-  const dayChunks = splitTextByDay(text);
+  const { preamble, dayChunks } = splitTextByDay(text);
 
   // If we couldn't split into multiple days, fall back to single-call parsing
   if (dayChunks.length <= 1) {
@@ -241,36 +239,56 @@ export async function parseItineraryText(
     return parseFull(text, docUrl, docTitle, yearHint, onProgress);
   }
 
-  // Load cache for re-imports
-  const cache = existingTripId ? await loadDayCache(existingTripId) : {};
+  // Start with empty cache on re-import to ensure latest prompt is used
+  const cache: DayCache = {};
   const newCache: DayCache = {};
 
   onProgress?.(`Parsing ${dayChunks.length} days...`);
 
-  // Parse each day in parallel, using cache for unchanged days
-  const dayPromises = dayChunks.map(async (chunk, i) => {
-    const hash = simpleHash(chunk);
+  // Parse days with limited concurrency (3 at a time) and retry logic
+  const MAX_CONCURRENT = 3;
+  const MAX_RETRIES = 2;
+  const days: Day[] = new Array(dayChunks.length);
 
-    if (cache[hash]) {
-      // Cache hit — reuse previous parse result
-      newCache[hash] = cache[hash];
-      onProgress?.(`Day ${i + 1} of ${dayChunks.length} (cached)`);
-      return cache[hash];
+  let nextIndex = 0;
+  const parseWithRetry = async () => {
+    while (nextIndex < dayChunks.length) {
+      const i = nextIndex++;
+      const chunk = dayChunks[i];
+      const hash = simpleHash(chunk);
+
+      if (cache[hash]) {
+        newCache[hash] = cache[hash];
+        days[i] = cache[hash];
+        onProgress?.(`Day ${i + 1} of ${dayChunks.length} (cached)`);
+        continue;
+      }
+
+      let lastErr: Error | null = null;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          if (attempt > 0) {
+            await new Promise((r) => setTimeout(r, 1000 * attempt));
+            onProgress?.(`Retrying day ${i + 1}...`);
+          }
+          const day = await parseSingleDay(chunk, yearHint);
+          newCache[hash] = day;
+          days[i] = day;
+          onProgress?.(`Parsed day ${i + 1} of ${dayChunks.length}`);
+          lastErr = null;
+          break;
+        } catch (err) {
+          lastErr = err as Error;
+        }
+      }
+      if (lastErr) {
+        throw new Error(`Failed to parse day ${i + 1}: ${lastErr.message}`);
+      }
     }
+  };
 
-    // Cache miss — parse with Haiku
-    try {
-      const day = await parseSingleDay(chunk, yearHint);
-      newCache[hash] = day;
-      onProgress?.(`Parsed day ${i + 1} of ${dayChunks.length}`);
-      return day;
-    } catch (err) {
-      // If a single day fails, throw with context
-      throw new Error(`Failed to parse day ${i + 1}: ${(err as Error).message}`);
-    }
-  });
-
-  const days = await Promise.all(dayPromises);
+  const workers = Array.from({ length: Math.min(MAX_CONCURRENT, dayChunks.length) }, () => parseWithRetry());
+  await Promise.all(workers);
 
   // Renumber activity IDs to be globally unique across all days
   let idCounter = 1;
@@ -297,9 +315,20 @@ export async function parseItineraryText(
   // Save the new cache
   await saveDayCache(tripId, newCache);
 
+  // Extract culinary specialties from preamble if present
+  let culinarySpecialties: CulinaryRegion[] | undefined;
+  if (preamble && preamble.length > 50) {
+    try {
+      onProgress?.("Extracting culinary guide...");
+      culinarySpecialties = await parseCulinaryPreamble(preamble);
+    } catch {
+      // Non-critical — skip if extraction fails
+    }
+  }
+
   onProgress?.("Done!");
 
-  return { id: tripId, docUrl, title, days, defaultCurrency: 'USD' } as Trip;
+  return { id: tripId, docUrl, title, days, defaultCurrency: 'USD', culinarySpecialties } as Trip;
 }
 
 // Fallback: parse entire document in one call (for docs that can't be split by day)
@@ -398,6 +427,65 @@ async function parseFull(
   } catch {
     throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
   }
+}
+
+// Extract culinary specialties from document preamble
+async function parseCulinaryPreamble(preamble: string): Promise<CulinaryRegion[]> {
+  const stream = client.messages.stream({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: `Extract culinary specialties from this text. If there are no culinary specialties or food recommendations, return an empty array [].\n\n${preamble}`,
+      },
+    ],
+    system: [
+      {
+        type: "text",
+        text: `You extract culinary specialties from travel itinerary preambles. Return a JSON array of regions with their specialty dishes/foods.
+
+Format:
+[
+  {
+    "region": "Region Name",
+    "items": [
+      { "name": "Dish or food name" },
+      { "name": "Another dish" }
+    ]
+  }
+]
+
+Rules:
+- Group items by region/city as they appear in the text
+- Keep dish names concise but descriptive
+- Include all food items, drinks, and culinary experiences mentioned
+- If no culinary content is found, return []
+- Return ONLY the raw JSON array. No code blocks, no extra text.`,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+  });
+  const message = await stream.finalMessage();
+  const content = message.content[0];
+  if (content.type !== "text") return [];
+
+  let jsonText = content.text.trim();
+  const codeBlock = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (codeBlock) jsonText = codeBlock[1].trim();
+  const match = jsonText.match(/\[[\s\S]*\]/);
+  if (match) jsonText = match[0];
+
+  const parsed = JSON.parse(jsonText);
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed.map((r: any) => ({
+    region: r.region || 'General',
+    items: (r.items || []).map((item: any) => ({
+      name: item.name || String(item),
+      checked: false,
+    })),
+  }));
 }
 
 const TRANSPORT_KEYWORDS = [
