@@ -89,7 +89,7 @@ function convertTimesIn(text: string): string {
 
 export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense }: Props) {
   const openDirections = () => {
-    const query = encodeURIComponent(activity.location || activity.title);
+    const query = encodeURIComponent(activity.location || activity.title || '');
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
   };
 
@@ -136,7 +136,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
         </TouchableOpacity>
         <View style={styles.content}>
           <Text style={[styles.title, activity.completed && styles.completedText]}>
-            {activity.title.replace(/[\u2018\u2019]/g, "'").replace(/[\u200B\u200C\u200D\uFEFF]/g, '')}
+            {(activity.title || '').replace(/[\u2018\u2019]/g, "'").replace(/[\u200B\u200C\u200D\uFEFF]/g, '')}
           </Text>
           {activity.description?.trim() ? <Text style={styles.description}>{activity.description.trim()}</Text> : null}
           {activity.hours?.trim() ? <Text style={styles.hours}>Hours: {convertTimesIn(activity.hours.trim())}</Text> : null}

@@ -317,6 +317,7 @@ export async function parseItineraryText(
 
   // Extract culinary specialties from preamble if present
   let culinarySpecialties: CulinaryRegion[] | undefined;
+  console.log('[parser] preamble length:', preamble.length, 'preview:', preamble.slice(0, 200));
   if (preamble && preamble.length > 50) {
     try {
       onProgress?.("Extracting culinary guide...");
@@ -450,7 +451,7 @@ Format:
   {
     "region": "Region Name",
     "items": [
-      { "name": "Dish or food name" },
+      { "name": "Dish name (description in parentheses if present)" },
       { "name": "Another dish" }
     ]
   }
@@ -458,7 +459,8 @@ Format:
 
 Rules:
 - Group items by region/city as they appear in the text
-- Keep dish names concise but descriptive
+- IMPORTANT: Copy each dish/food name EXACTLY as it appears in the original text — do not paraphrase, translate, or reword
+- If a dish has a description in parentheses, include the full text with parentheses verbatim in the "name" field
 - Include all food items, drinks, and culinary experiences mentioned
 - If no culinary content is found, return []
 - Return ONLY the raw JSON array. No code blocks, no extra text.`,
@@ -481,10 +483,12 @@ Rules:
 
   return parsed.map((r: any) => ({
     region: r.region || 'General',
-    items: (r.items || []).map((item: any) => ({
-      name: item.name || String(item),
-      checked: false,
-    })),
+    items: (r.items || [])
+      .map((item: any) => ({
+        name: typeof item === 'string' ? item : (item.name || ''),
+        checked: false,
+      }))
+      .filter((item: any) => item.name),
   }));
 }
 

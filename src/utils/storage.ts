@@ -14,6 +14,13 @@ export async function loadTripFull(id: string): Promise<Trip | null> {
   if (!json) return null;
   const trip = JSON.parse(json) as Trip;
   if (!trip.defaultCurrency) trip.defaultCurrency = 'USD';
+  // Sanitize culinary data — filter out items with missing names
+  if (trip.culinarySpecialties) {
+    trip.culinarySpecialties = trip.culinarySpecialties.map((region) => ({
+      ...region,
+      items: (region.items || []).filter((item) => item && item.name),
+    }));
+  }
   return trip;
 }
 

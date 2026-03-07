@@ -16,7 +16,8 @@ export default function CulinaryScreen({ regions, onToggle, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.safeTop, { height: insets.top }]} />
+      <View style={styles.header}>
         <Text style={styles.headerTitle}>Culinary Guide</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
@@ -40,9 +41,16 @@ export default function CulinaryScreen({ regions, onToggle, onClose }: Props) {
                   <Text style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
                     {item.checked ? '✓' : '○'}
                   </Text>
-                  <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
-                    {item.name}
-                  </Text>
+                  <View style={styles.itemTextWrap}>
+                    <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
+                      {(item.name || '').replace(/\s*\(.*\)$/, '')}
+                    </Text>
+                    {/\(.*\)$/.test(item.name || '') && (
+                      <Text style={[styles.itemDesc, item.checked && styles.itemNameChecked]}>
+                        {(item.name || '').match(/\(.*\)$/)?.[0]}
+                      </Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -58,18 +66,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  safeTop: {
+    backgroundColor: '#f5f5f5',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 10,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   closeButton: {
     paddingLeft: 12,
+    paddingVertical: 8,
   },
   closeText: {
     fontSize: 16,
@@ -77,10 +89,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1a1a1a',
     flex: 1,
+    marginRight: 8,
   },
   scrollContent: {
     padding: 16,
@@ -125,10 +138,17 @@ const styles = StyleSheet.create({
   checkboxChecked: {
     color: '#007AFF',
   },
+  itemTextWrap: {
+    flex: 1,
+  },
   itemName: {
     fontSize: 15,
     color: '#333',
-    flex: 1,
+  },
+  itemDesc: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
   },
   itemNameChecked: {
     textDecorationLine: 'line-through',

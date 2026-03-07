@@ -90,7 +90,8 @@ export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <View style={[styles.safeTop, { height: insets.top }]} />
+      <View style={styles.header}>
         <Text style={styles.headerTitle} numberOfLines={1}>Trip Expenses</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
@@ -171,18 +172,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  safeTop: {
+    backgroundColor: '#f5f5f5',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingVertical: 10,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   closeButton: {
     paddingLeft: 12,
+    paddingVertical: 8,
   },
   closeText: {
     fontSize: 16,
@@ -190,10 +195,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1a1a1a',
     flex: 1,
+    marginRight: 8,
   },
   scrollContent: {
     padding: 16,
