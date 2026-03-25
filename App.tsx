@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Modal, StyleSheet, View, Text } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Modal, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { Trip, TripMeta } from './src/types';
+import { Trip, TripMeta, Activity } from './src/types';
 import {
   loadTripFull, saveTripFull,
   loadTripList, saveTripList,
@@ -11,14 +11,17 @@ import {
   deleteTrip as deleteTripFromStorage,
   migrateOldStorage,
 } from './src/utils/storage';
+import { createBlankDay, generateActivityId } from './src/utils/tripBuilder';
 import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
 import ImportScreen from './src/screens/ImportScreen';
+import CreateTripScreen from './src/screens/CreateTripScreen';
 import DayScreen from './src/screens/DayScreen';
 import ExpenseSummaryScreen from './src/screens/ExpenseSummaryScreen';
 import CulinaryScreen from './src/screens/CulinaryScreen';
 import TripHeader from './src/components/TripHeader';
 import TripDrawer from './src/components/TripDrawer';
+import DayTabBar from './src/components/DayTabBar';
 import ExpenseInput, { ExpenseInputTarget } from './src/components/ExpenseInput';
 
 const Tab = createMaterialTopTabNavigator();
@@ -57,6 +60,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showCreateTrip, setShowCreateTrip] = useState(false);
   const [reimporting, setReimporting] = useState(false);
   const [reimportProgress, setReimportProgress] = useState('');
   const [showExpenses, setShowExpenses] = useState(false);
@@ -253,13 +257,168 @@ export default function App() {
     saveTripFull(updated);
   }, [trip]);
 
+  const handleCreateTrip = useCallback(async (newTrip: Trip) => {
+    await saveTripFull(newTrip);
+    await saveActiveTripId(newTrip.id);
+    const meta: TripMeta = {
+      id: newTrip.id,
+      title: newTrip.title,
+      dateRange: buildDateRange(newTrip),
+      docUrl: '',
+    };
+    const newList = [...tripList, meta];
+    await saveTripList(newList);
+    setTripList(newList);
+    setTrip(newTrip);
+    setShowCreateTrip(false);
+    setDrawerOpen(false);
+  }, [tripList]);
+
+  const handleUpdateActivity = useCallback((dayDate: string, activity: Activity) => {
+    if (!trip) return;
+    const updated: Trip = {
+      ...trip,
+      days: trip.days.map((day) =>
+        day.date !== dayDate ? day : {
+          ...day,
+          activities: day.activities.map((a) =>
+            a.id === activity.id ? activity : a
+          ),
+        }
+      ),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleInsertActivity = useCallback((dayDate: string, afterIndex: number, newActivity: Activity) => {
+    if (!trip) return;
+    // Generate a proper ID
+    const id = generateActivityId(trip);
+    const actWithId = { ...newActivity, id };
+    const updated: Trip = {
+      ...trip,
+      days: trip.days.map((day) => {
+        if (day.date !== dayDate) return day;
+        const activities = [...day.activities];
+        activities.splice(afterIndex + 1, 0, actWithId);
+        return { ...day, activities };
+      }),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleDeleteActivity = useCallback((dayDate: string, activityId: string) => {
+    if (!trip) return;
+    const updated: Trip = {
+      ...trip,
+      days: trip.days.map((day) =>
+        day.date !== dayDate ? day : {
+          ...day,
+          activities: day.activities.filter((a) => a.id !== activityId && a.parentId !== activityId),
+        }
+      ),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleAddDay = useCallback(() => {
+    if (!trip) return;
+    const lastDay = trip.days[trip.days.length - 1];
+    const lastDate = new Date(`${lastDay.date}T12:00:00`);
+    lastDate.setDate(lastDate.getDate() + 1);
+    const newDateStr = lastDate.toISOString().split('T')[0];
+    const newDay = createBlankDay(newDateStr);
+    const updated: Trip = { ...trip, days: [...trip.days, newDay] };
+    setTrip(updated);
+    saveTripFull(updated);
+    // Update trip list meta
+    const newMeta: TripMeta = {
+      id: trip.id,
+      title: trip.title,
+      dateRange: buildDateRange(updated),
+      docUrl: trip.docUrl,
+    };
+    const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
+    saveTripList(newList);
+    setTripList(newList);
+    // Navigate to the newly added day
+    setTimeout(() => {
+      navigationRef.current?.navigate(newDateStr);
+    }, 100);
+  }, [trip, tripList]);
+
+  const navigationRef = useRef<any>(null);
+
+  const handleRemoveDay = useCallback((dayDate: string) => {
+    if (!trip) return;
+    if (trip.days.length <= 1) {
+      Alert.alert('Cannot Remove', 'A trip must have at least one day.');
+      return;
+    }
+    // Find the closest day to navigate to after deletion (prefer day before, then after)
+    const idx = trip.days.findIndex((d) => d.date === dayDate);
+    const fallbackDay = idx > 0 ? trip.days[idx - 1] : trip.days[idx + 1];
+
+    Alert.alert(
+      'Remove Day',
+      `Remove ${dayDate} and all its activities?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            // Navigate to fallback day before removing
+            if (fallbackDay && navigationRef.current) {
+              navigationRef.current.navigate(fallbackDay.date);
+            }
+            const updated: Trip = {
+              ...trip,
+              days: trip.days.filter((d) => d.date !== dayDate),
+            };
+            setTrip(updated);
+            saveTripFull(updated);
+            const newMeta: TripMeta = {
+              id: trip.id,
+              title: trip.title,
+              dateRange: buildDateRange(updated),
+              docUrl: trip.docUrl,
+            };
+            const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
+            saveTripList(newList);
+            setTripList(newList);
+          },
+        },
+      ]
+    );
+  }, [trip, tripList]);
+
   if (!loaded) return null;
 
   if (!trip) {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={styles.container}>
-          <ImportScreen onImport={handleImport} />
+          {showCreateTrip ? (
+            <CreateTripScreen
+              defaultCurrency="USD"
+              onCreateTrip={handleCreateTrip}
+              onCancel={() => setShowCreateTrip(false)}
+            />
+          ) : (
+            <View style={styles.container}>
+              <ImportScreen onImport={handleImport} />
+              <TouchableOpacity
+                style={styles.createFromEmptyBtn}
+                onPress={() => setShowCreateTrip(true)}
+              >
+                <Text style={styles.createFromEmptyText}>or Create New Itinerary</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </SafeAreaView>
       </SafeAreaProvider>
     );
@@ -269,32 +428,52 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <TripHeader title={trip.title} onOpenDrawer={() => setDrawerOpen(true)} />
-        <NavigationContainer key={trip.id}>
+        <NavigationContainer key={trip.id} ref={navigationRef}>
           <Tab.Navigator
             initialRouteName={getTodayTabName(trip) as any}
+            tabBar={(props) => {
+              const tabs = trip.days.map((day) => {
+                const { dayOfWeek, monthDay } = formatDayLabel(day.date);
+                return {
+                  key: day.date,
+                  dayOfWeek,
+                  monthDay,
+                  isFocused: props.state.routes[props.state.index]?.name === day.date,
+                };
+              });
+              return (
+                <DayTabBar
+                  tabs={tabs}
+                  onTabPress={(key) => {
+                    const idx = props.state.routes.findIndex((r) => r.name === key);
+                    if (idx >= 0) props.navigation.navigate(props.state.routes[idx].name);
+                  }}
+                  onAddDay={handleAddDay}
+                />
+              );
+            }}
             screenOptions={{
               tabBarScrollEnabled: true,
               tabBarItemStyle: { width: 70 },
             }}
           >
-            {trip.days.map((day) => {
-              const { dayOfWeek, monthDay } = formatDayLabel(day.date);
-              return (
-                <Tab.Screen
-                  key={day.date}
-                  name={day.date}
-                  children={() => <DayScreen day={day} onToggle={handleToggle} onOpenExpense={handleOpenExpense} />}
-                  options={{
-                    tabBarLabel: () => (
-                      <View style={styles.tabLabel}>
-                        <Text style={styles.tabDayOfWeek}>{dayOfWeek}</Text>
-                        <Text style={styles.tabMonthDay}>{monthDay}</Text>
-                      </View>
-                    ),
-                  }}
-                />
-              );
-            })}
+            {trip.days.map((day) => (
+              <Tab.Screen
+                key={day.date}
+                name={day.date}
+                children={() => (
+                  <DayScreen
+                    day={day}
+                    onToggle={handleToggle}
+                    onOpenExpense={handleOpenExpense}
+                    onUpdateActivity={handleUpdateActivity}
+                    onInsertActivity={handleInsertActivity}
+                    onDeleteActivity={handleDeleteActivity}
+                    onRemoveDay={handleRemoveDay}
+                  />
+                )}
+              />
+            ))}
           </Tab.Navigator>
         </NavigationContainer>
 
@@ -305,6 +484,7 @@ export default function App() {
           onClose={() => setDrawerOpen(false)}
           onSelectTrip={handleSelectTrip}
           onImportNew={() => { setDrawerOpen(false); setShowImport(true); }}
+          onCreateNew={() => { setDrawerOpen(false); setShowCreateTrip(true); }}
           onReimportCurrent={handleReimport}
           onDeleteTrip={handleDeleteTrip}
           reimporting={reimporting}
@@ -320,6 +500,16 @@ export default function App() {
             <ImportScreen
               onImport={handleImport}
               onCancel={() => setShowImport(false)}
+            />
+          </SafeAreaView>
+        </Modal>
+
+        <Modal visible={showCreateTrip} animationType="slide">
+          <SafeAreaView style={styles.container}>
+            <CreateTripScreen
+              defaultCurrency={trip?.defaultCurrency || 'USD'}
+              onCreateTrip={handleCreateTrip}
+              onCancel={() => setShowCreateTrip(false)}
             />
           </SafeAreaView>
         </Modal>
@@ -350,7 +540,14 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
-  tabLabel: { alignItems: 'center' },
-  tabDayOfWeek: { fontSize: 13, fontWeight: '700', color: '#1a1a1a' },
-  tabMonthDay: { fontSize: 11, color: '#555', marginTop: 1 },
+  createFromEmptyBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 32,
+  },
+  createFromEmptyText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
 });

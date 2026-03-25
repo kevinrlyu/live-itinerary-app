@@ -52,7 +52,7 @@ Rules:
 - Each activity's "location" must be the SPECIFIC place name suitable for Google Maps search. For child activities under a group header, use the child's own specific place (e.g. "Shizuoka City Museum of Art"), NEVER the parent's location (e.g. NOT "Shizuoka Station").
 - For group headers that have a time range (e.g. "6:30pm–8:00pm: Explore Shinbashi"), set time to the start and timeEnd to the end
 - Use the description field ONLY for a brief inline note about a single activity (not for listing sub-items). The description must NOT repeat or restate the activity title.
-- Extract hours from sub-bullets that mention hours of operation (e.g. "Open 9am–5pm", "Closes at 17:00")
+- Extract hours of operation AND any related info (closures, days closed, seasonal hours) into the "hours" field. For example, "Hours: 9:00–17:00, Closed Mondays" should ALL go in the "hours" field, not split between "hours" and "notes". Everything after "Hours:" on the same bullet or line belongs in "hours".
 - When an activity has multiple sub-bullet details (e.g. stay duration, cancellation policy, cost, tee time, fees), put each detail on its own line in the "notes" field, separated by newline characters (\\n). Do NOT concatenate them into one line.
 - Preserve draft placeholders exactly as they appear: keep "__" (double underscore), "[spontaneous]", and any bracketed restaurant/time markers like "[Ajino Sapporo Oonishi]" or "[7:30pm]" in the output. These indicate the itinerary is still being planned.
 - IMPORTANT: To keep the output compact, OMIT any field whose value is null. Do not include "field": null — just leave that field out entirely.

@@ -3,6 +3,12 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 
 const CURRENCIES = ['CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'TWD', 'USD'];
 
+const CURRENCY_FLAGS: Record<string, string> = {
+  CAD: '\u{1F1E8}\u{1F1E6}', CHF: '\u{1F1E8}\u{1F1ED}', CNY: '\u{1F1E8}\u{1F1F3}',
+  EUR: '\u{1F1EA}\u{1F1FA}', GBP: '\u{1F1EC}\u{1F1E7}', JPY: '\u{1F1EF}\u{1F1F5}',
+  KRW: '\u{1F1F0}\u{1F1F7}', TWD: '\u{1F1F9}\u{1F1FC}', USD: '\u{1F1FA}\u{1F1F8}',
+};
+
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
   KRW: '₩', TWD: 'NT$', CHF: 'Fr', CAD: 'C$',
@@ -67,38 +73,38 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
 
         {/* Amount display */}
         <View style={styles.amountRow}>
-          <Pressable
-            style={styles.currencyButton}
-            onPress={() => setShowDropdown(!showDropdown)}
-          >
-            <Text style={styles.currencyButtonText}>{currency}</Text>
-            <Text style={styles.currencyChevron}>▾</Text>
-          </Pressable>
           <Text style={[styles.amountDisplay, !amount && styles.amountPlaceholder]}>
             {sym}{displayAmount}
           </Text>
-        </View>
-
-        {/* Currency dropdown */}
-        {showDropdown && (
-          <View style={styles.dropdown}>
-            {CURRENCIES.map((cur) => (
-              <Pressable
-                key={cur}
-                style={[
-                  styles.dropdownOption,
-                  cur === currency && styles.dropdownOptionSelected,
-                ]}
-                onPress={() => { setCurrency(cur); setShowDropdown(false); }}
-              >
-                <Text style={[
-                  styles.dropdownOptionText,
-                  cur === currency && styles.dropdownOptionTextSelected,
-                ]}>{cur}</Text>
-              </Pressable>
-            ))}
+          <View style={{ position: 'relative' }}>
+            <Pressable
+              style={styles.currencyButton}
+              onPress={() => setShowDropdown(!showDropdown)}
+            >
+              <Text style={styles.currencyButtonText}>{currency}</Text>
+              <Text style={styles.currencyChevron}>▾</Text>
+            </Pressable>
+            {showDropdown && (
+              <View style={styles.dropdown}>
+                {CURRENCIES.map((cur) => (
+                  <Pressable
+                    key={cur}
+                    style={[
+                      styles.dropdownOption,
+                      cur === currency && styles.dropdownOptionSelected,
+                    ]}
+                    onPress={() => { setCurrency(cur); setShowDropdown(false); }}
+                  >
+                    <Text style={[
+                      styles.dropdownOptionText,
+                      cur === currency && styles.dropdownOptionTextSelected,
+                    ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
-        )}
+        </View>
 
         {/* Number pad */}
         <View style={styles.pad}>
@@ -172,7 +178,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginRight: 10,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -191,20 +196,24 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1a1a1a',
-    textAlign: 'right',
+    textAlign: 'left',
   },
   amountPlaceholder: {
     color: '#ccc',
   },
   dropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
-    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 10,
+    minWidth: 85,
   },
   dropdownOption: {
     paddingHorizontal: 14,

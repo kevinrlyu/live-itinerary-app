@@ -3,12 +3,19 @@ import {
   View, Text, TouchableOpacity, Animated,
   FlatList, StyleSheet, Dimensions, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TripMeta } from '../types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
+const DRAWER_WIDTH = SCREEN_WIDTH;
 
 const CURRENCIES = ['CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'TWD', 'USD'];
+
+const CURRENCY_FLAGS: Record<string, string> = {
+  CAD: '\u{1F1E8}\u{1F1E6}', CHF: '\u{1F1E8}\u{1F1ED}', CNY: '\u{1F1E8}\u{1F1F3}',
+  EUR: '\u{1F1EA}\u{1F1FA}', GBP: '\u{1F1EC}\u{1F1E7}', JPY: '\u{1F1EF}\u{1F1F5}',
+  KRW: '\u{1F1F0}\u{1F1F7}', TWD: '\u{1F1F9}\u{1F1FC}', USD: '\u{1F1FA}\u{1F1F8}',
+};
 
 interface Props {
   visible: boolean;
@@ -17,6 +24,7 @@ interface Props {
   onClose: () => void;
   onSelectTrip: (id: string) => void;
   onImportNew: () => void;
+  onCreateNew?: () => void;
   onReimportCurrent: () => void;
   onDeleteTrip: (id: string) => void;
   reimporting: boolean;
@@ -54,7 +62,7 @@ function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: stri
                 <Text style={[
                   styles.currencyOptionText,
                   cur === value && styles.currencyOptionTextSelected,
-                ]}>{cur}</Text>
+                ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -66,9 +74,10 @@ function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: stri
 
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
-  onSelectTrip, onImportNew, onReimportCurrent, onDeleteTrip, reimporting, reimportProgress,
+  onSelectTrip, onImportNew, onCreateNew, onReimportCurrent, onDeleteTrip, reimporting, reimportProgress,
   onViewCulinary, onViewExpenses, defaultCurrency, onSetCurrency,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(false);
@@ -122,8 +131,17 @@ export default function TripDrawer({
       <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
       </Animated.View>
-      <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
-        <Text style={styles.drawerTitle}>My Itineraries</Text>
+      <Animated.View style={[styles.drawer, { paddingTop: insets.top, transform: [{ translateX: slideAnim }] }]}>
+        <View style={styles.drawerHeader}>
+          <Text style={styles.drawerTitle}>My Itineraries</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <View style={styles.menuIconContainer}>
+              <View style={styles.menuBar} />
+              <View style={styles.menuBar} />
+              <View style={styles.menuBar} />
+            </View>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.actionButton, reimporting && styles.actionButtonDisabled]}
@@ -177,6 +195,11 @@ export default function TripDrawer({
           )}
         />
 
+        {onCreateNew && (
+          <TouchableOpacity style={styles.createButton} onPress={onCreateNew}>
+            <Text style={styles.createButtonText}>+ Create New Itinerary</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.importButton} onPress={onImportNew}>
           <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
         </TouchableOpacity>
@@ -201,19 +224,38 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: DRAWER_WIDTH,
     backgroundColor: '#fff',
-    paddingTop: 60,
+    paddingTop: 0,
     paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 10,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    marginBottom: 16,
   },
   drawerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#1a1a1a',
-    marginBottom: 16,
+    flex: 1,
+    marginRight: 8,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  menuIconContainer: {
+    width: 22,
+    height: 18,
+    justifyContent: 'space-between',
+  },
+  menuBar: {
+    width: 22,
+    height: 2.5,
+    backgroundColor: '#007AFF',
+    borderRadius: 1,
   },
   actionButton: {
     backgroundColor: '#f0f0f0',
@@ -281,7 +323,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     zIndex: 10,
-    minWidth: 80,
+    minWidth: 85,
   },
   currencyOption: {
     paddingHorizontal: 14,
@@ -300,6 +342,14 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
   },
+  createButton: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  createButtonText: { color: '#333', fontSize: 15, fontWeight: '700' },
   importButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Linking, StyleSheet } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
@@ -63,6 +63,8 @@ interface Props {
   isChild?: boolean;
   isGroupHeader?: boolean;
   onOpenExpense?: (activity: Activity) => void;
+  isEditMode?: boolean;
+  onLongPress?: (activity: Activity) => void;
 }
 
 // Convert "HH:MM" (24h) to "h:mmam/pm" (12h)
@@ -87,7 +89,7 @@ function convertTimesIn(text: string): string {
   });
 }
 
-export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense }: Props) {
+export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense, isEditMode, onLongPress }: Props) {
   const openDirections = () => {
     const query = encodeURIComponent(activity.location || activity.title || '');
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
@@ -101,65 +103,87 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
     return to12h(activity.time);
   };
 
+  const handleLongPress = () => {
+    if (onLongPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onLongPress(activity);
+    }
+  };
+
   // Transport: faint tappable row — entire row opens Google Maps
   if (activity.type === 'transport') {
     const label = activity.time
       ? `${to12h(activity.time)}: ${activity.title}`
       : activity.title;
     return (
-      <TouchableOpacity
-        style={styles.transportRow}
-        onPress={openDirections}
-        activeOpacity={0.6}
+      <Pressable
+        style={[styles.transportRow, isEditMode && styles.editModeHighlight]}
+        onPress={isEditMode ? undefined : openDirections}
+        onLongPress={isEditMode ? handleLongPress : undefined}
+        delayLongPress={400}
       >
         <Text style={styles.transportTitle} numberOfLines={2}>{label}</Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   const timeLabel = formatTimeRange();
 
   return (
-    <View style={[
-      styles.card,
-      activity.completed && styles.completedCard,
-      isChild && styles.childCard,
-      isGroupHeader && styles.groupHeaderCard,
-      isCurrent && [styles.currentCard, { borderLeftColor: accent, shadowColor: accent }],
-    ]}>
-      {timeLabel && <Text style={styles.time}>{timeLabel}</Text>}
-      <View style={[styles.row, isGroupHeader && styles.groupHeaderRow]}>
-        <TouchableOpacity testID="toggle-button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(activity.id); }} style={styles.checkbox}>
-          <Text style={[styles.checkboxText, { color: accent }]}>
-            {activity.completed ? '✓' : '○'}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.content}>
-          <Text style={[styles.title, activity.completed && styles.completedText]}>
-            {(activity.title || '').replace(/[\u2018\u2019]/g, "'").replace(/[\u200B\u200C\u200D\uFEFF]/g, '')}
-          </Text>
-          {activity.description?.trim() ? <Text style={styles.description}>{activity.description.trim()}</Text> : null}
-          {activity.hours?.trim() ? <Text style={styles.hours}>Hours: {convertTimesIn(activity.hours.trim())}</Text> : null}
-          {activity.notes?.trim() ? <Text style={styles.notes}>{activity.notes.trim()}</Text> : null}
+    <Pressable
+      onLongPress={isEditMode ? handleLongPress : undefined}
+      delayLongPress={400}
+    >
+      <View style={[
+        styles.card,
+        activity.completed && styles.completedCard,
+        isChild && styles.childCard,
+        isGroupHeader && styles.groupHeaderCard,
+        isCurrent && [styles.currentCard, { borderLeftColor: accent, shadowColor: accent }],
+        isEditMode && styles.editModeHighlight,
+      ]}>
+        {timeLabel && <Text style={styles.time}>{timeLabel}</Text>}
+        <View style={[styles.row, isGroupHeader && styles.groupHeaderRow]}>
+          <TouchableOpacity testID="toggle-button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(activity.id); }} style={styles.checkbox}>
+            <Text style={[styles.checkboxText, { color: accent }]}>
+              {activity.completed ? '✓' : '○'}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.content}>
+            <Text style={[styles.title, activity.completed && styles.completedText]}>
+              {(activity.title || '').replace(/[\u2018\u2019]/g, "'").replace(/[\u200B\u200C\u200D\uFEFF]/g, '')}
+            </Text>
+            {activity.description?.trim() ? <Text style={styles.description}>{activity.description.trim()}</Text> : null}
+            {activity.hours?.trim() ? <Text style={styles.hours}>Hours: {convertTimesIn(activity.hours.trim())}</Text> : null}
+            {activity.notes?.trim() ? <Text style={styles.notes}>{activity.notes.trim()}</Text> : null}
+          </View>
+        </View>
+        <View style={styles.buttonRow}>
+          {onOpenExpense && (
+            <TouchableOpacity
+              onPress={isEditMode ? undefined : () => onOpenExpense(activity)}
+              activeOpacity={isEditMode ? 1 : 0.2}
+              style={[styles.iconButton, { backgroundColor: accent }, isEditMode && styles.buttonDisabled]}
+            >
+              {activity.expense ? (
+                <Text style={styles.expenseAmountText}>
+                  {formatExpense(activity.expense.amount, activity.expense.currency)}
+                </Text>
+              ) : (
+                <BillIcon size={14} color="#fff" />
+              )}
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={isEditMode ? undefined : openDirections}
+            activeOpacity={isEditMode ? 1 : 0.2}
+            style={[styles.iconButton, { backgroundColor: accent }, isEditMode && styles.buttonDisabled]}
+          >
+            <MapPinIcon size={14} color="#fff" holeColor={accent} />
+          </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.buttonRow}>
-        {onOpenExpense && (
-          <TouchableOpacity onPress={() => onOpenExpense(activity)} style={[styles.iconButton, { backgroundColor: accent }]}>
-            {activity.expense ? (
-              <Text style={styles.expenseAmountText}>
-                {formatExpense(activity.expense.amount, activity.expense.currency)}
-              </Text>
-            ) : (
-              <BillIcon size={14} color="#fff" />
-            )}
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity onPress={openDirections} style={[styles.iconButton, { backgroundColor: accent }]}>
-          <MapPinIcon size={14} color="#fff" holeColor={accent} />
-        </TouchableOpacity>
-      </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -283,5 +307,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: '#aaa',
+  },
+  editModeHighlight: {
+    borderWidth: 1,
+    borderColor: '#007AFF44',
+    borderStyle: 'dashed',
+  },
+  buttonDisabled: {
+    opacity: 0.4,
   },
 });
