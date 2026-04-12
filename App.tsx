@@ -257,6 +257,74 @@ export default function App() {
     saveTripFull(updated);
   }, [trip]);
 
+  const handleAddCulinaryItem = useCallback((regionIndex: number, name: string) => {
+    if (!trip?.culinarySpecialties) return;
+    const updated: Trip = {
+      ...trip,
+      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
+        rIdx !== regionIndex ? region : {
+          ...region,
+          items: [...region.items, { name, checked: false }],
+        }
+      ),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleAddCulinaryRegion = useCallback((regionName: string) => {
+    if (!trip) return;
+    const newRegion = { region: regionName, items: [] };
+    const updated: Trip = {
+      ...trip,
+      culinarySpecialties: [...(trip.culinarySpecialties ?? []), newRegion],
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleDeleteCulinaryItem = useCallback((regionIndex: number, itemIndex: number) => {
+    if (!trip?.culinarySpecialties) return;
+    const updated: Trip = {
+      ...trip,
+      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
+        rIdx !== regionIndex ? region : {
+          ...region,
+          items: region.items.filter((_, iIdx) => iIdx !== itemIndex),
+        }
+      ),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleEditCulinaryItem = useCallback((regionIndex: number, itemIndex: number, name: string) => {
+    if (!trip?.culinarySpecialties) return;
+    const updated: Trip = {
+      ...trip,
+      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
+        rIdx !== regionIndex ? region : {
+          ...region,
+          items: region.items.map((item, iIdx) =>
+            iIdx === itemIndex ? { ...item, name } : item
+          ),
+        }
+      ),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
+  const handleDeleteCulinaryRegion = useCallback((regionIndex: number) => {
+    if (!trip?.culinarySpecialties) return;
+    const updated: Trip = {
+      ...trip,
+      culinarySpecialties: trip.culinarySpecialties.filter((_, rIdx) => rIdx !== regionIndex),
+    };
+    setTrip(updated);
+    saveTripFull(updated);
+  }, [trip]);
+
   const handleCreateTrip = useCallback(async (newTrip: Trip) => {
     await saveTripFull(newTrip);
     await saveActiveTripId(newTrip.id);
@@ -324,30 +392,53 @@ export default function App() {
     saveTripFull(updated);
   }, [trip]);
 
-  const handleAddDay = useCallback(() => {
+  const handleUpdateDayTheme = useCallback((dayDate: string, theme: string) => {
     if (!trip) return;
-    const lastDay = trip.days[trip.days.length - 1];
-    const lastDate = new Date(`${lastDay.date}T12:00:00`);
-    lastDate.setDate(lastDate.getDate() + 1);
-    const newDateStr = lastDate.toISOString().split('T')[0];
-    const newDay = createBlankDay(newDateStr);
-    const updated: Trip = { ...trip, days: [...trip.days, newDay] };
+    const updated: Trip = {
+      ...trip,
+      days: trip.days.map((d) => d.date === dayDate ? { ...d, theme } : d),
+    };
     setTrip(updated);
     saveTripFull(updated);
-    // Update trip list meta
-    const newMeta: TripMeta = {
-      id: trip.id,
-      title: trip.title,
-      dateRange: buildDateRange(updated),
-      docUrl: trip.docUrl,
-    };
-    const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
-    saveTripList(newList);
-    setTripList(newList);
-    // Navigate to the newly added day
-    setTimeout(() => {
-      navigationRef.current?.navigate(newDateStr);
-    }, 100);
+  }, [trip]);
+
+  const handleAddDay = useCallback(() => {
+    if (!trip) return;
+    Alert.prompt(
+      'New Day',
+      'Enter a title for this day (optional)',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add',
+          onPress: (theme?: string) => {
+            const lastDay = trip.days[trip.days.length - 1];
+            const lastDate = new Date(`${lastDay.date}T12:00:00`);
+            lastDate.setDate(lastDate.getDate() + 1);
+            const newDateStr = lastDate.toISOString().split('T')[0];
+            const newDay = { ...createBlankDay(newDateStr), theme: theme?.trim() || '' };
+            const updated: Trip = { ...trip, days: [...trip.days, newDay] };
+            setTrip(updated);
+            saveTripFull(updated);
+            const newMeta: TripMeta = {
+              id: trip.id,
+              title: trip.title,
+              dateRange: buildDateRange(updated),
+              docUrl: trip.docUrl,
+            };
+            const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
+            saveTripList(newList);
+            setTripList(newList);
+            setTimeout(() => {
+              navigationRef.current?.navigate(newDateStr);
+            }, 100);
+          },
+        },
+      ],
+      'plain-text',
+      '',
+      'e.g. Tokyo, Travel Day'
+    );
   }, [trip, tripList]);
 
   const navigationRef = useRef<any>(null);
@@ -470,6 +561,7 @@ export default function App() {
                     onInsertActivity={handleInsertActivity}
                     onDeleteActivity={handleDeleteActivity}
                     onRemoveDay={handleRemoveDay}
+                    onUpdateDayTheme={handleUpdateDayTheme}
                   />
                 )}
               />
@@ -522,6 +614,11 @@ export default function App() {
           <CulinaryScreen
             regions={trip.culinarySpecialties ?? []}
             onToggle={handleToggleCulinaryItem}
+            onAddItem={handleAddCulinaryItem}
+            onEditItem={handleEditCulinaryItem}
+            onAddRegion={handleAddCulinaryRegion}
+            onDeleteItem={handleDeleteCulinaryItem}
+            onDeleteRegion={handleDeleteCulinaryRegion}
             onClose={() => setShowCulinary(false)}
           />
         </Modal>

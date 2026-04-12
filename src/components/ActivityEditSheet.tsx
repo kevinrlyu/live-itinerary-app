@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable,
-  ScrollView, Alert, StyleSheet, KeyboardAvoidingView, Platform,
+  ScrollView, Alert, StyleSheet,
 } from 'react-native';
 import { Activity } from '../types';
 import TimeKeypad from './TimeKeypad';
@@ -90,6 +90,22 @@ function to24h(time: string): string {
 }
 
 export default function ActivityEditSheet({ activity, dayActivities, isNew, onSave, onDelete, onClose }: Props) {
+  const scrollRef = React.useRef<ScrollView>(null);
+  const fieldLayoutsRef = React.useRef<Record<string, { y: number; height: number }>>({});
+  const scrollOffsetRef = React.useRef(0);
+  const scrollViewHeightRef = React.useRef(0);
+
+  const scrollToField = (fieldName: string) => {
+    const layout = fieldLayoutsRef.current[fieldName];
+    if (!layout || !scrollRef.current) return;
+    const fieldBottom = layout.y + layout.height;
+    const visibleBottom = scrollOffsetRef.current + scrollViewHeightRef.current;
+    // Only scroll if the field bottom is below the visible area
+    if (fieldBottom > visibleBottom) {
+      scrollRef.current.scrollTo({ y: Math.max(0, layout.y - 8), animated: true });
+    }
+  };
+
   const [title, setTitle] = useState(activity.title);
   const [startTime, setStartTime] = useState(to12hDisplay(activity.time || ''));
   const [endTime, setEndTime] = useState(to12hDisplay(activity.timeEnd || ''));
@@ -145,27 +161,32 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
   return (
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.sheetWrapper}
-      >
+      <View style={styles.sheetWrapper}>
         <View style={styles.sheet}>
           <View style={styles.headerRow}>
             <Text style={styles.heading}>{isNew ? 'New Activity' : 'Edit Activity'}</Text>
             {!isNew && onDelete && (
-              <TouchableOpacity onPress={handleDelete}>
+              <Pressable onPress={handleDelete}>
                 <Text style={styles.deleteText}>Delete</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
 
-          <ScrollView style={styles.scrollBody} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scrollBody}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
+            onLayout={(e) => { scrollViewHeightRef.current = e.nativeEvent.layout.height; }}
+            scrollEventThrottle={16}
+          >
             {/* Time fields with custom keypad */}
             <View style={styles.timeRow}>
               <View style={styles.timeCol}>
                 <Text style={styles.label}>Start Time</Text>
                 <Pressable
-                  style={[styles.input, styles.timeInput, activeTimeField === 'start' && styles.timeInputActive]}
+                  style={[styles.timeInput, activeTimeField === 'start' && styles.timeInputActive]}
                   onPress={() => setActiveTimeField(activeTimeField === 'start' ? null : 'start')}
                 >
                   <Text style={[styles.timeDisplayText, !startTime && styles.placeholder]}>
@@ -176,7 +197,7 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
               <View style={styles.timeCol}>
                 <Text style={styles.label}>End Time</Text>
                 <Pressable
-                  style={[styles.input, styles.timeInput, activeTimeField === 'end' && styles.timeInputActive]}
+                  style={[styles.timeInput, activeTimeField === 'end' && styles.timeInputActive]}
                   onPress={() => setActiveTimeField(activeTimeField === 'end' ? null : 'end')}
                 >
                   <Text style={[styles.timeDisplayText, !endTime && styles.placeholder]}>
@@ -193,58 +214,68 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
               />
             )}
 
-            <Text style={styles.label}>Title</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Activity title"
-              placeholderTextColor="#bbb"
-              autoFocus={isNew}
-              onFocus={() => setActiveTimeField(null)}
-            />
+            <View onLayout={(e) => { fieldLayoutsRef.current['title'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
+              <Text style={styles.label}>Title</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Activity title"
+                placeholderTextColor="#bbb"
+                autoFocus={isNew}
+                onFocus={() => { setActiveTimeField(null); scrollToField('title'); }}
+              />
+            </View>
 
-            <Text style={styles.label}>Location</Text>
-            <TextInput
-              style={styles.input}
-              value={location}
-              onChangeText={setLocation}
-              placeholder="Location name or address"
-              placeholderTextColor="#bbb"
-              onFocus={() => setActiveTimeField(null)}
-            />
+            <View onLayout={(e) => { fieldLayoutsRef.current['location'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
+              <Text style={styles.label}>Location</Text>
+              <TextInput
+                style={styles.input}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="Location name or address"
+                placeholderTextColor="#bbb"
+                onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
+              />
+            </View>
 
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={[styles.input, styles.multiline]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Short description"
-              placeholderTextColor="#bbb"
-              multiline
-              onFocus={() => setActiveTimeField(null)}
-            />
+            <View onLayout={(e) => { fieldLayoutsRef.current['description'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.multiline]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Short description"
+                placeholderTextColor="#bbb"
+                multiline
+                onFocus={() => { setActiveTimeField(null); scrollToField('description'); }}
+              />
+            </View>
 
-            <Text style={styles.label}>Hours</Text>
-            <TextInput
-              style={styles.input}
-              value={hours}
-              onChangeText={setHours}
-              placeholder="e.g. 9:00–17:00, Closed Mondays"
-              placeholderTextColor="#bbb"
-              onFocus={() => setActiveTimeField(null)}
-            />
+            <View onLayout={(e) => { fieldLayoutsRef.current['hours'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
+              <Text style={styles.label}>Hours</Text>
+              <TextInput
+                style={styles.input}
+                value={hours}
+                onChangeText={setHours}
+                placeholder="e.g., 8:00am-8:00pm, closed Sundays"
+                placeholderTextColor="#bbb"
+                onFocus={() => { setActiveTimeField(null); scrollToField('hours'); }}
+              />
+            </View>
 
-            <Text style={styles.label}>Notes</Text>
-            <TextInput
-              style={[styles.input, styles.multiline]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Additional notes"
-              placeholderTextColor="#bbb"
-              multiline
-              onFocus={() => setActiveTimeField(null)}
-            />
+            <View onLayout={(e) => { fieldLayoutsRef.current['notes'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
+              <Text style={styles.label}>Notes</Text>
+              <TextInput
+                style={[styles.input, styles.multiline]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Additional notes"
+                placeholderTextColor="#bbb"
+                multiline
+                onFocus={() => { setActiveTimeField(null); scrollToField('notes'); }}
+              />
+            </View>
 
             <Text style={styles.label}>Type</Text>
             <PillToggle
@@ -299,19 +330,19 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
               </>
             )}
 
-            <View style={{ height: 16 }} />
           </ScrollView>
 
+          <View style={{ flexGrow: 1 }} />
           <View style={styles.actions}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
+            <Pressable onPress={onClose} style={styles.cancelBtn}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.saveBtn}>
+            </Pressable>
+            <Pressable onPress={handleSave} style={styles.saveBtn}>
               <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 }
@@ -327,16 +358,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheetWrapper: {
-    justifyContent: 'flex-end',
+    flex: 1,
   },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
+    flex: 1,
+    marginTop: 8,
     paddingTop: 20,
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -355,7 +387,11 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
   },
   scrollBody: {
-    flexGrow: 0,
+    flex: 0,
+    flexShrink: 1,
+  },
+  scrollContent: {
+    paddingBottom: 16,
   },
   label: {
     fontSize: 12,
@@ -369,11 +405,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
+    height: 44,
+    justifyContent: 'center',
     fontSize: 15,
     color: '#1a1a1a',
   },
   multiline: {
-    minHeight: 60,
+    height: undefined,
+    minHeight: 44,
     textAlignVertical: 'top',
   },
   timeRow: {
@@ -384,16 +423,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    height: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   timeInputActive: {
     borderWidth: 2,
     borderColor: '#007AFF',
-    padding: 10, // compensate for border
   },
   timeDisplayText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
     color: '#1a1a1a',
   },
   placeholder: {

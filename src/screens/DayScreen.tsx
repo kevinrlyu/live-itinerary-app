@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, TextInput, ScrollView, TouchableOpacity,
   Animated, StyleSheet,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -22,15 +22,18 @@ interface Props {
   onInsertActivity?: (dayDate: string, afterIndex: number, newActivity: Activity) => void;
   onDeleteActivity?: (dayDate: string, activityId: string) => void;
   onRemoveDay?: (dayDate: string) => void;
+  onUpdateDayTheme?: (dayDate: string, theme: string) => void;
 }
 
 export default function DayScreen({
   day, onToggle, onOpenExpense,
-  onUpdateActivity, onInsertActivity, onDeleteActivity, onRemoveDay,
+  onUpdateActivity, onInsertActivity, onDeleteActivity, onRemoveDay, onUpdateDayTheme,
 }: Props) {
   const [now, setNow] = useState(new Date());
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
+  const [editingTheme, setEditingTheme] = useState(false);
+  const [themeText, setThemeText] = useState(day.theme);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [isNewActivity, setIsNewActivity] = useState(false);
@@ -146,9 +149,20 @@ export default function DayScreen({
   }, [cancelHold]);
 
   const exitEditMode = () => {
+    if (editingTheme) {
+      saveTheme();
+    }
     setEditMode(false);
     pullAnim.setValue(0);
     holdProgressAnim.setValue(0);
+  };
+
+  const saveTheme = () => {
+    setEditingTheme(false);
+    const trimmed = themeText.trim();
+    if (trimmed !== day.theme) {
+      onUpdateDayTheme?.(day.date, trimmed);
+    }
   };
 
   // Edit actions
@@ -281,10 +295,29 @@ export default function DayScreen({
         </View>
       )}
 
-      <Text style={styles.theme}>{day.theme}</Text>
+      {editMode && editingTheme ? (
+        <TextInput
+          style={styles.themeInput}
+          value={themeText}
+          onChangeText={setThemeText}
+          onBlur={saveTheme}
+          onSubmitEditing={saveTheme}
+          placeholder="Day title (e.g. Tokyo, Travel Day)"
+          placeholderTextColor="#bbb"
+          autoFocus
+          returnKeyType="done"
+        />
+      ) : editMode ? (
+        <TouchableOpacity onPress={() => { setThemeText(day.theme); setEditingTheme(true); }}>
+          <Text style={styles.theme}>{day.theme || 'Tap to add title'}</Text>
+        </TouchableOpacity>
+      ) : (
+        day.theme ? <Text style={styles.theme}>{day.theme}</Text> : null
+      )}
 
       <ScrollView
         contentContainerStyle={styles.list}
+        alwaysBounceVertical
         onScroll={handleScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
@@ -369,7 +402,18 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  list: { paddingBottom: 32 },
+  themeInput: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+  },
+  list: { paddingBottom: 32, flexGrow: 1 },
   group: {
     marginBottom: 4,
   },

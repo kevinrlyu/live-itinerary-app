@@ -40,7 +40,8 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <View style={styles.container}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text style={styles.heading}>New Itinerary</Text>
 
       <Text style={styles.label}>Title</Text>
@@ -105,6 +106,7 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
