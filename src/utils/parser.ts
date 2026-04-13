@@ -2,12 +2,23 @@ import Anthropic from "@anthropic-ai/sdk";
 import { fetch as expoFetch } from "expo/fetch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Day, Trip, CulinaryRegion } from "../types";
+import { loadApiKey } from "./storage";
 
-const client = new Anthropic({
-  apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
-  dangerouslyAllowBrowser: true,
-  fetch: expoFetch as unknown as typeof globalThis.fetch,
-});
+let cachedClient: Anthropic | null = null;
+let cachedApiKey: string | null = null;
+
+async function getClient(): Promise<Anthropic> {
+  const apiKey = await loadApiKey();
+  if (!apiKey) throw new Error('No API key set. Please enter your Anthropic API key in settings.');
+  if (cachedClient && cachedApiKey === apiKey) return cachedClient;
+  cachedClient = new Anthropic({
+    apiKey,
+    dangerouslyAllowBrowser: true,
+    fetch: expoFetch as unknown as typeof globalThis.fetch,
+  });
+  cachedApiKey = apiKey;
+  return cachedClient;
+}
 
 // System prompt for parsing a SINGLE day's text into a day object.
 // Kept as a constant so prompt caching works across calls.
@@ -147,7 +158,7 @@ async function parseSingleDay(
   dayText: string,
   yearHint: string,
 ): Promise<Day> {
-  const stream = client.messages.stream({
+  const stream = (await getClient()).messages.stream({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 8192,
     messages: [
@@ -320,7 +331,7 @@ export async function parseItineraryText(
   console.log('[parser] preamble length:', preamble.length, 'preview:', preamble.slice(0, 200));
   if (preamble && preamble.length > 50) {
     try {
-      onProgress?.("Extracting culinary guide...");
+      onProgress?.("Extracting local cuisine...");
       culinarySpecialties = await parseCulinaryPreamble(preamble);
     } catch {
       // Non-critical — skip if extraction fails
@@ -357,7 +368,7 @@ async function parseFull(
     '    ]\n    }\n  ]\n}\n\nRules:\n- IDs must be globally unique across the ENTIRE trip (count up: \'a1\', \'a2\', \'a3\', ... never reuse a number)\n- IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.'
   );
 
-  const stream = client.messages.stream({
+  const stream = (await getClient()).messages.stream({
     model,
     max_tokens: maxTokens,
     messages: [
@@ -432,7 +443,7 @@ async function parseFull(
 
 // Extract culinary specialties from document preamble
 async function parseCulinaryPreamble(preamble: string): Promise<CulinaryRegion[]> {
-  const stream = client.messages.stream({
+  const stream = (await getClient()).messages.stream({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 4096,
     messages: [

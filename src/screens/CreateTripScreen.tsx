@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip } from '../types';
 import { createBlankTrip } from '../utils/tripBuilder';
 import DateRangePicker from '../components/DateRangePicker';
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCancel }: Props) {
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
@@ -41,8 +43,11 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
 
   return (
     <View style={styles.container}>
+    <View style={{ height: insets.top + 7, backgroundColor: '#fff' }} />
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>New Itinerary</Text>
+    </View>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <Text style={styles.heading}>New Itinerary</Text>
 
       <Text style={styles.label}>Title</Text>
       <TextInput
@@ -69,28 +74,30 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
         onSelect={handleDateSelect}
       />
 
-      <Text style={styles.label}>Currency</Text>
-      <View style={{ zIndex: 10 }}>
-        <TouchableOpacity
-          style={styles.currencyButton}
-          onPress={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-        >
-          <Text style={styles.currencyButtonText}>{currency}</Text>
-          <Text style={styles.currencyChevron}>▾</Text>
-        </TouchableOpacity>
-        {showCurrencyDropdown && (
-          <View style={styles.dropdown}>
-            {CURRENCIES.map((cur) => (
-              <TouchableOpacity
-                key={cur}
-                style={[styles.dropdownOption, cur === currency && styles.dropdownOptionSelected]}
-                onPress={() => { setCurrency(cur); setShowCurrencyDropdown(false); }}
-              >
-                <Text style={[styles.dropdownOptionText, cur === currency && styles.dropdownOptionTextSelected]}>{cur}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+      <View style={styles.currencyRow}>
+        <Text style={styles.currencyLabel}>Default Currency</Text>
+        <View>
+          <TouchableOpacity
+            style={styles.currencyButton}
+            onPress={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+          >
+            <Text style={styles.currencyButtonText}>{currency}</Text>
+            <Text style={styles.currencyChevron}>▾</Text>
+          </TouchableOpacity>
+          {showCurrencyDropdown && (
+            <View style={styles.dropdown}>
+              {CURRENCIES.map((cur) => (
+                <TouchableOpacity
+                  key={cur}
+                  style={[styles.dropdownOption, cur === currency && styles.dropdownOptionSelected]}
+                  onPress={() => { setCurrency(cur); setShowCurrencyDropdown(false); }}
+                >
+                  <Text style={[styles.dropdownOptionText, cur === currency && styles.dropdownOptionTextSelected]}>{cur}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -115,15 +122,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 17,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    flex: 1,
+  },
   content: {
     padding: 24,
-    paddingTop: 16,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1a1a1a',
-    marginBottom: 24,
+    paddingTop: 2,
   },
   label: {
     fontSize: 13,
@@ -145,35 +162,49 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     marginBottom: 4,
+    height: 20,
   },
   dateHint: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#bbb',
     marginBottom: 4,
+    height: 20,
   },
-  currencyButton: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+  currencyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    justifyContent: 'space-between',
+    paddingVertical: 0,
+    marginTop: 16,
+    zIndex: 10,
+  },
+  currencyLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  currencyButton: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 70,
   },
   currencyButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#007AFF',
   },
   currencyChevron: {
     fontSize: 11,
     color: '#888',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   dropdown: {
     position: 'absolute',
-    top: 48,
-    left: 0,
+    top: 36,
+    right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
     shadowColor: '#000',
@@ -181,7 +212,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 5,
-    minWidth: 100,
+    minWidth: 85,
     zIndex: 20,
   },
   dropdownOption: {

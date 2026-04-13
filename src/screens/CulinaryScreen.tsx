@@ -221,7 +221,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
     <View style={styles.container}>
       <View style={[styles.safeTop, { height: insets.top }]} />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Culinary Guide</Text>
+        <Text style={styles.headerTitle}>Local Cuisine</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeText}>Close</Text>
         </TouchableOpacity>
@@ -241,6 +241,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
           alwaysBounceVertical
           onScroll={handleScroll}
           onScrollBeginDrag={handleScrollBeginDrag}
@@ -415,7 +416,16 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
             ) : (
               <TouchableOpacity
                 style={styles.addSectionBtn}
-                onPress={() => { cancelAddItem(); cancelEditItem(); setAddingSection(true); }}
+                onPress={() => {
+                  cancelAddItem();
+                  cancelEditItem();
+                  setAddingSection(true);
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+                  const kbListener = Keyboard.addListener('keyboardDidShow', () => {
+                    kbListener.remove();
+                    scrollRef.current?.scrollToEnd({ animated: true });
+                  });
+                }}
               >
                 <Text style={styles.addSectionText}>+ Add section</Text>
               </TouchableOpacity>

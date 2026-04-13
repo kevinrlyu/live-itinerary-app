@@ -3,6 +3,7 @@ import { Trip, TripMeta } from '../types';
 
 const TRIP_LIST_KEY = 'trip_list';
 const ACTIVE_TRIP_KEY = 'active_trip_id';
+const API_KEY_KEY = 'anthropic_api_key';
 const tripKey = (id: string) => `trip_${id}`;
 
 export async function saveTripFull(trip: Trip): Promise<void> {
@@ -45,6 +46,18 @@ export async function saveActiveTripId(id: string): Promise<void> {
   await AsyncStorage.setItem(ACTIVE_TRIP_KEY, id);
 }
 
+export async function loadApiKey(): Promise<string | null> {
+  return AsyncStorage.getItem(API_KEY_KEY);
+}
+
+export async function saveApiKey(key: string): Promise<void> {
+  if (key) {
+    await AsyncStorage.setItem(API_KEY_KEY, key);
+  } else {
+    await AsyncStorage.removeItem(API_KEY_KEY);
+  }
+}
+
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function buildMigrationDateRange(days: any[]): string {
@@ -55,7 +68,7 @@ function buildMigrationDateRange(days: any[]): string {
     const dt = new Date(`${d}T12:00:00`);
     return `${MONTHS[dt.getMonth()]} ${dt.getDate()}`;
   };
-  return first === last ? fmt(first) : `${fmt(first)}–${fmt(last)}`;
+  return first === last ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
 }
 
 export async function migrateOldStorage(): Promise<void> {

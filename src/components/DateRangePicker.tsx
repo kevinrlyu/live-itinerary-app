@@ -66,6 +66,8 @@ export default function DateRangePicker({ startDate, endDate, onSelect }: Props)
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  // Pad to always have 6 rows (42 cells) so grid height doesn't shift
+  while (cells.length < 42) cells.push(null);
 
   return (
     <View style={styles.container}>
@@ -121,7 +123,7 @@ export default function DateRangePicker({ startDate, endDate, onSelect }: Props)
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   header: {
     flexDirection: 'row',
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   },
   cell: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -168,7 +170,6 @@ const styles = StyleSheet.create({
   },
   cellSelected: {
     backgroundColor: '#007AFF',
-    borderRadius: 20,
   },
   cellText: {
     fontSize: 14,

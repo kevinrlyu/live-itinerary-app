@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ActivityIndicator, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { fetchDocText, fetchDocTitle } from '../utils/googleDocs';
 import { parseItineraryText } from '../utils/parser';
-import { saveTripFull, saveTripList, loadTripList, saveActiveTripId } from '../utils/storage';
+import { saveTripFull, saveTripList, loadTripList, saveActiveTripId, loadApiKey, saveApiKey } from '../utils/storage';
 import { Trip, TripMeta } from '../types';
 
 interface Props {
@@ -21,19 +21,35 @@ function buildDateRange(trip: Trip): string {
     const dt = new Date(`${d}T12:00:00`);
     return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()]} ${dt.getDate()}`;
   };
-  return first === last ? fmt(first) : `${fmt(first)}–${fmt(last)}`;
+  return first === last ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
 }
 
 export default function ImportScreen({ onImport, onCancel }: Props) {
   const [url, setUrl] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [hasStoredKey, setHasStoredKey] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState('');
 
+  useEffect(() => {
+    loadApiKey().then((key) => {
+      if (key) {
+        setApiKey(key);
+        setHasStoredKey(true);
+      }
+    });
+  }, []);
+
   const handleImport = async () => {
+    if (!apiKey.trim()) {
+      Alert.alert('API Key Required', 'Please enter your Anthropic API key.');
+      return;
+    }
     if (!url.trim()) {
       Alert.alert('Paste your Google Doc link first.');
       return;
     }
+    await saveApiKey(apiKey.trim());
     setLoading(true);
     setProgress('Fetching document...');
     try {
@@ -63,8 +79,25 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.title}>Travel Itinerary</Text>
-      <Text style={styles.subtitle}>Paste a Google Doc link to get started</Text>
+      <Text style={styles.title}>Let's Get Started</Text>
+      {!hasStoredKey && (
+        <>
+          <Text style={styles.label}>Anthropic API Key</Text>
+          <Text style={styles.hint}>Get an API key at console.anthropic.com</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="sk-ant-..."
+            value={apiKey}
+            onChangeText={setApiKey}
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+            editable={!loading}
+          />
+        </>
+      )}
+      <Text style={styles.label}>Google Doc URL</Text>
+      <Text style={styles.hint}>Change general access setting to "Anyone with the link"</Text>
       <TextInput
         style={styles.input}
         placeholder="https://docs.google.com/document/d/..."
@@ -89,9 +122,6 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
           <Text style={styles.cancel}>Cancel</Text>
         </TouchableOpacity>
       )}
-      <Text style={styles.hint}>
-        Make sure your Google Doc is shared with "Anyone with the link can view"
-      </Text>
     </KeyboardAvoidingView>
   );
 }
@@ -101,8 +131,8 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#f5f5f5',
     justifyContent: 'center', padding: 24,
   },
-  title: { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#666', marginBottom: 32 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 32 },
+  label: { fontSize: 13, fontWeight: '600', color: '#444', marginBottom: 2 },
   input: {
     backgroundColor: '#fff', borderRadius: 12, padding: 16,
     fontSize: 14, borderWidth: 1, borderColor: '#ddd', marginBottom: 16,
@@ -115,5 +145,5 @@ const styles = StyleSheet.create({
   loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   progressText: { color: '#fff', fontSize: 14, marginLeft: 10 },
   cancel: { color: '#007AFF', fontSize: 15, textAlign: 'center', marginBottom: 16 },
-  hint: { fontSize: 12, color: '#999', textAlign: 'center', marginTop: 8 },
+  hint: { fontSize: 12, color: '#999', marginBottom: 6 },
 });

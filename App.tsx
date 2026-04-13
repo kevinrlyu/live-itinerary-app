@@ -51,7 +51,7 @@ function buildDateRange(trip: Trip): string {
     const dt = new Date(`${d}T12:00:00`);
     return `${MONTH_NAMES[dt.getMonth()]} ${dt.getDate()}`;
   };
-  return first === last ? fmt(first) : `${fmt(first)}–${fmt(last)}`;
+  return first === last ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
 }
 
 export default function App() {
@@ -61,7 +61,7 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showCreateTrip, setShowCreateTrip] = useState(false);
-  const [reimporting, setReimporting] = useState(false);
+  const [reimportingTripId, setReimportingTripId] = useState<string | null>(null);
   const [reimportProgress, setReimportProgress] = useState('');
   const [showExpenses, setShowExpenses] = useState(false);
   const [showCulinary, setShowCulinary] = useState(false);
@@ -133,32 +133,29 @@ export default function App() {
     setDrawerOpen(false);
   }, [trip, tripList]);
 
-  const handleReimport = useCallback(async () => {
-    if (!trip?.docUrl) {
-      // Legacy trip with no saved URL — open import screen so user can paste it
-      setDrawerOpen(false);
-      setShowImport(true);
-      return;
-    }
-    setReimporting(true);
+  const handleReimportTrip = useCallback(async (tripId: string) => {
+    const targetTrip = tripId === trip?.id ? trip : await loadTripFull(tripId);
+    if (!targetTrip?.docUrl) return;
+
+    setReimportingTripId(tripId);
     setReimportProgress('Fetching document...');
     try {
       const [text, docTitle] = await Promise.all([
-        fetchDocText(trip.docUrl),
-        fetchDocTitle(trip.docUrl),
+        fetchDocText(targetTrip.docUrl),
+        fetchDocTitle(targetTrip.docUrl),
       ]);
       setReimportProgress('Starting parse...');
-      const updated = await parseItineraryText(text, trip.docUrl, docTitle ?? undefined, setReimportProgress, trip.id);
+      const updated = await parseItineraryText(text, targetTrip.docUrl, docTitle ?? undefined, setReimportProgress, targetTrip.id);
       // Preserve expenses from old trip
       const oldExpenses: Record<string, { amount: number; currency: string }> = {};
-      for (const day of trip.days) {
+      for (const day of targetTrip.days) {
         for (const a of day.activities) {
           if (a.expense) oldExpenses[a.id] = a.expense;
         }
       }
       // Preserve culinary checked states by region+name
       const oldChecked = new Set<string>();
-      for (const region of trip.culinarySpecialties ?? []) {
+      for (const region of targetTrip.culinarySpecialties ?? []) {
         for (const item of region.items) {
           if (item.checked) oldChecked.add(`${region.region}::${item.name}`);
         }
@@ -173,9 +170,9 @@ export default function App() {
 
       const refreshed: Trip = {
         ...updated,
-        id: trip.id,
-        defaultCurrency: trip.defaultCurrency,
-        culinarySpecialties: newCulinary || trip.culinarySpecialties,
+        id: targetTrip.id,
+        defaultCurrency: targetTrip.defaultCurrency,
+        culinarySpecialties: newCulinary || targetTrip.culinarySpecialties,
         days: updated.days.map((day) => ({
           ...day,
           activities: day.activities.map((a) =>
@@ -185,20 +182,19 @@ export default function App() {
       };
       await saveTripFull(refreshed);
       const newMeta: TripMeta = {
-        id: trip.id,
+        id: targetTrip.id,
         title: refreshed.title,
         dateRange: buildDateRange(refreshed),
-        docUrl: trip.docUrl,
+        docUrl: targetTrip.docUrl,
       };
-      const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
+      const newList = tripList.map((t) => t.id === targetTrip.id ? newMeta : t);
       await saveTripList(newList);
       setTripList(newList);
-      setTrip(refreshed);
-      setDrawerOpen(false);
+      if (tripId === trip?.id) setTrip(refreshed);
     } catch (err: any) {
       alert(`Re-import failed: ${err.message}`);
     } finally {
-      setReimporting(false);
+      setReimportingTripId(null);
     }
   }, [trip, tripList]);
 
@@ -577,9 +573,9 @@ export default function App() {
           onSelectTrip={handleSelectTrip}
           onImportNew={() => { setDrawerOpen(false); setShowImport(true); }}
           onCreateNew={() => { setDrawerOpen(false); setShowCreateTrip(true); }}
-          onReimportCurrent={handleReimport}
+          onReimportTrip={handleReimportTrip}
           onDeleteTrip={handleDeleteTrip}
-          reimporting={reimporting}
+          reimportingTripId={reimportingTripId}
           reimportProgress={reimportProgress}
           onViewCulinary={trip.culinarySpecialties?.length ? () => { setDrawerOpen(false); setShowCulinary(true); } : undefined}
           onViewExpenses={() => { setDrawerOpen(false); setShowExpenses(true); }}
@@ -597,13 +593,13 @@ export default function App() {
         </Modal>
 
         <Modal visible={showCreateTrip} animationType="slide">
-          <SafeAreaView style={styles.container}>
+          <SafeAreaProvider>
             <CreateTripScreen
               defaultCurrency={trip?.defaultCurrency || 'USD'}
               onCreateTrip={handleCreateTrip}
               onCancel={() => setShowCreateTrip(false)}
             />
-          </SafeAreaView>
+          </SafeAreaProvider>
         </Modal>
 
         <Modal visible={showExpenses} animationType="slide">

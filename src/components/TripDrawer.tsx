@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Animated,
-  FlatList, StyleSheet, Dimensions, Alert,
+  FlatList, StyleSheet, Dimensions, Alert, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TripMeta } from '../types';
+import { loadApiKey, saveApiKey } from '../utils/storage';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const DRAWER_WIDTH = SCREEN_WIDTH;
@@ -25,9 +26,9 @@ interface Props {
   onSelectTrip: (id: string) => void;
   onImportNew: () => void;
   onCreateNew?: () => void;
-  onReimportCurrent: () => void;
+  onReimportTrip: (id: string) => void;
   onDeleteTrip: (id: string) => void;
-  reimporting: boolean;
+  reimportingTripId?: string | null;
   reimportProgress?: string;
   onViewCulinary?: () => void;
   onViewExpenses?: () => void;
@@ -74,13 +75,25 @@ function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: stri
 
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
-  onSelectTrip, onImportNew, onCreateNew, onReimportCurrent, onDeleteTrip, reimporting, reimportProgress,
+  onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, reimportingTripId, reimportProgress,
   onViewCulinary, onViewExpenses, defaultCurrency, onSetCurrency,
 }: Props) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(false);
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [apiKeyValue, setApiKeyValue] = useState('');
+  const [hasApiKey, setHasApiKey] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      loadApiKey().then((key) => {
+        setHasApiKey(!!key);
+        setApiKeyValue(key || '');
+      });
+    }
+  }, [visible]);
 
   useEffect(() => {
     if (visible) {
@@ -143,25 +156,15 @@ export default function TripDrawer({
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={[styles.actionButton, reimporting && styles.actionButtonDisabled]}
-          onPress={onReimportCurrent}
-          disabled={reimporting}
-        >
-          <Text style={styles.actionButtonText}>
-            {reimporting ? (reimportProgress || 'Re-importing…') : '↻  Re-import Current'}
-          </Text>
-        </TouchableOpacity>
-
         {onViewCulinary && (
           <TouchableOpacity style={styles.actionButton} onPress={onViewCulinary}>
-            <Text style={styles.actionButtonText}>Culinary Guide</Text>
+            <Text style={styles.actionButtonText}>Local Cuisine</Text>
           </TouchableOpacity>
         )}
 
         {onViewExpenses && (
           <TouchableOpacity style={styles.actionButton} onPress={onViewExpenses}>
-            <Text style={styles.actionButtonText}>$  Trip Expenses</Text>
+            <Text style={styles.actionButtonText}>Trip Expenses</Text>
           </TouchableOpacity>
         )}
 
@@ -176,33 +179,110 @@ export default function TripDrawer({
           data={trips}
           keyExtractor={(item) => item.id}
           style={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.tripRow}>
-              <TouchableOpacity
-                style={styles.tripInfo}
-                onPress={() => onSelectTrip(item.id)}
-              >
-                <Text style={styles.tripTitle} numberOfLines={1}>{item.title}</Text>
-                <Text style={styles.tripDate}>{item.dateRange}</Text>
-              </TouchableOpacity>
-              <View style={styles.tripActions}>
-                {item.id === activeTripId && <Text style={styles.checkmark}>✓</Text>}
-                <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.deleteButton}>
-                  <Text style={styles.deleteText}>✕</Text>
+          ListHeaderComponent={<View style={{ borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginHorizontal: 8, marginTop: 8 }} />}
+          renderItem={({ item }) => {
+            const isActive = item.id === activeTripId;
+            const isReimporting = reimportingTripId === item.id;
+            return (
+              <View style={[styles.tripRow, isActive && styles.tripRowActive]}>
+                <TouchableOpacity
+                  style={styles.tripInfo}
+                  onPress={() => onSelectTrip(item.id)}
+                >
+                  <Text style={[styles.tripTitle, isActive && styles.tripTitleActive]} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.tripDate}>
+                    {isReimporting ? (reimportProgress || 'Re-importing...') : item.dateRange}
+                  </Text>
                 </TouchableOpacity>
+                <View style={styles.tripActions}>
+                  {!!item.docUrl && (
+                    <TouchableOpacity
+                      onPress={() => onReimportTrip(item.id)}
+                      style={styles.refreshButton}
+                      disabled={!!reimportingTripId}
+                    >
+                      <Text style={[styles.refreshText, !!reimportingTripId && styles.refreshTextDisabled]}>↻</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.deleteButton}>
+                    <Text style={styles.deleteText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
+            );
+          }}
         />
 
+        <View style={styles.apiKeyRow}>
+          <Text style={styles.apiKeyLabel}>API Key</Text>
+          <View>
+            <TouchableOpacity
+              style={styles.apiKeyValue}
+              onPress={() => setApiKeyVisible(!apiKeyVisible)}
+            >
+              <Text style={styles.apiKeyValueText}>{hasApiKey ? 'Set' : 'None'}</Text>
+              <Text style={styles.apiKeyChevron}>▾</Text>
+            </TouchableOpacity>
+            {apiKeyVisible && (
+              <View style={styles.apiKeyDropdown}>
+                <TextInput
+                  style={styles.apiKeyInput}
+                  value={apiKeyValue}
+                  onChangeText={setApiKeyValue}
+                  placeholder="sk-ant-..."
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                />
+                <View style={styles.apiKeyButtons}>
+                  <TouchableOpacity
+                    style={styles.apiKeySave}
+                    onPress={() => {
+                      if (!apiKeyValue.trim()) {
+                        Alert.alert('Enter a valid API key');
+                        return;
+                      }
+                      saveApiKey(apiKeyValue.trim());
+                      setHasApiKey(true);
+                      setApiKeyVisible(false);
+                    }}
+                  >
+                    <Text style={styles.apiKeySaveText}>Save</Text>
+                  </TouchableOpacity>
+                  {hasApiKey && (
+                    <TouchableOpacity
+                      style={styles.apiKeyRemove}
+                      onPress={() => {
+                        Alert.alert('Remove API Key', 'Are you sure?', [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Remove', style: 'destructive', onPress: async () => {
+                              await saveApiKey('');
+                              setApiKeyValue('');
+                              setHasApiKey(false);
+                              setApiKeyVisible(false);
+                            },
+                          },
+                        ]);
+                      }}
+                    >
+                      <Text style={styles.apiKeyRemoveText}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.importButton} onPress={onImportNew}>
+          <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
+        </TouchableOpacity>
         {onCreateNew && (
           <TouchableOpacity style={styles.createButton} onPress={onCreateNew}>
             <Text style={styles.createButtonText}>+ Create New Itinerary</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.importButton} onPress={onImportNew}>
-          <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
-        </TouchableOpacity>
       </Animated.View>
     </View>
   );
@@ -261,33 +341,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 8,
     alignItems: 'center',
   },
   actionButtonDisabled: { opacity: 0.5 },
   actionButtonText: { fontSize: 14, fontWeight: '600', color: '#333' },
-  list: { flex: 1 },
+  list: { flex: 1, overflow: 'visible' },
   tripRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    borderRadius: 10,
+  },
+  tripRowActive: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+    shadowColor: '#007AFF',
+    shadowOpacity: 0.55,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 8,
+    backgroundColor: '#fff',
   },
   tripInfo: { flex: 1 },
   tripTitle: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
+  tripTitleActive: { color: '#007AFF' },
   tripDate: { fontSize: 12, color: '#888', marginTop: 2 },
   tripActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  checkmark: { fontSize: 16, color: '#007AFF', fontWeight: '700' },
+  refreshButton: { padding: 4 },
+  refreshText: { fontSize: 18, color: '#34C759', fontWeight: '700' },
+  refreshTextDisabled: { opacity: 0.4 },
   deleteButton: { padding: 4 },
   deleteText: { fontSize: 14, color: '#FF3B30' },
   currencyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 0,
     paddingHorizontal: 4,
-    marginBottom: 12,
+    marginBottom: 4,
   },
   currencyLabel: {
     fontSize: 14,
@@ -296,10 +391,11 @@ const styles = StyleSheet.create({
   currencyValue: {
     backgroundColor: '#f0f0f0',
     borderRadius: 8,
-    paddingHorizontal: 14,
     paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: 70,
   },
   currencyValueText: {
     fontSize: 14,
@@ -342,20 +438,101 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
   },
-  createButton: {
+  apiKeyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 0,
+    paddingHorizontal: 4,
+    marginBottom: 0,
+  },
+  apiKeyLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  apiKeyValue: {
     backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 70,
+  },
+  apiKeyValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  apiKeyChevron: {
+    fontSize: 11,
+    color: '#888',
+    marginLeft: 4,
+  },
+  apiKeyDropdown: {
+    position: 'absolute',
+    top: 36,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 10,
+    padding: 12,
+    minWidth: 220,
+  },
+  apiKeyInput: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 8,
+  },
+  apiKeyButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  apiKeySave: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  apiKeySaveText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  apiKeyRemove: {
+    backgroundColor: '#ff3b30',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  apiKeyRemoveText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  createButton: {
+    backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
+    marginBottom: 32,
   },
-  createButtonText: { color: '#333', fontSize: 15, fontWeight: '700' },
+  createButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   importButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
-    marginBottom: 32,
     marginTop: 8,
   },
   importButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
