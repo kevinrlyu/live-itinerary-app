@@ -4,6 +4,7 @@ import { Trip, TripMeta } from '../types';
 const TRIP_LIST_KEY = 'trip_list';
 const ACTIVE_TRIP_KEY = 'active_trip_id';
 const API_KEY_KEY = 'anthropic_api_key';
+const WALKTHROUGH_SEEN_KEY = 'has_seen_walkthrough';
 const tripKey = (id: string) => `trip_${id}`;
 
 export async function saveTripFull(trip: Trip): Promise<void> {
@@ -56,6 +57,15 @@ export async function saveApiKey(key: string): Promise<void> {
   } else {
     await AsyncStorage.removeItem(API_KEY_KEY);
   }
+}
+
+export async function loadHasSeenWalkthrough(): Promise<boolean> {
+  const v = await AsyncStorage.getItem(WALKTHROUGH_SEEN_KEY);
+  return v === '1';
+}
+
+export async function saveHasSeenWalkthrough(): Promise<void> {
+  await AsyncStorage.setItem(WALKTHROUGH_SEEN_KEY, '1');
 }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

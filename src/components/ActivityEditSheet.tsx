@@ -227,18 +227,6 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
               />
             </View>
 
-            <View onLayout={(e) => { fieldLayoutsRef.current['location'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
-              <Text style={styles.label}>Location</Text>
-              <TextInput
-                style={styles.input}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Location name or address"
-                placeholderTextColor="#bbb"
-                onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
-              />
-            </View>
-
             <View onLayout={(e) => { fieldLayoutsRef.current['description'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
               <Text style={styles.label}>Description</Text>
               <TextInput
@@ -274,6 +262,18 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
                 placeholderTextColor="#bbb"
                 multiline
                 onFocus={() => { setActiveTimeField(null); scrollToField('notes'); }}
+              />
+            </View>
+
+            <View onLayout={(e) => { fieldLayoutsRef.current['location'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
+              <Text style={styles.label}>Location</Text>
+              <TextInput
+                style={styles.input}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="Location name or address"
+                placeholderTextColor="#bbb"
+                onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
               />
             </View>
 

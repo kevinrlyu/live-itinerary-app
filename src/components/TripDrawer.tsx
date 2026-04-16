@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Animated,
-  FlatList, StyleSheet, Dimensions, Alert, TextInput,
+  ScrollView, StyleSheet, Dimensions, Alert, TextInput,
+  PanResponder,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TripMeta } from '../types';
 import { loadApiKey, saveApiKey } from '../utils/storage';
@@ -28,12 +30,14 @@ interface Props {
   onCreateNew?: () => void;
   onReimportTrip: (id: string) => void;
   onDeleteTrip: (id: string) => void;
+  onReorderTrips?: (fromIndex: number, toIndex: number) => void;
   reimportingTripId?: string | null;
   reimportProgress?: string;
   onViewCulinary?: () => void;
   onViewExpenses?: () => void;
   defaultCurrency?: string;
   onSetCurrency?: (currency: string) => void;
+  onShowHelp?: () => void;
 }
 
 function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
@@ -73,10 +77,268 @@ function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: stri
   );
 }
 
+const ROW_HEIGHT = 61; // measured: paddingV 12*2 + content ~37
+
+interface DraggableListProps {
+  trips: TripMeta[];
+  activeTripId: string;
+  reimportingTripId?: string | null;
+  reimportProgress?: string;
+  onSelectTrip: (id: string) => void;
+  onReimportTrip: (id: string) => void;
+  onDeletePress: (trip: TripMeta) => void;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
+}
+
+function DraggableTripList({
+  trips, activeTripId, reimportingTripId, reimportProgress,
+  onSelectTrip, onReimportTrip, onDeletePress, onReorder,
+}: DraggableListProps) {
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const dragY = useRef(new Animated.Value(0)).current;
+  const tripsRef = useRef(trips);
+  tripsRef.current = trips;
+  const draggingIdxRef = useRef<number>(-1);
+  const hoverIdxRef = useRef<number | null>(null);
+
+  const setHover = (v: number | null) => {
+    hoverIdxRef.current = v;
+    setHoverIndex(v);
+  };
+
+  return (
+    <ScrollView
+      style={styles.list}
+      scrollEnabled={draggingId === null}
+      contentContainerStyle={{ paddingTop: 8 }}
+    >
+      <View style={{ borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginHorizontal: 8 }} />
+      <View style={{ height: trips.length * ROW_HEIGHT, position: 'relative' }}>
+        {trips.map((item, idx) => {
+          const isDragging = item.id === draggingId;
+          let targetTop = idx * ROW_HEIGHT;
+          if (draggingId && !isDragging && hoverIndex !== null) {
+            const fromIdx = draggingIdxRef.current;
+            if (fromIdx !== -1) {
+              if (fromIdx < hoverIndex && idx > fromIdx && idx <= hoverIndex) {
+                targetTop = (idx - 1) * ROW_HEIGHT;
+              } else if (fromIdx > hoverIndex && idx < fromIdx && idx >= hoverIndex) {
+                targetTop = (idx + 1) * ROW_HEIGHT;
+              }
+            }
+          }
+          return (
+            <TripRow
+              key={item.id}
+              item={item}
+              index={idx}
+              top={targetTop}
+              isDragging={isDragging}
+              isActive={item.id === activeTripId}
+              isReimporting={reimportingTripId === item.id}
+              reimportProgress={reimportProgress}
+              disableActions={!!reimportingTripId}
+              dragY={dragY}
+              onSelectTrip={onSelectTrip}
+              onReimportTrip={onReimportTrip}
+              onDeletePress={onDeletePress}
+              onDragStart={(startIdx) => {
+                draggingIdxRef.current = startIdx;
+                setDraggingId(item.id);
+                setHover(startIdx);
+              }}
+              onDragMove={(dy) => {
+                const fromIdx = draggingIdxRef.current;
+                if (fromIdx === -1) return;
+                const offset = Math.round(dy / ROW_HEIGHT);
+                const next = Math.max(0, Math.min(tripsRef.current.length - 1, fromIdx + offset));
+                if (hoverIdxRef.current !== next) setHover(next);
+              }}
+              onDragEnd={() => {
+                const fromIdx = draggingIdxRef.current;
+                const toIdx = hoverIdxRef.current;
+                draggingIdxRef.current = -1;
+                setDraggingId(null);
+                setHover(null);
+                dragY.setValue(0);
+                if (fromIdx !== -1 && toIdx !== null && fromIdx !== toIdx && onReorder) {
+                  onReorder(fromIdx, toIdx);
+                }
+              }}
+            />
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}
+
+interface TripRowProps {
+  item: TripMeta;
+  index: number;
+  top: number;
+  isDragging: boolean;
+  isActive: boolean;
+  isReimporting: boolean;
+  reimportProgress?: string;
+  disableActions: boolean;
+  dragY: Animated.Value;
+  onSelectTrip: (id: string) => void;
+  onReimportTrip: (id: string) => void;
+  onDeletePress: (trip: TripMeta) => void;
+  onDragStart: (index: number) => void;
+  onDragMove: (dy: number) => void;
+  onDragEnd: () => void;
+}
+
+function TripRow({
+  item, index, top, isDragging, isActive, isReimporting, reimportProgress,
+  disableActions, dragY, onSelectTrip, onReimportTrip, onDeletePress,
+  onDragStart, onDragMove, onDragEnd,
+}: TripRowProps) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragActiveRef = useRef(false);
+  const startYRef = useRef(0);
+  const grantTimeRef = useRef(0);
+  const movedRef = useRef(false);
+  const animatedTop = useRef(new Animated.Value(top)).current;
+
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const topRef = useRef(top);
+  topRef.current = top;
+  const onDragStartRef = useRef(onDragStart);
+  onDragStartRef.current = onDragStart;
+  const onDragMoveRef = useRef(onDragMove);
+  onDragMoveRef.current = onDragMove;
+  const onDragEndRef = useRef(onDragEnd);
+  onDragEndRef.current = onDragEnd;
+  const onSelectTripRef = useRef(onSelectTrip);
+  onSelectTripRef.current = onSelectTrip;
+  const itemIdRef = useRef(item.id);
+  itemIdRef.current = item.id;
+
+  useEffect(() => {
+    if (!isDragging) {
+      Animated.timing(animatedTop, {
+        toValue: top,
+        duration: 160,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      animatedTop.setValue(top);
+    }
+  }, [top, isDragging, animatedTop]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (e) => {
+          startYRef.current = e.nativeEvent.pageY;
+          grantTimeRef.current = Date.now();
+          movedRef.current = false;
+          longPressTimer.current = setTimeout(() => {
+            dragActiveRef.current = true;
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onDragStartRef.current(indexRef.current);
+          }, 400);
+        },
+        onPanResponderMove: (_, g) => {
+          if (Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6) movedRef.current = true;
+          if (!dragActiveRef.current) {
+            if (movedRef.current && longPressTimer.current) {
+              clearTimeout(longPressTimer.current);
+              longPressTimer.current = null;
+            }
+            return;
+          }
+          dragY.setValue(g.dy);
+          onDragMoveRef.current(g.dy);
+        },
+        onPanResponderRelease: () => {
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+          }
+          if (dragActiveRef.current) {
+            dragActiveRef.current = false;
+            const dy = (dragY as any).__getValue ? (dragY as any).__getValue() : 0;
+            animatedTop.setValue(topRef.current + dy);
+            dragY.setValue(0);
+            onDragEndRef.current();
+          } else if (!movedRef.current && Date.now() - grantTimeRef.current < 400) {
+            onSelectTripRef.current(itemIdRef.current);
+          }
+        },
+        onPanResponderTerminate: () => {
+          if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+          }
+          if (dragActiveRef.current) {
+            dragActiveRef.current = false;
+            const dy = (dragY as any).__getValue ? (dragY as any).__getValue() : 0;
+            animatedTop.setValue(topRef.current + dy);
+            dragY.setValue(0);
+            onDragEndRef.current();
+          }
+        },
+      }),
+    [dragY]
+  );
+
+  const translateY = isDragging ? dragY : 0;
+
+  return (
+    <Animated.View
+      style={[
+        styles.tripRowAbs,
+        isActive && styles.tripRowActive,
+        isDragging && styles.tripRowDragging,
+        {
+          top: animatedTop,
+          transform: [{ translateY }],
+          zIndex: isDragging ? 10 : isActive ? 2 : 1,
+          elevation: isDragging ? 12 : isActive ? 8 : 0,
+        },
+      ]}
+      {...panResponder.panHandlers}
+    >
+      <View style={styles.tripInfo}>
+        <Text style={[styles.tripTitle, isActive && styles.tripTitleActive]} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.tripDate}>
+          {isReimporting ? (reimportProgress || 'Re-importing...') : item.dateRange}
+        </Text>
+      </View>
+      <View style={styles.tripActions}>
+        {!!item.docUrl && (
+          <TouchableOpacity
+            onPress={() => onReimportTrip(item.id)}
+            style={styles.refreshButton}
+            disabled={disableActions || isDragging}
+          >
+            <Text style={[styles.refreshText, disableActions && styles.refreshTextDisabled]}>↻</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          onPress={() => onDeletePress(item)}
+          style={styles.deleteButton}
+          disabled={isDragging}
+        >
+          <Text style={styles.deleteText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
   onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, reimportingTripId, reimportProgress,
-  onViewCulinary, onViewExpenses, defaultCurrency, onSetCurrency,
+  onViewCulinary, onViewExpenses, onReorderTrips, defaultCurrency, onSetCurrency, onShowHelp,
 }: Props) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
@@ -175,42 +437,15 @@ export default function TripDrawer({
           />
         )}
 
-        <FlatList
-          data={trips}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          ListHeaderComponent={<View style={{ borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginHorizontal: 8, marginTop: 8 }} />}
-          renderItem={({ item }) => {
-            const isActive = item.id === activeTripId;
-            const isReimporting = reimportingTripId === item.id;
-            return (
-              <View style={[styles.tripRow, isActive && styles.tripRowActive]}>
-                <TouchableOpacity
-                  style={styles.tripInfo}
-                  onPress={() => onSelectTrip(item.id)}
-                >
-                  <Text style={[styles.tripTitle, isActive && styles.tripTitleActive]} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.tripDate}>
-                    {isReimporting ? (reimportProgress || 'Re-importing...') : item.dateRange}
-                  </Text>
-                </TouchableOpacity>
-                <View style={styles.tripActions}>
-                  {!!item.docUrl && (
-                    <TouchableOpacity
-                      onPress={() => onReimportTrip(item.id)}
-                      style={styles.refreshButton}
-                      disabled={!!reimportingTripId}
-                    >
-                      <Text style={[styles.refreshText, !!reimportingTripId && styles.refreshTextDisabled]}>↻</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.deleteButton}>
-                    <Text style={styles.deleteText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          }}
+        <DraggableTripList
+          trips={trips}
+          activeTripId={activeTripId}
+          reimportingTripId={reimportingTripId}
+          reimportProgress={reimportProgress}
+          onSelectTrip={onSelectTrip}
+          onReimportTrip={onReimportTrip}
+          onDeletePress={confirmDelete}
+          onReorder={onReorderTrips}
         />
 
         <View style={styles.apiKeyRow}>
@@ -283,6 +518,11 @@ export default function TripDrawer({
             <Text style={styles.createButtonText}>+ Create New Itinerary</Text>
           </TouchableOpacity>
         )}
+        {onShowHelp && (
+          <TouchableOpacity style={styles.helpButton} onPress={onShowHelp}>
+            <Text style={styles.helpButtonText}>Help</Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
     </View>
   );
@@ -312,6 +552,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: -16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     marginBottom: 16,
@@ -354,6 +596,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    borderRadius: 10,
+  },
+  tripRowAbs: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: ROW_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+  },
+  tripRowDragging: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 12,
     borderRadius: 10,
   },
   tripRowActive: {
@@ -525,9 +790,19 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     marginTop: 8,
-    marginBottom: 32,
   },
   createButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  helpButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  helpButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
   importButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,

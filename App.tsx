@@ -10,6 +10,7 @@ import {
   loadActiveTripId, saveActiveTripId,
   deleteTrip as deleteTripFromStorage,
   migrateOldStorage,
+  loadHasSeenWalkthrough, saveHasSeenWalkthrough,
 } from './src/utils/storage';
 import { createBlankDay, generateActivityId } from './src/utils/tripBuilder';
 import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
@@ -23,6 +24,8 @@ import TripHeader from './src/components/TripHeader';
 import TripDrawer from './src/components/TripDrawer';
 import DayTabBar from './src/components/DayTabBar';
 import ExpenseInput, { ExpenseInputTarget } from './src/components/ExpenseInput';
+import Walkthrough from './src/components/Walkthrough';
+import NewDayDialog from './src/components/NewDayDialog';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -66,18 +69,35 @@ export default function App() {
   const [showExpenses, setShowExpenses] = useState(false);
   const [showCulinary, setShowCulinary] = useState(false);
   const [expenseTarget, setExpenseTarget] = useState<{ dayDate: string; target: ExpenseInputTarget } | null>(null);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [showNewDayDialog, setShowNewDayDialog] = useState(false);
 
   useEffect(() => {
     (async () => {
       await migrateOldStorage();
-      const [list, activeId] = await Promise.all([loadTripList(), loadActiveTripId()]);
+      const [list, activeId, seen] = await Promise.all([
+        loadTripList(),
+        loadActiveTripId(),
+        loadHasSeenWalkthrough(),
+      ]);
       setTripList(list);
       if (activeId) {
         const active = await loadTripFull(activeId);
         if (active) setTrip(active);
       }
       setLoaded(true);
+      if (!seen) setShowWalkthrough(true);
     })();
+  }, []);
+
+  const handleCloseWalkthrough = useCallback(() => {
+    setShowWalkthrough(false);
+    saveHasSeenWalkthrough();
+  }, []);
+
+  const handleShowHelp = useCallback(() => {
+    setDrawerOpen(false);
+    setShowWalkthrough(true);
   }, []);
 
   const handleImport = useCallback(async (newTrip: Trip) => {
@@ -400,42 +420,42 @@ export default function App() {
 
   const handleAddDay = useCallback(() => {
     if (!trip) return;
-    Alert.prompt(
-      'New Day',
-      'Enter a title for this day (optional)',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (theme?: string) => {
-            const lastDay = trip.days[trip.days.length - 1];
-            const lastDate = new Date(`${lastDay.date}T12:00:00`);
-            lastDate.setDate(lastDate.getDate() + 1);
-            const newDateStr = lastDate.toISOString().split('T')[0];
-            const newDay = { ...createBlankDay(newDateStr), theme: theme?.trim() || '' };
-            const updated: Trip = { ...trip, days: [...trip.days, newDay] };
-            setTrip(updated);
-            saveTripFull(updated);
-            const newMeta: TripMeta = {
-              id: trip.id,
-              title: trip.title,
-              dateRange: buildDateRange(updated),
-              docUrl: trip.docUrl,
-            };
-            const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
-            saveTripList(newList);
-            setTripList(newList);
-            setTimeout(() => {
-              navigationRef.current?.navigate(newDateStr);
-            }, 100);
-          },
-        },
-      ],
-      'plain-text',
-      '',
-      'e.g. Tokyo, Travel Day'
-    );
+    setShowNewDayDialog(true);
+  }, [trip]);
+
+  const handleConfirmAddDay = useCallback((theme: string) => {
+    setShowNewDayDialog(false);
+    if (!trip) return;
+    const lastDay = trip.days[trip.days.length - 1];
+    const lastDate = new Date(`${lastDay.date}T12:00:00`);
+    lastDate.setDate(lastDate.getDate() + 1);
+    const newDateStr = lastDate.toISOString().split('T')[0];
+    const newDay = { ...createBlankDay(newDateStr), theme: theme.trim() };
+    const updated: Trip = { ...trip, days: [...trip.days, newDay] };
+    setTrip(updated);
+    saveTripFull(updated);
+    const newMeta: TripMeta = {
+      id: trip.id,
+      title: trip.title,
+      dateRange: buildDateRange(updated),
+      docUrl: trip.docUrl,
+    };
+    const newList = tripList.map((t) => t.id === trip.id ? newMeta : t);
+    saveTripList(newList);
+    setTripList(newList);
+    setTimeout(() => {
+      navigationRef.current?.navigate(newDateStr);
+    }, 100);
   }, [trip, tripList]);
+
+  const handleReorderTrips = useCallback(async (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const newList = [...tripList];
+    const [moved] = newList.splice(fromIndex, 1);
+    newList.splice(toIndex, 0, moved);
+    setTripList(newList);
+    await saveTripList(newList);
+  }, [tripList]);
 
   const navigationRef = useRef<any>(null);
 
@@ -506,6 +526,7 @@ export default function App() {
               </TouchableOpacity>
             </View>
           )}
+          <Walkthrough visible={showWalkthrough} onClose={handleCloseWalkthrough} />
         </SafeAreaView>
       </SafeAreaProvider>
     );
@@ -577,10 +598,12 @@ export default function App() {
           onDeleteTrip={handleDeleteTrip}
           reimportingTripId={reimportingTripId}
           reimportProgress={reimportProgress}
-          onViewCulinary={trip.culinarySpecialties?.length ? () => { setDrawerOpen(false); setShowCulinary(true); } : undefined}
+          onViewCulinary={() => { setDrawerOpen(false); setShowCulinary(true); }}
           onViewExpenses={() => { setDrawerOpen(false); setShowExpenses(true); }}
+          onReorderTrips={handleReorderTrips}
           defaultCurrency={trip.defaultCurrency}
           onSetCurrency={handleSetCurrency}
+          onShowHelp={handleShowHelp}
         />
 
         <Modal visible={showImport} animationType="slide">
@@ -626,6 +649,14 @@ export default function App() {
             onClose={() => setExpenseTarget(null)}
           />
         )}
+
+        <Walkthrough visible={showWalkthrough} onClose={handleCloseWalkthrough} />
+
+        <NewDayDialog
+          visible={showNewDayDialog}
+          onCancel={() => setShowNewDayDialog(false)}
+          onAdd={handleConfirmAddDay}
+        />
       </SafeAreaView>
     </SafeAreaProvider>
   );

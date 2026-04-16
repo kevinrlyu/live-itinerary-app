@@ -248,9 +248,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
         >
-          {regions.length === 0 && !addingSection ? (
-            <Text style={styles.emptyText}>No culinary specialties found in this itinerary.</Text>
-          ) : (
+          {regions.length === 0 && !addingSection ? null : (
             regions.map((region, rIdx) => (
               <View
                 key={region.region}
@@ -533,6 +531,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 0,
+    flexGrow: 1,
   },
   emptyText: {
     fontSize: 15,

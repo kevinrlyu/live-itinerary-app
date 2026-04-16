@@ -65,10 +65,10 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (!isDraggingRef.current) return;
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const maxOffset = contentSize.width - layoutMeasurement.width;
+    const maxOffset = Math.max(0, contentSize.width - layoutMeasurement.width);
     const overscroll = contentOffset.x - maxOffset;
 
-    if (overscroll > 10 && maxOffset > 0) {
+    if (overscroll > 10) {
       if (!isAtEdgeRef.current) {
         isAtEdgeRef.current = true;
         startHold();
@@ -115,6 +115,8 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
         bounces={true}
+        alwaysBounceHorizontal={true}
+        contentContainerStyle={{ flexGrow: 1 }}
       >
         {tabs.map((tab) => (
           <TouchableOpacity
