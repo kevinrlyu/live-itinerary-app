@@ -242,11 +242,15 @@ export default function Demo3Activities({ active }: { active: boolean }) {
     const X_NUDGE = s(2);
     const insert1Center = { x: W / 2 - X_NUDGE, y: INSERT1_TOP + INSERT_H / 2 };
     const card2Center = { x: W / 2 - X_NUDGE, y: CARD2_TOP + CARD_FULL_H / 2 };
-    // Save button: sheet paddingH s(16), paddingB s(16).
-    // "Save" text ~s(28) wide + paddingH s(20)*2 ≈ s(68). paddingV s(8)*2 + lh s(15.6) ≈ s(32).
-    const saveBtnW = s(60);
-    const saveBtnH = s(32);
-    const saveBtnCenter = { x: W - s(16) - saveBtnW / 2 - s(8), y: H - s(16) - saveBtnH / 2 - s(4) };
+
+    // Actions row button geometry (sheet paddingH s(20), paddingB s(16))
+    // Save button: paddingH s(24) + "Save" ~s(30) wide ≈ s(78) total, paddingV s(10) + text ~s(18) ≈ s(38) tall
+    const saveBtnW = s(78);
+    const saveBtnH = s(38);
+    const saveBtnCenter = { x: W - s(20) - saveBtnW / 2 - s(3) - 2, y: H - s(16) - saveBtnH / 2 - s(3) - 1 };
+    // Cancel text: paddingH s(16) + "Cancel" ~s(45) wide ≈ s(77), same height
+    const cancelW = s(77);
+    const cancelCenter = { x: W - s(20) - saveBtnW - s(12) - cancelW / 2 - s(3) - 6.5, y: H - s(16) - saveBtnH / 2 - s(3) - 1 };
     const start = { x: W - 22, y: H - 22 };
 
     const script = Animated.loop(
@@ -261,8 +265,8 @@ export default function Demo3Activities({ active }: { active: boolean }) {
         tap(cursor),
         Animated.timing(newSheetY, { toValue: 0, duration: 350, useNativeDriver: true }),
         Animated.delay(800),
-        // Tap Save button
-        moveTo(cursor, saveBtnCenter.x, saveBtnCenter.y, 700),
+        // Tap Cancel button
+        moveTo(cursor, cancelCenter.x, cancelCenter.y, 700),
         Animated.delay(150),
         tap(cursor),
         Animated.timing(newSheetY, { toValue: SHEET_H, duration: 300, useNativeDriver: true }),
