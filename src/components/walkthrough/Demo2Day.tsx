@@ -8,7 +8,7 @@ const HOLD_MS = 1000;
 
 const HEADER_H = s(10 + 20 + 10);
 const TAB_H = s(10 + 17 + 1 + 14 + 10);
-const TAB_W = s(70);
+const TAB_W = W / 5;
 
 const MON_IDX = 2;
 const WED_IDX = 4;
@@ -306,12 +306,12 @@ export default function Demo2Day({ active }: { active: boolean }) {
             {['Sat', 'Sun', 'Mon', 'Tue'].map((dow, i) => (
               <View key={i} style={styles.tab}>
                 <Text style={styles.tabDow}>{dow}</Text>
-                <Text style={styles.tabDate}>Apr {11 + i}</Text>
+                <Text style={styles.tabDate}>Aug {22 + i}</Text>
               </View>
             ))}
             <Animated.View style={[styles.tab, { opacity: wedTabOpacity }]}>
               <Text style={styles.tabDow}>Wed</Text>
-              <Text style={styles.tabDate}>Apr 15</Text>
+              <Text style={styles.tabDate}>Aug 26</Text>
             </Animated.View>
             <Animated.View
               style={[styles.activeUnderline, { transform: [{ translateX: activeUnderX }] }]}

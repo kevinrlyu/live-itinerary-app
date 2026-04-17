@@ -309,10 +309,10 @@ export default function Demo3Activities({ active }: { active: boolean }) {
 
         {/* Day tab bar */}
         <View style={styles.tabBar}>
-          {['Sat', 'Sun', 'Mon', 'Tue'].map((dow, i) => (
+          {['Sat', 'Sun', 'Mon', 'Tue', 'Wed'].map((dow, i) => (
             <View key={i} style={[styles.tab, i === 2 && styles.tabActive]}>
               <Text style={[styles.tabDow, i === 2 && styles.tabDowActive]}>{dow}</Text>
-              <Text style={[styles.tabDate, i === 2 && styles.tabDateActive]}>Apr {11 + i}</Text>
+              <Text style={[styles.tabDate, i === 2 && styles.tabDateActive]}>Aug {22 + i}</Text>
             </View>
           ))}
         </View>
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1, borderBottomColor: '#eee',
   },
-  tab: { width: s(70), alignItems: 'center', justifyContent: 'center', paddingVertical: s(10) },
+  tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(10) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
   tabDow: { fontSize: s(13), lineHeight: s(17), fontWeight: '700', color: '#1a1a1a' },
   tabDate: { fontSize: s(11), lineHeight: s(14), color: '#555', marginTop: 1 },
