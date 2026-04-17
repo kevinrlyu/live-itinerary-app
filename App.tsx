@@ -71,6 +71,7 @@ export default function App() {
   const [expenseTarget, setExpenseTarget] = useState<{ dayDate: string; target: ExpenseInputTarget } | null>(null);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [showNewDayDialog, setShowNewDayDialog] = useState(false);
+  const [isEditingActivity, setIsEditingActivity] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -563,6 +564,7 @@ export default function App() {
             screenOptions={{
               tabBarScrollEnabled: true,
               tabBarItemStyle: { width: 70 },
+              swipeEnabled: !isEditingActivity,
             }}
           >
             {trip.days.map((day) => (
@@ -579,6 +581,7 @@ export default function App() {
                     onDeleteActivity={handleDeleteActivity}
                     onRemoveDay={handleRemoveDay}
                     onUpdateDayTheme={handleUpdateDayTheme}
+                    onEditingChange={setIsEditingActivity}
                   />
                 )}
               />

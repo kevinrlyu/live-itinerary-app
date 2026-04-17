@@ -162,8 +162,8 @@ export default function Demo2Day({ active }: { active: boolean }) {
     const dialogBtnsY = DIALOG_TOP + dialogRenderedH - DIALOG_BTNS_H / 2;
     const dialogAddCenter = { x: DIALOG_LEFT + DIALOG_W * 0.75, y: dialogBtnsY };
 
-    // "Remove Day" text center — shift down to visually center on text glyphs
-    const removeDayCenter = { x: s(54), y: CONTENT_TOP + BANNER_H / 2 + s(5) };
+    // "Remove Day" text center — vertically centered in edit banner
+    const removeDayCenter = { x: s(54), y: CONTENT_TOP + BANNER_H / 2 };
 
     const script = Animated.loop(
       Animated.sequence([
@@ -286,7 +286,7 @@ export default function Demo2Day({ active }: { active: boolean }) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.frame}>
-        <View style={{ height: STATUS_H, backgroundColor: '#fff' }} />
+        <View style={{ height: STATUS_H, backgroundColor: '#f5f5f5' }} />
 
         {/* Header */}
         <View style={styles.header}>

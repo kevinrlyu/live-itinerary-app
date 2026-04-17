@@ -23,11 +23,13 @@ interface Props {
   onDeleteActivity?: (dayDate: string, activityId: string) => void;
   onRemoveDay?: (dayDate: string) => void;
   onUpdateDayTheme?: (dayDate: string, theme: string) => void;
+  onEditingChange?: (editing: boolean) => void;
 }
 
 export default function DayScreen({
   day, onToggle, onOpenExpense,
   onUpdateActivity, onInsertActivity, onDeleteActivity, onRemoveDay, onUpdateDayTheme,
+  onEditingChange,
 }: Props) {
   const [now, setNow] = useState(new Date());
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -37,6 +39,10 @@ export default function DayScreen({
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [isNewActivity, setIsNewActivity] = useState(false);
+
+  useEffect(() => {
+    onEditingChange?.(editingActivity !== null);
+  }, [editingActivity, onEditingChange]);
 
   // Pull-and-hold state (driven by ScrollView's native overscroll)
   const pullAnim = useRef(new Animated.Value(0)).current;

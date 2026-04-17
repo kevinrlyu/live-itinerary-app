@@ -1,9 +1,11 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  Animated, StyleSheet, NativeSyntheticEvent, NativeScrollEvent,
+  Animated, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+
+const MIN_TAB_WIDTH = 70;
 
 const HOLD_DURATION = 1000;
 
@@ -22,6 +24,15 @@ interface Props {
 
 export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
   const scrollViewRef = useRef<ScrollView>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  const tabWidth = containerWidth > 0
+    ? Math.floor(containerWidth / Math.min(tabs.length, 5))
+    : MIN_TAB_WIDTH;
+
+  const onContainerLayout = useCallback((e: LayoutChangeEvent) => {
+    setContainerWidth(e.nativeEvent.layout.width);
+  }, []);
 
   const isDraggingRef = useRef(false);
   const isAtEdgeRef = useRef(false);
@@ -90,14 +101,16 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
     cancelHold();
   };
 
-  // Scroll to show the focused tab (especially after adding a new day)
+  // Scroll to center the focused tab
   useEffect(() => {
     const focusedIdx = tabs.findIndex((t) => t.isFocused);
-    if (focusedIdx >= 0 && scrollViewRef.current) {
-      const TAB_WIDTH = 70;
-      scrollViewRef.current.scrollTo({ x: Math.max(0, (focusedIdx + 1) * TAB_WIDTH - 200), animated: true });
+    if (focusedIdx >= 0 && scrollViewRef.current && containerWidth > 0) {
+      const tabCenter = focusedIdx * tabWidth + tabWidth / 2;
+      const scrollX = tabCenter - containerWidth / 2;
+      const maxScroll = Math.max(0, tabs.length * tabWidth - containerWidth);
+      scrollViewRef.current.scrollTo({ x: Math.max(0, Math.min(scrollX, maxScroll)), animated: true });
     }
-  }, [tabs.length, tabs.find((t) => t.isFocused)?.key]);
+  }, [tabs.length, tabs.find((t) => t.isFocused)?.key, tabWidth, containerWidth]);
 
   const addLabelOpacity = holdProgressAnim.interpolate({
     inputRange: [0, 0.5, 1],
@@ -105,7 +118,7 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
   });
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={onContainerLayout}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -121,7 +134,7 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.tab, tab.isFocused && styles.tabActive]}
+            style={[styles.tab, { width: tabWidth }, tab.isFocused && styles.tabActive]}
             onPress={() => onTabPress(tab.key)}
             activeOpacity={0.7}
           >
@@ -163,7 +176,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ddd',
   },
   tab: {
-    width: 70,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,

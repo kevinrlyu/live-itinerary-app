@@ -105,7 +105,7 @@ interface SheetProps {
 
 function EditSheet({ isNew }: SheetProps) {
   const values = isNew
-    ? { start: 'tap to set', end: 'tap to set', title: '', description: '', hours: '', notes: '', location: '' }
+    ? { start: '', end: '', title: '', description: '', hours: '', notes: '', location: '' }
     : {
         start: '1:00pm',
         end: '3:00pm',
@@ -128,81 +128,32 @@ function EditSheet({ isNew }: SheetProps) {
         {!isNew && <Text style={styles.sheetDelete}>Delete</Text>}
       </View>
 
-      <View style={styles.timeRow}>
-        <View style={styles.timeCol}>
-          <Text style={styles.label}>Start Time</Text>
-          <View style={styles.timeInput}>
-            <Text style={[styles.timeText, isNew && styles.placeholder]}>{values.start}</Text>
-          </View>
-        </View>
-        <View style={styles.timeCol}>
-          <Text style={styles.label}>End Time</Text>
-          <View style={styles.timeInput}>
-            <Text style={[styles.timeText, isNew && styles.placeholder]}>{values.end}</Text>
-          </View>
-        </View>
-      </View>
-
-      <Text style={styles.label}>Title</Text>
-      <View style={styles.input}>
-        <Text style={[styles.inputText, !values.title && styles.placeholder]}>
-          {values.title || 'Activity title'}
-        </Text>
-      </View>
-
-      <Text style={styles.label}>Description</Text>
-      <View style={styles.input}>
-        <Text style={[styles.inputText, !values.description && styles.placeholder]}>
-          {values.description || 'Short description'}
-        </Text>
-      </View>
-
-      <Text style={styles.label}>Hours</Text>
-      <View style={styles.input}>
-        <Text style={[styles.inputText, !values.hours && styles.placeholder]}>
-          {values.hours || 'e.g., 8:00am-8:00pm'}
-        </Text>
-      </View>
-
-      <Text style={styles.label}>Notes</Text>
-      <View style={styles.input}>
-        <Text style={[styles.inputText, !values.notes && styles.placeholder]}>
-          {values.notes || 'Additional notes'}
-        </Text>
-      </View>
-
-      <Text style={styles.label}>Location</Text>
-      <View style={styles.input}>
-        <Text style={[styles.inputText, !values.location && styles.placeholder]}>
-          {values.location || 'Location name or address'}
-        </Text>
-      </View>
-
-      <Text style={styles.label}>Type</Text>
+      {/* Pills at top */}
       <View style={styles.pillRow}>
+        <Text style={styles.pillLabel}>Type</Text>
         <View style={[styles.pill, styles.pillActive]}>
-          <Text style={styles.pillTextActive}>Activity</Text>
+          <Text style={styles.pillTextActive}>Place</Text>
         </View>
         <View style={styles.pill}>
-          <Text style={styles.pillText}>Transport</Text>
+          <Text style={styles.pillText}>Transit</Text>
         </View>
       </View>
 
-      <Text style={styles.label}>Category</Text>
       <View style={styles.pillRow}>
+        <Text style={styles.pillLabel}>Category</Text>
         <View style={[styles.pill, styles.pillActive]}>
           <Text style={styles.pillTextActive}>Default</Text>
         </View>
         <View style={styles.pill}>
-          <Text style={styles.pillText}>Check-In</Text>
+          <Text style={styles.pillText}>Stay</Text>
         </View>
         <View style={styles.pill}>
-          <Text style={styles.pillText}>Eat/Drink</Text>
+          <Text style={styles.pillText}>Food</Text>
         </View>
       </View>
 
-      <Text style={styles.label}>Parent Activity</Text>
-      <View style={styles.pillRow}>
+      <View style={styles.parentRow}>
+        <Text style={styles.pillLabel}>Parent Activity</Text>
         <View style={[styles.parentChip, styles.parentChipActive]}>
           <Text style={styles.parentChipTextActive}>None</Text>
         </View>
@@ -211,6 +162,55 @@ function EditSheet({ isNew }: SheetProps) {
             <Text style={styles.parentChipText} numberOfLines={1}>{opt}</Text>
           </View>
         ))}
+      </View>
+
+      {/* Time fields — no labels, just placeholder text */}
+      <View style={styles.timeRow}>
+        <View style={styles.timeCol}>
+          <View style={styles.timeInput}>
+            <Text style={[styles.timeText, !values.start && styles.placeholder]}>
+              {values.start || 'Start Time'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.timeCol}>
+          <View style={styles.timeInput}>
+            <Text style={[styles.timeText, !values.end && styles.placeholder]}>
+              {values.end || 'End Time'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Text fields — no labels, just placeholder text */}
+      <View style={styles.input}>
+        <Text style={[styles.inputText, !values.title && styles.placeholder]}>
+          {values.title || 'Title'}
+        </Text>
+      </View>
+
+      <View style={styles.input}>
+        <Text style={[styles.inputText, !values.description && styles.placeholder]}>
+          {values.description || 'Description'}
+        </Text>
+      </View>
+
+      <View style={styles.input}>
+        <Text style={[styles.inputText, !values.hours && styles.placeholder]}>
+          {values.hours || 'Opening Hours'}
+        </Text>
+      </View>
+
+      <View style={styles.input}>
+        <Text style={[styles.inputText, !values.notes && styles.placeholder]}>
+          {values.notes || 'Additional Notes'}
+        </Text>
+      </View>
+
+      <View style={styles.input}>
+        <Text style={[styles.inputText, !values.location && styles.placeholder]}>
+          {values.location || 'Location / Address'}
+        </Text>
       </View>
 
       <View style={{ flex: 1 }} />
@@ -266,8 +266,7 @@ export default function Demo3Activities({ active }: { active: boolean }) {
         Animated.delay(150),
         tap(cursor),
         Animated.timing(newSheetY, { toValue: SHEET_H, duration: 300, useNativeDriver: true }),
-        moveTo(cursor, start.x, start.y, 500),
-        Animated.delay(600),
+        Animated.delay(400),
 
         // --- Phase 2: long-press Kiyomizu card → edit-activity sheet ---
         moveTo(cursor, card2Center.x, card2Center.y, 700),
@@ -541,8 +540,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: s(20),
     borderTopRightRadius: s(20),
-    paddingTop: s(16),
-    paddingHorizontal: s(16),
+    paddingTop: s(20),
+    paddingHorizontal: s(20),
     paddingBottom: s(16),
     shadowColor: '#000',
     shadowOpacity: 0.15,
@@ -553,98 +552,108 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: s(8),
+    marginBottom: s(12),
   },
   sheetHeading: {
-    fontSize: s(16), lineHeight: s(20),
+    fontSize: s(18), lineHeight: s(22),
     fontWeight: '700', color: '#1a1a1a',
   },
   sheetDelete: {
-    fontSize: s(12),
+    fontSize: s(14),
     fontWeight: '600',
     color: '#FF3B30',
   },
-  timeRow: {
-    flexDirection: 'row',
-    gap: s(10),
-  },
-  timeCol: { flex: 1 },
-  label: {
-    fontSize: s(9),
-    fontWeight: '600',
-    color: '#888',
-    textTransform: 'uppercase',
-    marginBottom: s(3),
-    marginTop: s(8),
-  },
-  timeInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: s(6),
-    height: s(28),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timeText: { fontSize: s(11), color: '#1a1a1a' },
-  placeholder: { color: '#bbb', fontWeight: '400' },
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: s(6),
-    height: s(28),
-    paddingHorizontal: s(10),
-    justifyContent: 'center',
-  },
-  inputText: { fontSize: s(11), color: '#1a1a1a' },
   pillRow: {
     flexDirection: 'row',
-    gap: s(6),
-    marginBottom: s(2),
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: s(8),
+    marginBottom: s(12),
+  },
+  parentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(8),
+    marginBottom: s(12),
+    overflow: 'hidden',
+  },
+  pillLabel: {
+    fontSize: s(12),
+    fontWeight: '600',
+    color: '#888',
+    marginRight: s(4),
   },
   pill: {
-    paddingHorizontal: s(10),
-    paddingVertical: s(5),
-    borderRadius: s(14),
+    minWidth: s(68),
+    alignItems: 'center',
+    paddingHorizontal: s(12),
+    paddingVertical: s(8),
+    borderRadius: s(20),
     backgroundColor: '#f0f0f0',
   },
   pillActive: {
     backgroundColor: '#007AFF',
   },
-  pillText: { fontSize: s(10), fontWeight: '600', color: '#666' },
-  pillTextActive: { fontSize: s(10), fontWeight: '600', color: '#fff' },
+  pillText: { fontSize: s(13), fontWeight: '600', color: '#666' },
+  pillTextActive: { fontSize: s(13), fontWeight: '600', color: '#fff' },
   parentChip: {
-    paddingHorizontal: s(10),
-    paddingVertical: s(5),
-    borderRadius: s(12),
+    minWidth: s(68),
+    alignItems: 'center',
+    paddingHorizontal: s(12),
+    paddingVertical: s(8),
+    borderRadius: s(20),
     backgroundColor: '#f0f0f0',
-    maxWidth: s(90),
+    maxWidth: s(120),
   },
   parentChipActive: {
     backgroundColor: '#007AFF',
   },
-  parentChipText: { fontSize: s(10), fontWeight: '600', color: '#666' },
-  parentChipTextActive: { fontSize: s(10), fontWeight: '600', color: '#fff' },
+  parentChipText: { fontSize: s(13), fontWeight: '600', color: '#666' },
+  parentChipTextActive: { fontSize: s(13), fontWeight: '600', color: '#fff' },
+  timeRow: {
+    flexDirection: 'row',
+    gap: s(12),
+  },
+  timeCol: { flex: 1 },
+  timeInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: s(8),
+    height: s(44),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timeText: { fontSize: s(15), color: '#1a1a1a' },
+  placeholder: { color: '#bbb', fontWeight: '400' },
+  input: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: s(8),
+    height: s(44),
+    paddingHorizontal: s(12),
+    justifyContent: 'center',
+    marginTop: s(8),
+  },
+  inputText: { fontSize: s(15), color: '#1a1a1a' },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: s(12),
-    marginTop: s(10),
+    marginTop: s(12),
   },
   cancelText: {
-    fontSize: s(13),
+    fontSize: s(15),
     fontWeight: '600',
     color: '#888',
-    paddingHorizontal: s(12),
-    paddingVertical: s(8),
+    paddingHorizontal: s(16),
+    paddingVertical: s(10),
   },
   saveBtn: {
     backgroundColor: '#007AFF',
-    borderRadius: s(8),
-    paddingHorizontal: s(20),
-    paddingVertical: s(8),
+    borderRadius: s(10),
+    paddingHorizontal: s(24),
+    paddingVertical: s(10),
   },
   saveText: {
-    fontSize: s(13),
+    fontSize: s(15),
     fontWeight: '600',
     color: '#fff',
   },

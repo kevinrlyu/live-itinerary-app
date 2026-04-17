@@ -110,6 +110,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
   const digit1Opacity = useRef(new Animated.Value(0)).current;  // "8"
   const digit2Opacity = useRef(new Animated.Value(0)).current;  // "0"
   const placeholderOpacity = useRef(new Animated.Value(1)).current; // "0" placeholder
+  const symActiveOpacity = useRef(new Animated.Value(0)).current; // bold ¥ symbol
   const mapsOpacity = useRef(new Animated.Value(0)).current;
   const billFlag = useRef(new Animated.Value(0)).current;
   const [billHasAmount, setBillHasAmount] = useState(false);
@@ -129,6 +130,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
       digit1Opacity.setValue(0);
       digit2Opacity.setValue(0);
       placeholderOpacity.setValue(1);
+      symActiveOpacity.setValue(0);
       mapsOpacity.setValue(0);
       billFlag.setValue(0);
     };
@@ -166,7 +168,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
     // Modal Save button in actions row (right-aligned)
     const actionsTop = MODAL_TOP + MODAL_PAD + TITLE_H + s(4) + SUBTITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16);
     const SAVE_W = s(60);
-    const saveCenter = { x: MODAL_LEFT + MODAL_W - MODAL_PAD - SAVE_W / 2 - X_NUDGE, y: actionsTop + ACTIONS_H / 2 };
+    const saveCenter = { x: MODAL_LEFT + MODAL_W - MODAL_PAD - SAVE_W / 2 - X_NUDGE, y: actionsTop + ACTIONS_H / 2 - 2 };
     const start = { x: W - 22, y: H - 22 };
 
     const script = Animated.loop(
@@ -175,6 +177,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
         Animated.timing(digit1Opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
         Animated.timing(digit2Opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
         Animated.timing(placeholderOpacity, { toValue: 1, duration: 0, useNativeDriver: true }),
+        Animated.timing(symActiveOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
         Animated.timing(mapsOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
 
         // Phase 1: tap bill → modal → tap 8 → tap 0 → Save
@@ -184,19 +187,20 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
         tap(cursor),
         Animated.timing(modalOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
         Animated.delay(200),
-        moveTo(cursor, tap8.x, tap8.y, 500),
-        Animated.delay(100),
+        moveTo(cursor, tap8.x, tap8.y, 350),
+        Animated.delay(80),
         tap(cursor),
         Animated.parallel([
-          Animated.timing(digit1Opacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-          Animated.timing(placeholderOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+          Animated.timing(digit1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+          Animated.timing(placeholderOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
+          Animated.timing(symActiveOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
         ]),
-        Animated.delay(250),
-        moveTo(cursor, tap0.x, tap0.y, 400),
-        Animated.delay(100),
+        Animated.delay(150),
+        moveTo(cursor, tap0.x, tap0.y, 250),
+        Animated.delay(80),
         tap(cursor),
-        Animated.timing(digit2Opacity, { toValue: 1, duration: 150, useNativeDriver: true }),
-        Animated.delay(350),
+        Animated.timing(digit2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.delay(300),
         moveTo(cursor, saveCenter.x, saveCenter.y, 500),
         Animated.delay(100),
         tap(cursor),
@@ -290,7 +294,10 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
                   ¥0
                 </Animated.Text>
                 <View style={styles.modalAmountTyped}>
-                  <Text style={styles.modalAmountSym}>¥</Text>
+                  <View>
+                    <Text style={styles.modalAmountSymInactive}>¥</Text>
+                    <Animated.Text style={[styles.modalAmountSym, { opacity: symActiveOpacity, position: 'absolute', left: 0, top: 0 }]}>¥</Animated.Text>
+                  </View>
                   <Animated.Text style={[styles.modalAmountDigit, { opacity: digit1Opacity }]}>8</Animated.Text>
                   <Animated.Text style={[styles.modalAmountDigit, { opacity: digit2Opacity }]}>0</Animated.Text>
                 </View>
@@ -508,6 +515,11 @@ const styles = StyleSheet.create({
   modalAmountTyped: {
     flexDirection: 'row',
     alignItems: 'baseline',
+  },
+  modalAmountSymInactive: {
+    fontSize: s(24),
+    fontWeight: '700',
+    color: '#ccc',
   },
   modalAmountSym: {
     fontSize: s(24),

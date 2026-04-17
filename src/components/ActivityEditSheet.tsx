@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable,
-  ScrollView, Alert, StyleSheet,
+  ScrollView, Alert, StyleSheet, Keyboard, PanResponder, Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
-import TimeKeypad from './TimeKeypad';
 
 const ACCENT_COLORS: Record<string, string> = {
   none: '#007AFF',
@@ -24,13 +24,15 @@ interface Props {
 type ActivityType = 'activity' | 'transport';
 type CategoryValue = 'none' | 'hotel' | 'meal';
 
-function PillToggle<T extends string>({ options, value, onChange }: {
+function PillToggle<T extends string>({ label, options, value, onChange }: {
+  label: string;
   options: { label: string; value: T; color?: string }[];
   value: T;
   onChange: (v: T) => void;
 }) {
   return (
     <View style={pillStyles.row}>
+      <Text style={pillStyles.label}>{label}</Text>
       {options.map((opt) => {
         const isActive = opt.value === value;
         const activeColor = opt.color || '#007AFF';
@@ -50,14 +52,165 @@ function PillToggle<T extends string>({ options, value, onChange }: {
   );
 }
 
+const PILL_MIN_W = 68;
+
 const pillStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  label: { fontSize: 12, fontWeight: '600', color: '#888', marginRight: 4 },
   pill: {
-    paddingHorizontal: 16, paddingVertical: 8,
+    minWidth: PILL_MIN_W, alignItems: 'center',
+    paddingHorizontal: 12, paddingVertical: 8,
     borderRadius: 20, backgroundColor: '#f0f0f0',
   },
   pillText: { fontSize: 13, fontWeight: '600', color: '#666' },
   pillTextActive: { color: '#fff' },
+});
+
+const HOUR_ITEMS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const MIN_ITEMS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+const PERIOD_ITEMS = ['AM', 'PM'];
+const SLOT_H = 32;
+const PICKER_H = SLOT_H * 3;
+
+function wrap(idx: number, count: number) {
+  return ((idx % count) + count) % count;
+}
+
+function DragColumn({ items, selectedIndex, onSelect, cyclic }: {
+  items: string[];
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  cyclic?: boolean;
+}) {
+  const count = items.length;
+  const offsetY = useRef(new Animated.Value(0)).current;
+  const baseIdxRef = useRef(selectedIndex);
+  const [displayIdx, setDisplayIdx] = useState(selectedIndex);
+  const displayIdxRef = useRef(selectedIndex);
+
+  useEffect(() => {
+    baseIdxRef.current = selectedIndex;
+    displayIdxRef.current = selectedIndex;
+    setDisplayIdx(selectedIndex);
+  }, [selectedIndex]);
+
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponderCapture: () => true,
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: () => {
+      baseIdxRef.current = displayIdxRef.current;
+    },
+    onPanResponderMove: (_, g) => {
+      if (cyclic) {
+        const rawIdx = baseIdxRef.current + (-g.dy / SLOT_H);
+        const snappedIdx = wrap(Math.round(rawIdx), count);
+        // Compute remainder relative to snapped position for smooth sub-slot offset
+        const snappedRaw = baseIdxRef.current + (wrap(snappedIdx - baseIdxRef.current + Math.floor(count / 2), count) - Math.floor(count / 2));
+        const remainder = -(rawIdx - snappedRaw) * SLOT_H;
+        offsetY.setValue(remainder);
+        if (snappedIdx !== displayIdxRef.current) {
+          displayIdxRef.current = snappedIdx;
+          setDisplayIdx(snappedIdx);
+          Haptics.selectionAsync();
+        }
+      } else {
+        // For non-cyclic (e.g. AM/PM): clamp drag and rubber-band at edges
+        const rawIdx = baseIdxRef.current + (-g.dy / SLOT_H);
+        const clampedIdx = Math.max(-0.4, Math.min(count - 1 + 0.4, rawIdx));
+        const snappedIdx = Math.max(0, Math.min(count - 1, Math.round(clampedIdx)));
+        const remainder = -(clampedIdx - snappedIdx) * SLOT_H;
+        offsetY.setValue(remainder);
+        if (snappedIdx !== displayIdxRef.current) {
+          displayIdxRef.current = snappedIdx;
+          setDisplayIdx(snappedIdx);
+          Haptics.selectionAsync();
+        }
+      }
+    },
+    onPanResponderRelease: () => {
+      onSelectRef.current(displayIdxRef.current);
+      Animated.spring(offsetY, { toValue: 0, tension: 120, friction: 14, useNativeDriver: true }).start();
+    },
+    onPanResponderTerminate: () => {
+      offsetY.setValue(0);
+    },
+  }), [count, cyclic, offsetY]);
+
+  const getItem = (offset: number) => {
+    if (cyclic) return items[wrap(displayIdx + offset, count)];
+    const idx = displayIdx + offset;
+    return idx >= 0 && idx < count ? items[idx] : '';
+  };
+
+  return (
+    <View style={pickerStyles.colWrapper} {...panResponder.panHandlers}>
+      <View style={pickerStyles.highlight} pointerEvents="none" />
+      <Animated.View style={[pickerStyles.slotsContainer, { transform: [{ translateY: offsetY }] }]}>
+        {[-2, -1, 0, 1, 2].map((offset) => (
+          <View key={offset} style={pickerStyles.slot}>
+            <Text style={[pickerStyles.slotText, offset === 0 && pickerStyles.slotTextActive]}>
+              {getItem(offset)}
+            </Text>
+          </View>
+        ))}
+      </Animated.View>
+    </View>
+  );
+}
+
+function ScrollTimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parsed = value.match(/^(\d{1,2}):(\d{2})(am|pm)$/i);
+  const initH = parsed ? parseInt(parsed[1], 10) : 12;
+  const initM = parsed ? parseInt(parsed[2], 10) : 0;
+  const initP = parsed ? (parsed[3].toUpperCase() === 'PM' ? 1 : 0) : 0;
+
+  const [hourIdx, setHourIdx] = useState(HOUR_ITEMS.indexOf(String(initH)) >= 0 ? HOUR_ITEMS.indexOf(String(initH)) : 11);
+  const [minIdx, setMinIdx] = useState(() => {
+    const rounded = Math.round(initM / 5) * 5;
+    const idx = MIN_ITEMS.indexOf(String(rounded).padStart(2, '0'));
+    return idx >= 0 ? idx : 0;
+  });
+  const [periodIdx, setPeriodIdx] = useState(initP);
+
+  useEffect(() => {
+    const h = HOUR_ITEMS[hourIdx];
+    const m = MIN_ITEMS[minIdx];
+    const p = PERIOD_ITEMS[periodIdx].toLowerCase();
+    onChange(`${h}:${m}${p}`);
+  }, [hourIdx, minIdx, periodIdx]);
+
+  return (
+    <View style={pickerStyles.container}>
+      <View style={pickerStyles.columns}>
+        <DragColumn items={HOUR_ITEMS} selectedIndex={hourIdx} onSelect={setHourIdx} cyclic />
+        <Text style={pickerStyles.colon}>:</Text>
+        <DragColumn items={MIN_ITEMS} selectedIndex={minIdx} onSelect={setMinIdx} cyclic />
+        <DragColumn items={PERIOD_ITEMS} selectedIndex={periodIdx} onSelect={setPeriodIdx} />
+      </View>
+    </View>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  container: { marginTop: 2, marginBottom: -2, alignItems: 'center' },
+  columns: { flexDirection: 'row', alignItems: 'center' },
+  colWrapper: { height: PICKER_H, width: 44, position: 'relative', overflow: 'hidden' },
+  highlight: {
+    position: 'absolute', top: SLOT_H, left: 2, right: 2,
+    height: SLOT_H, borderRadius: 6, backgroundColor: '#e8f0fe',
+    zIndex: -1,
+  },
+  slotsContainer: { height: SLOT_H * 5, marginTop: -SLOT_H },
+  slot: { height: SLOT_H, alignItems: 'center', justifyContent: 'center' },
+  slotText: { fontSize: 15, color: '#aaa' },
+  slotTextActive: { color: '#1a1a1a', fontWeight: '700' },
+  colon: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginHorizontal: 1 },
 });
 
 // Convert stored 24h "HH:MM" to display "H:MMam/pm", or pass through if already in 12h
@@ -91,18 +244,56 @@ function to24h(time: string): string {
 
 export default function ActivityEditSheet({ activity, dayActivities, isNew, onSave, onDelete, onClose }: Props) {
   const scrollRef = React.useRef<ScrollView>(null);
-  const fieldLayoutsRef = React.useRef<Record<string, { y: number; height: number }>>({});
+  const fieldRefs = React.useRef<Record<string, View | null>>({});
   const scrollOffsetRef = React.useRef(0);
-  const scrollViewHeightRef = React.useRef(0);
+
+  const keyboardVisibleRef = React.useRef(false);
+  const keyboardTopRef = React.useRef(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      keyboardVisibleRef.current = true;
+      keyboardTopRef.current = e.endCoordinates.screenY;
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardVisibleRef.current = false;
+      setKeyboardHeight(0);
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   const scrollToField = (fieldName: string) => {
-    const layout = fieldLayoutsRef.current[fieldName];
-    if (!layout || !scrollRef.current) return;
-    const fieldBottom = layout.y + layout.height;
-    const visibleBottom = scrollOffsetRef.current + scrollViewHeightRef.current;
-    // Only scroll if the field bottom is below the visible area
-    if (fieldBottom > visibleBottom) {
-      scrollRef.current.scrollTo({ y: Math.max(0, layout.y - 8), animated: true });
+    const doScroll = (kbTop: number) => {
+      // Delay to let layout settle after picker collapse
+      setTimeout(() => {
+        const fieldView = fieldRefs.current[fieldName];
+        if (!fieldView || !scrollRef.current) return;
+        fieldView.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+          if (!kbTop) return;
+          const fieldBottom = y + h + 12;
+          if (fieldBottom > kbTop) {
+            scrollRef.current?.scrollTo({
+              y: scrollOffsetRef.current + (fieldBottom - kbTop),
+              animated: true,
+            });
+          }
+        });
+      }, 50);
+    };
+
+    if (keyboardVisibleRef.current) {
+      // Keyboard already up — measure after brief layout settle
+      doScroll(keyboardTopRef.current);
+    } else {
+      // Keyboard appearing (e.g. from time picker) — wait for it, then measure after layout settles
+      const listener = Keyboard.addListener('keyboardDidShow', (e) => {
+        listener.remove();
+        keyboardTopRef.current = e.endCoordinates.screenY;
+        // Extra delay: picker collapse + keyboard inset padding both need to settle
+        setTimeout(() => doScroll(e.endCoordinates.screenY), 100);
+      });
     }
   };
 
@@ -162,7 +353,7 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheetWrapper}>
-        <View style={styles.sheet}>
+        <Pressable style={styles.sheet} onPress={Keyboard.dismiss}>
           <View style={styles.headerRow}>
             <Text style={styles.heading}>{isNew ? 'New Activity' : 'Edit Activity'}</Text>
             {!isNew && onDelete && (
@@ -175,136 +366,38 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
           <ScrollView
             ref={scrollRef}
             style={styles.scrollBody}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardHeight || 16 }]}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={activeTimeField === null}
             onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
-            onLayout={(e) => { scrollViewHeightRef.current = e.nativeEvent.layout.height; }}
             scrollEventThrottle={16}
           >
-            {/* Time fields with custom keypad */}
-            <View style={styles.timeRow}>
-              <View style={styles.timeCol}>
-                <Text style={styles.label}>Start Time</Text>
-                <Pressable
-                  style={[styles.timeInput, activeTimeField === 'start' && styles.timeInputActive]}
-                  onPress={() => setActiveTimeField(activeTimeField === 'start' ? null : 'start')}
-                >
-                  <Text style={[styles.timeDisplayText, !startTime && styles.placeholder]}>
-                    {startTime || 'tap to set'}
-                  </Text>
-                </Pressable>
-              </View>
-              <View style={styles.timeCol}>
-                <Text style={styles.label}>End Time</Text>
-                <Pressable
-                  style={[styles.timeInput, activeTimeField === 'end' && styles.timeInputActive]}
-                  onPress={() => setActiveTimeField(activeTimeField === 'end' ? null : 'end')}
-                >
-                  <Text style={[styles.timeDisplayText, !endTime && styles.placeholder]}>
-                    {endTime || 'tap to set'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
-            {activeTimeField && (
-              <TimeKeypad
-                value={activeTimeField === 'start' ? startTime : endTime}
-                onChange={activeTimeField === 'start' ? setStartTime : setEndTime}
-              />
-            )}
-
-            <View onLayout={(e) => { fieldLayoutsRef.current['title'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
-              <Text style={styles.label}>Title</Text>
-              <TextInput
-                style={styles.input}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Activity title"
-                placeholderTextColor="#bbb"
-                autoFocus={isNew}
-                onFocus={() => { setActiveTimeField(null); scrollToField('title'); }}
-              />
-            </View>
-
-            <View onLayout={(e) => { fieldLayoutsRef.current['description'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.multiline]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Short description"
-                placeholderTextColor="#bbb"
-                multiline
-                onFocus={() => { setActiveTimeField(null); scrollToField('description'); }}
-              />
-            </View>
-
-            <View onLayout={(e) => { fieldLayoutsRef.current['hours'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
-              <Text style={styles.label}>Hours</Text>
-              <TextInput
-                style={styles.input}
-                value={hours}
-                onChangeText={setHours}
-                placeholder="e.g., 8:00am-8:00pm, closed Sundays"
-                placeholderTextColor="#bbb"
-                onFocus={() => { setActiveTimeField(null); scrollToField('hours'); }}
-              />
-            </View>
-
-            <View onLayout={(e) => { fieldLayoutsRef.current['notes'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
-              <Text style={styles.label}>Notes</Text>
-              <TextInput
-                style={[styles.input, styles.multiline]}
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Additional notes"
-                placeholderTextColor="#bbb"
-                multiline
-                onFocus={() => { setActiveTimeField(null); scrollToField('notes'); }}
-              />
-            </View>
-
-            <View onLayout={(e) => { fieldLayoutsRef.current['location'] = { y: e.nativeEvent.layout.y, height: e.nativeEvent.layout.height }; }}>
-              <Text style={styles.label}>Location</Text>
-              <TextInput
-                style={styles.input}
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Location name or address"
-                placeholderTextColor="#bbb"
-                onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
-              />
-            </View>
-
-            <Text style={styles.label}>Type</Text>
             <PillToggle
+              label="Type"
               options={[
-                { label: 'Activity', value: 'activity' },
-                { label: 'Transport', value: 'transport' },
+                { label: 'Place', value: 'activity' },
+                { label: 'Transit', value: 'transport' },
               ]}
               value={actType}
               onChange={handleTypeChange}
             />
 
             {actType === 'activity' && (
-              <>
-                <Text style={styles.label}>Category</Text>
-                <PillToggle
-                  options={[
-                    { label: 'Default', value: 'none', color: ACCENT_COLORS.none },
-                    { label: 'Check-In', value: 'hotel', color: ACCENT_COLORS.hotel },
-                    { label: 'Eat/Drink', value: 'meal', color: ACCENT_COLORS.meal },
-                  ]}
-                  value={category}
-                  onChange={setCategory}
-                />
-              </>
+              <PillToggle
+                label="Category"
+                options={[
+                  { label: 'Default', value: 'none', color: ACCENT_COLORS.none },
+                  { label: 'Stay', value: 'hotel', color: ACCENT_COLORS.hotel },
+                  { label: 'Food', value: 'meal', color: ACCENT_COLORS.meal },
+                ]}
+                value={category}
+                onChange={setCategory}
+              />
             )}
 
             {actType === 'activity' && parentOptions.length > 0 && (
-              <>
-                <Text style={styles.label}>Parent Activity</Text>
+              <View style={styles.parentRow}>
+                <Text style={styles.parentLabel}>Parent Activity</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.parentScroll}>
                   <TouchableOpacity
                     style={[styles.parentChip, !parentId && styles.parentChipActive]}
@@ -327,8 +420,113 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
-              </>
+              </View>
             )}
+
+            {/* Time fields with inline pickers */}
+            <View style={styles.timeRow}>
+              <View style={styles.timeCol}>
+                <Pressable
+                  style={[styles.timeInput, activeTimeField === 'start' && styles.timeInputActive]}
+                  onPress={() => { Keyboard.dismiss(); setActiveTimeField(activeTimeField === 'start' ? null : 'start'); }}
+                >
+                  <Text style={[styles.timeDisplayText, !startTime && styles.placeholder]}>
+                    {startTime || 'Start Time'}
+                  </Text>
+                  {!!startTime && (
+                    <TouchableOpacity
+                      style={styles.timeClear}
+                      onPress={() => { setStartTime(''); setActiveTimeField(null); }}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.timeClearText}>×</Text>
+                    </TouchableOpacity>
+                  )}
+                </Pressable>
+                {activeTimeField === 'start' && (
+                  <ScrollTimePicker value={startTime} onChange={setStartTime} />
+                )}
+              </View>
+              <View style={styles.timeCol}>
+                <Pressable
+                  style={[styles.timeInput, activeTimeField === 'end' && styles.timeInputActive]}
+                  onPress={() => { Keyboard.dismiss(); setActiveTimeField(activeTimeField === 'end' ? null : 'end'); }}
+                >
+                  <Text style={[styles.timeDisplayText, !endTime && styles.placeholder]}>
+                    {endTime || 'End Time'}
+                  </Text>
+                  {!!endTime && (
+                    <TouchableOpacity
+                      style={styles.timeClear}
+                      onPress={() => { setEndTime(''); setActiveTimeField(null); }}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.timeClearText}>×</Text>
+                    </TouchableOpacity>
+                  )}
+                </Pressable>
+                {activeTimeField === 'end' && (
+                  <ScrollTimePicker value={endTime} onChange={setEndTime} />
+                )}
+              </View>
+            </View>
+
+            <View ref={(r) => { fieldRefs.current['title'] = r; }}>
+              <TextInput
+                style={[styles.input, styles.fieldSpacing]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Title"
+                placeholderTextColor="#bbb"
+                onFocus={() => { setActiveTimeField(null); scrollToField('title'); }}
+              />
+            </View>
+
+            <View ref={(r) => { fieldRefs.current['description'] = r; }}>
+              <TextInput
+                style={[styles.input, styles.multiline, styles.fieldSpacing]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Description"
+                placeholderTextColor="#bbb"
+                multiline
+                onFocus={() => { setActiveTimeField(null); scrollToField('description'); }}
+              />
+            </View>
+
+            <View ref={(r) => { fieldRefs.current['hours'] = r; }}>
+              <TextInput
+                style={[styles.input, styles.fieldSpacing]}
+                value={hours}
+                onChangeText={setHours}
+                placeholder="Opening Hours"
+                placeholderTextColor="#bbb"
+                onFocus={() => { setActiveTimeField(null); scrollToField('hours'); }}
+              />
+            </View>
+
+            <View ref={(r) => { fieldRefs.current['notes'] = r; }}>
+              <TextInput
+                style={[styles.input, styles.multiline, styles.fieldSpacing]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Additional Notes"
+                placeholderTextColor="#bbb"
+                multiline
+                onFocus={() => { setActiveTimeField(null); scrollToField('notes'); }}
+              />
+            </View>
+
+            <View ref={(r) => { fieldRefs.current['location'] = r; }}>
+              <TextInput
+                style={[styles.input, styles.fieldSpacing]}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="Location / Address"
+                placeholderTextColor="#bbb"
+                onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
+              />
+            </View>
 
           </ScrollView>
 
@@ -341,7 +539,7 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
               <Text style={styles.saveBtnText}>Save</Text>
             </Pressable>
           </View>
-        </View>
+        </Pressable>
       </View>
     </View>
   );
@@ -415,6 +613,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
     textAlignVertical: 'top',
   },
+  fieldSpacing: {
+    marginTop: 8,
+  },
   timeRow: {
     flexDirection: 'row',
     gap: 12,
@@ -426,8 +627,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  timeClear: {
+    position: 'absolute',
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timeClearText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+    lineHeight: 14,
+    textAlign: 'center',
+    includeFontPadding: false,
+    marginTop: 1,
   },
   timeInputActive: {
     borderWidth: 2,
@@ -441,13 +663,26 @@ const styles = StyleSheet.create({
     color: '#bbb',
     fontWeight: '400',
   },
+  parentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  parentLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#888',
+    marginRight: 12,
+  },
   parentScroll: {
-    marginBottom: 8,
+    flex: 1,
   },
   parentChip: {
-    paddingHorizontal: 14,
+    minWidth: PILL_MIN_W,
+    alignItems: 'center',
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: '#f0f0f0',
     marginRight: 8,
   },
