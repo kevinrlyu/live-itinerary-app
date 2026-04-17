@@ -8,12 +8,11 @@ const HOLD_MS = 1000;
 
 const HEADER_H = s(10 + 20 + 10);
 const TAB_H = s(10 + 17 + 1 + 14 + 10);
-const TAB_W = W / 5;
+const TAB_W_4 = W / 4;  // width when 4 days
+const TAB_W_5 = W / 5;  // width when 5 days
 
 const MON_IDX = 2;
 const WED_IDX = 4;
-const MON_UNDER_X = TAB_W * MON_IDX;
-const WED_UNDER_X = TAB_W * WED_IDX;
 
 const CONTENT_TOP = STATUS_H + HEADER_H + TAB_H;
 
@@ -106,7 +105,13 @@ export default function Demo2Day({ active }: { active: boolean }) {
   const addProgress = useRef(new Animated.Value(0)).current;
   const addOverlayOpacity = useRef(new Animated.Value(0)).current;
   const wedTabOpacity = useRef(new Animated.Value(0)).current;
-  const activeUnderX = useRef(new Animated.Value(MON_UNDER_X)).current;
+  // Animates from 0 (4-day layout) to 1 (5-day layout)
+  const layoutProgress = useRef(new Animated.Value(0)).current;
+  const animTabW = layoutProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [TAB_W_4, TAB_W_5],
+  });
+  const activeUnderX = useRef(new Animated.Value(TAB_W_4 * MON_IDX)).current;
 
   // Day content swap
   const oldContentOpacity = useRef(new Animated.Value(1)).current;
@@ -133,7 +138,8 @@ export default function Demo2Day({ active }: { active: boolean }) {
       addProgress.setValue(0);
       addOverlayOpacity.setValue(0);
       wedTabOpacity.setValue(0);
-      activeUnderX.setValue(MON_UNDER_X);
+      activeUnderX.setValue(TAB_W_4 * MON_IDX);
+      layoutProgress.setValue(0);
       oldContentOpacity.setValue(1);
       newContentOpacity.setValue(0);
       dialogOpacity.setValue(0);
@@ -171,7 +177,8 @@ export default function Demo2Day({ active }: { active: boolean }) {
         Animated.timing(addProgress, { toValue: 0, duration: 0, useNativeDriver: false }),
         Animated.timing(addOverlayOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
         Animated.timing(wedTabOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
-        Animated.timing(activeUnderX, { toValue: MON_UNDER_X, duration: 0, useNativeDriver: true }),
+        Animated.timing(activeUnderX, { toValue: TAB_W_4 * MON_IDX, duration: 0, useNativeDriver: true }),
+        Animated.timing(layoutProgress, { toValue: 0, duration: 0, useNativeDriver: false }),
         Animated.timing(oldContentOpacity, { toValue: 1, duration: 0, useNativeDriver: true }),
         Animated.timing(newContentOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
         Animated.timing(dialogOpacity, { toValue: 0, duration: 0, useNativeDriver: true }),
@@ -202,7 +209,8 @@ export default function Demo2Day({ active }: { active: boolean }) {
           Animated.timing(addOverlayOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
           Animated.timing(tabsTranslate, { toValue: 0, duration: 400, useNativeDriver: true }),
           Animated.timing(wedTabOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(activeUnderX, { toValue: WED_UNDER_X, duration: 500, useNativeDriver: true }),
+          Animated.timing(layoutProgress, { toValue: 1, duration: 500, useNativeDriver: false }),
+          Animated.timing(activeUnderX, { toValue: TAB_W_5 * WED_IDX, duration: 500, useNativeDriver: true }),
           Animated.timing(oldContentOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
           Animated.timing(newContentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
           Animated.timing(dimOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
@@ -255,7 +263,8 @@ export default function Demo2Day({ active }: { active: boolean }) {
         Animated.parallel([
           Animated.timing(editBannerOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
           Animated.timing(wedTabOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-          Animated.timing(activeUnderX, { toValue: MON_UNDER_X, duration: 500, useNativeDriver: true }),
+          Animated.timing(layoutProgress, { toValue: 0, duration: 500, useNativeDriver: false }),
+          Animated.timing(activeUnderX, { toValue: TAB_W_4 * MON_IDX, duration: 500, useNativeDriver: true }),
           Animated.timing(newContentOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
           Animated.timing(themeNaraOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
           Animated.timing(promptTypedOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
@@ -304,17 +313,17 @@ export default function Demo2Day({ active }: { active: boolean }) {
             style={[styles.tabStrip, { transform: [{ translateX: Animated.multiply(tabsTranslate, -1) }] }]}
           >
             {['Sat', 'Sun', 'Mon', 'Tue'].map((dow, i) => (
-              <View key={i} style={styles.tab}>
+              <Animated.View key={i} style={[styles.tab, { width: animTabW }]}>
                 <Text style={styles.tabDow}>{dow}</Text>
                 <Text style={styles.tabDate}>Aug {22 + i}</Text>
-              </View>
+              </Animated.View>
             ))}
-            <Animated.View style={[styles.tab, { opacity: wedTabOpacity }]}>
+            <Animated.View style={[styles.tab, { width: animTabW, opacity: wedTabOpacity }]}>
               <Text style={styles.tabDow}>Wed</Text>
               <Text style={styles.tabDate}>Aug 26</Text>
             </Animated.View>
             <Animated.View
-              style={[styles.activeUnderline, { transform: [{ translateX: activeUnderX }] }]}
+              style={[styles.activeUnderline, { width: animTabW, transform: [{ translateX: activeUnderX }] }]}
             />
           </Animated.View>
 
@@ -542,7 +551,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   tab: {
-    width: TAB_W,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: s(10),
@@ -563,7 +571,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: TAB_W,
     height: 2,
     backgroundColor: '#007AFF',
   },
