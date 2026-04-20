@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   tabActive: {
     borderBottomWidth: 2,

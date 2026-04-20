@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { G, Path, Circle } from 'react-native-svg';
 import FingerCursor, { createCursor, moveTo, tap } from './FingerCursor';
 import { FRAME_W as W, FRAME_H as H, s, STATUS_H } from './scale';
 
-const HEADER_H = s(10 + 20 + 10);
-const TAB_H = s(10 + 17 + 1 + 14 + 10);
+const HEADER_H = s(8 + 20 + 8);
+const TAB_H = s(8 + 17 + 1 + 14 + 8);
+const BOTTOM_TAB_H = s(83); // 49 bar + 34 bottom safe area
 const THEME_H = s(16 + 22 + 8);
 
 const CONTENT_TOP = STATUS_H + HEADER_H + TAB_H + THEME_H;
@@ -32,23 +33,43 @@ const ACTIONS_H = s(36);
 const MODAL_H = MODAL_PAD * 2 + TITLE_H + s(4) + SUBTITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16) + ACTIONS_H;
 const MODAL_TOP = (H - MODAL_H) / 2;
 
-function BillIcon({ size, color = '#fff' }: { size: number; color?: string }) {
-  const w = size;
-  const h = size * 1.2;
-  const stripeH = Math.max(1, size * 0.107);
-  const stripeGap = size * 0.179;
-  const borderW = Math.max(1, size * 0.107);
+function ReceiptIconMini({ size, color = '#fff' }: { size: number; color?: string }) {
+  const h = size * 1.4;
   return (
-    <View style={{ width: w, height: h, justifyContent: 'center', alignItems: 'center' }}>
-      <View style={{
-        width: w, height: h, borderRadius: 2, borderWidth: borderW, borderColor: color,
-        paddingTop: h * 0.2, paddingHorizontal: w * 0.15, justifyContent: 'flex-start',
-      }}>
-        <View style={{ width: '100%', height: stripeH, backgroundColor: color, marginBottom: stripeGap }} />
-        <View style={{ width: '70%', height: stripeH, backgroundColor: color, marginBottom: stripeGap }} />
-        <View style={{ width: '85%', height: stripeH, backgroundColor: color }} />
-      </View>
-    </View>
+    <Svg width={size} height={h} viewBox="2.5 0.5 18 22.5" fill="none">
+      <Path
+        d="M5 1.5 C4.2 1.5 3.5 2.2 3.5 3 L3.5 22 L5.5 20.5 L7.5 22 L9.5 20.5 L11.5 22 L13.5 20.5 L15.5 22 L17.5 20.5 L19.5 22 L19.5 3 C19.5 2.2 18.8 1.5 18 1.5 Z"
+        stroke={color} strokeWidth="1.5" strokeLinejoin="round" fill="none"
+      />
+      <Path d="M7 6.5 L16 6.5" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
+      <Path d="M7 10 L16 10" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
+      <Path d="M7 13.5 L13 13.5" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function WalkIconMini({ size, color }: { size: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="55 8 155 175">
+      <G transform="matrix(25.882 0 0 -25.882 132.75 45.76)">
+        <Path d="m0,0c.283-.023.529.188.553.471s-.19.529-.473.552-.529-.189-.551-.472 .188-.53.471-.551" fill={color} stroke={color} strokeWidth={0.08} />
+      </G>
+      <G transform="matrix(25.882 0 0 -25.882 121.47 51.218)">
+        <Path d="m0,0c.102.07.225.117.361.105 .176-.013.321-.123.409-.255l.517-1.028 .707-.486c.061-.047.098-.121.09-.203-.01-.127-.121-.223-.248-.211-.039.002-.07.017-.106.033l-.771.531c-.023.02-.043.043-.059.069l-.193.384-.232-1.023 .91-1.076c.021-.033.035-.072.043-.111l.246-1.299c-.002-.03.002-.047 0-.071-.014-.193-.182-.334-.373-.32-.158.014-.276.131-.313.275l-.232,1.217-.74.811-.172-.789c-.006-.037-.055-.116-.069-.147l-.711-1.197c-.07-.109-.189-.18-.324-.168-.193.014-.336.182-.32.373 .004.055.027.111.047.15l.66,1.108 .551,2.439-.36-.291-.191-.869c-.025-.111-.127-.203-.246-.193-.129.01-.223.121-.213.25 0 .01.002.019.004.031l.226,1.014c.014.043.038.082.071.111l1.031.836z" fill={color} stroke={color} strokeWidth={0.12} strokeLinejoin="round" strokeLinecap="round" />
+      </G>
+    </Svg>
+  );
+}
+
+function RestaurantIconMini({ size, color }: { size: number; color: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 512 512" fill="none">
+      <Path d="M57.49,47.74,425.92,416.17a37.28,37.28,0,0,1,0,52.72h0a37.29,37.29,0,0,1-52.72,0l-90-91.55A32,32,0,0,1,274,354.91v-5.53a32,32,0,0,0-9.52-22.78l-11.62-10.73a32,32,0,0,0-29.8-7.44h0A48.53,48.53,0,0,1,176.5,295.8L91.07,210.36C40.39,159.68,21.74,83.15,57.49,47.74Z" stroke={color} strokeLinejoin="round" strokeWidth="32" fill="none" />
+      <Path d="M400,32l-77.25,77.25A64,64,0,0,0,304,154.51v14.86a16,16,0,0,1-4.69,11.32L288,192" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="32" fill="none" />
+      <Path d="M320,224l11.31-11.31A16,16,0,0,1,342.63,208h14.86a64,64,0,0,0,45.26-18.75L480,112" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="32" fill="none" />
+      <Path d="M440,72L360,152" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="32" fill="none" />
+      <Path d="M200,368,100.28,468.28a40,40,0,0,1-56.56,0h0a40,40,0,0,1,0-56.56L128,328" stroke={color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="32" fill="none" />
+    </Svg>
   );
 }
 
@@ -93,7 +114,7 @@ function Card({ time, timeEnd, title, description, hours, top, height, billHasAm
           {billHasAmount ? (
             <Text style={cardStyles.iconBtnAmount}>¥80</Text>
           ) : (
-            <BillIcon size={s(14)} color="#fff" />
+            <ReceiptIconMini size={s(14)} color="#fff" />
           )}
         </View>
         <View style={cardStyles.iconBtn}>
@@ -281,6 +302,19 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
           title="Gion District walk"
         />
 
+        {/* Bottom tab bar */}
+        <View style={styles.bottomTabBar}>
+          <View style={styles.bottomTab}>
+            <WalkIconMini size={s(25)} color="#007AFF" />
+          </View>
+          <View style={styles.bottomTab}>
+            <RestaurantIconMini size={s(25)} color="#1a1a1a" />
+          </View>
+          <View style={styles.bottomTab}>
+            <ReceiptIconMini size={s(18)} color="#1a1a1a" />
+          </View>
+        </View>
+
         {/* Expense input modal — mirrors real ExpenseInput */}
         <Animated.View style={[styles.modalOverlay, { opacity: modalOpacity }]} pointerEvents="none">
           <View style={styles.modalBackdrop} />
@@ -450,7 +484,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1, borderBottomColor: '#eee',
   },
-  tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(10) },
+  tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(8) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
   tabDow: { fontSize: s(13), lineHeight: s(17), fontWeight: '700', color: '#1a1a1a' },
   tabDate: { fontSize: s(11), lineHeight: s(14), color: '#555', marginTop: 1 },
@@ -658,4 +692,21 @@ const styles = StyleSheet.create({
     marginTop: s(12),
   },
   mapDirectionsText: { fontSize: s(14), fontWeight: '700', color: '#fff' },
+  bottomTabBar: {
+    position: 'absolute',
+    left: 0, right: 0,
+    bottom: 0,
+    height: BOTTOM_TAB_H,
+    backgroundColor: '#fff',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#ddd',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-around',
+    paddingTop: s(10),
+  },
+  bottomTab: {
+    flex: 1,
+    alignItems: 'center',
+  },
 });

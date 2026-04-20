@@ -22,12 +22,10 @@ const IMPORT_CENTER_Y = CREATE_CENTER_Y - BTN_BLOCK_H / 2 - BTN_MARGIN_TOP - BTN
 // not the title (lineHeight 20). Include border + marginBottom.
 const HEADER_BLOCK_H = s(10 * 2 + 34) + 1 + s(16);
 const ACTION_BTN_BLOCK_H = s(12 * 2 + 18) + s(8);
-// currencyRow height is driven by currencyValue: paddingV 6*2 + lineHeight 18 = 30.
-const CURRENCY_BLOCK_H = s(30) + s(4);
 const LIST_TOP_PAD = s(8) + 1;
 const ROW_H = s(12 * 2 + 19 + 2 + 15) + 1; // paddingV + title + gap + date + border
 
-const LIST_TOP_Y = STATUS_H + HEADER_BLOCK_H + ACTION_BTN_BLOCK_H * 2 + CURRENCY_BLOCK_H;
+const LIST_TOP_Y = STATUS_H + HEADER_BLOCK_H + ACTION_BTN_BLOCK_H * 2;
 const VAN_ROW_TOP_Y = LIST_TOP_Y + LIST_TOP_PAD + ROW_H; // Japan row above
 const VAN_CENTER_Y = VAN_ROW_TOP_Y + ROW_H / 2;
 
@@ -122,23 +120,6 @@ export default function Demo1Drawer({ active }: Props) {
                 <View style={styles.menuBar} />
                 <View style={styles.menuBar} />
               </View>
-            </View>
-          </View>
-
-          {/* Action buttons */}
-          <View style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Local Cuisine</Text>
-          </View>
-          <View style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Trip Expenses</Text>
-          </View>
-
-          {/* Default Currency */}
-          <View style={styles.currencyRow}>
-            <Text style={styles.currencyLabel}>Default Currency</Text>
-            <View style={styles.currencyValue}>
-              <Text style={styles.currencyValueText}>USD</Text>
-              <Text style={styles.currencyChevron}>▾</Text>
             </View>
           </View>
 
@@ -291,38 +272,6 @@ const styles = StyleSheet.create({
     lineHeight: s(18),
     fontWeight: '600',
     color: '#333',
-  },
-  currencyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: s(4),
-    marginBottom: s(4),
-  },
-  currencyLabel: {
-    fontSize: s(14),
-    lineHeight: s(18),
-    color: '#555',
-  },
-  currencyValue: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: s(8),
-    paddingVertical: s(6),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: s(70),
-  },
-  currencyValueText: {
-    fontSize: s(14),
-    lineHeight: s(18),
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  currencyChevron: {
-    fontSize: s(11),
-    color: '#888',
-    marginLeft: s(4),
   },
   list: {
     flex: 1,

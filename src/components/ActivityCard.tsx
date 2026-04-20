@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Pressable, Linking, StyleSheet } from 're
 import Svg, { Path, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
+import ReceiptIcon from './icons/ReceiptIcon';
 
 const ACCENT_COLORS: Record<string, string> = {
   default: '#007AFF',
@@ -14,24 +15,6 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
   KRW: '₩', TWD: 'NT$', CHF: 'Fr', CAD: 'C$',
 };
-
-// Bill/receipt icon drawn with Views
-function BillIcon({ size = 16, color = '#666' }: { size?: number; color?: string }) {
-  const w = size;
-  const h = size * 1.2;
-  return (
-    <View style={{ width: w, height: h, justifyContent: 'center', alignItems: 'center' }}>
-      <View style={{
-        width: w, height: h, borderRadius: 2, borderWidth: 1.5, borderColor: color,
-        paddingTop: h * 0.2, paddingHorizontal: w * 0.15, justifyContent: 'flex-start',
-      }}>
-        <View style={{ width: '100%', height: 1.5, backgroundColor: color, marginBottom: 2.5 }} />
-        <View style={{ width: '70%', height: 1.5, backgroundColor: color, marginBottom: 2.5 }} />
-        <View style={{ width: '85%', height: 1.5, backgroundColor: color }} />
-      </View>
-    </View>
-  );
-}
 
 // Google Maps-style pin: teardrop shape with a circle inside
 function MapPinIcon({ size = 16, color = '#fff', holeColor }: { size?: number; color?: string; holeColor?: string }) {
@@ -170,7 +153,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
                   {formatExpense(activity.expense.amount, activity.expense.currency)}
                 </Text>
               ) : (
-                <BillIcon size={14} color="#fff" />
+                <ReceiptIcon size={14} height={20} color="#fff" />
               )}
             </TouchableOpacity>
           )}

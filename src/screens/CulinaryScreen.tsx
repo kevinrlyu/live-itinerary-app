@@ -19,7 +19,7 @@ interface Props {
   onAddRegion: (regionName: string) => void;
   onDeleteItem: (regionIndex: number, itemIndex: number) => void;
   onDeleteRegion: (regionIndex: number) => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditItem, onAddRegion, onDeleteItem, onDeleteRegion, onClose }: Props) {
@@ -37,8 +37,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
   const [editItemName, setEditItemName] = useState('');
   const [editItemDesc, setEditItemDesc] = useState('');
 
-  // Track section layout positions for keyboard scroll
-  const sectionLayoutsRef = useRef<Record<number, { y: number; height: number }>>({});
+  const addItemFormRef = useRef<View>(null);
 
   // Pull-and-hold state
   const pullAnim = useRef(new Animated.Value(0)).current;
@@ -80,8 +79,9 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
   }, [holdProgressAnim, cancelHold]);
 
   const handleScroll = useCallback((event: any) => {
-    if (editMode) return;
     const offsetY: number = event.nativeEvent.contentOffset.y;
+    scrollOffsetRef.current = offsetY;
+    if (editMode) return;
 
     if (isDraggingRef.current && offsetY < -PULL_THRESHOLD) {
       const rawPull = Math.abs(offsetY) - PULL_THRESHOLD;
@@ -203,29 +203,39 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
     );
   };
 
-  // Scroll so section bottom is just above the keyboard
-  const scrollToSectionBottom = (rIdx: number) => {
+  // Scroll add-item form into view above keyboard
+  const scrollOffsetRef = useRef(0);
+  const scrollToAddItemForm = () => {
     const keyboardListener = Keyboard.addListener('keyboardDidShow', (e) => {
       keyboardListener.remove();
-      const layout = sectionLayoutsRef.current[rIdx];
-      if (!layout || !scrollRef.current) return;
-      const keyboardTopY = e.endCoordinates.screenY; // Y position of keyboard top edge
-      const visibleTop = insets.top + 46 + (editMode ? 40 : 0); // header + banner height
-      const visibleScrollHeight = keyboardTopY - visibleTop;
-      const sectionBottom = layout.y + layout.height + 16; // +16 for scrollContent padding
-      scrollRef.current.scrollTo({ y: Math.max(0, sectionBottom - visibleScrollHeight), animated: true });
+      setTimeout(() => {
+        addItemFormRef.current?.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+          const fieldBottom = y + h + 12;
+          const kbTop = e.endCoordinates.screenY;
+          if (fieldBottom > kbTop && scrollRef.current) {
+            scrollRef.current.scrollTo({
+              y: scrollOffsetRef.current + (fieldBottom - kbTop),
+              animated: true,
+            });
+          }
+        });
+      }, 50);
     });
   };
 
   return (
     <View style={styles.container}>
-      <View style={[styles.safeTop, { height: insets.top }]} />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Local Cuisine</Text>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeText}>Close</Text>
-        </TouchableOpacity>
-      </View>
+      {onClose && (
+        <>
+          <View style={[styles.safeTop, { height: insets.top }]} />
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Local Cuisine</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       {editMode && (
         <View style={styles.editBanner}>
@@ -253,12 +263,6 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
               <View
                 key={region.region}
                 style={styles.section}
-                onLayout={(e) => {
-                  sectionLayoutsRef.current[rIdx] = {
-                    y: e.nativeEvent.layout.y,
-                    height: e.nativeEvent.layout.height,
-                  };
-                }}
               >
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>{region.region}</Text>
@@ -347,7 +351,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                 {/* Add item — only in edit mode */}
                 {editMode && (
                   addingItemForRegion === rIdx ? (
-                    <View style={styles.addForm}>
+                    <View ref={addItemFormRef} style={styles.addForm}>
                       <TextInput
                         style={styles.addInput}
                         value={itemName}
@@ -379,7 +383,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                         cancelAddSection();
                         cancelEditItem();
                         setAddingItemForRegion(rIdx);
-                        scrollToSectionBottom(rIdx);
+                        scrollToAddItemForm();
                       }}
                     >
                       <Text style={styles.addItemText}>+ Add item</Text>
@@ -418,11 +422,13 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                   cancelAddItem();
                   cancelEditItem();
                   setAddingSection(true);
-                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-                  const kbListener = Keyboard.addListener('keyboardDidShow', () => {
-                    kbListener.remove();
-                    scrollRef.current?.scrollToEnd({ animated: true });
-                  });
+                  if (regions.length > 0) {
+                    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+                    const kbListener = Keyboard.addListener('keyboardDidShow', () => {
+                      kbListener.remove();
+                      scrollRef.current?.scrollToEnd({ animated: true });
+                    });
+                  }
                 }}
               >
                 <Text style={styles.addSectionText}>+ Add section</Text>
@@ -436,7 +442,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
 
       {/* Pull-and-hold overlay — positioned below safe area + header */}
       {isPulling && !editMode && (
-        <View style={[styles.pullOverlay, { top: insets.top + 46 }]} pointerEvents="none">
+        <View style={[styles.pullOverlay, { top: onClose ? insets.top + 46 : 0 }]} pointerEvents="none">
           <View style={styles.pullContent}>
             <View style={styles.progressTrack}>
               <Animated.View
@@ -482,7 +488,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',

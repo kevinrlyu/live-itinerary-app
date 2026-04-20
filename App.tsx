@@ -2,7 +2,11 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Modal, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import WalkIcon from './src/components/icons/WalkIcon';
+import ReceiptIcon from './src/components/icons/ReceiptIcon';
 import { Trip, TripMeta, Activity } from './src/types';
 import {
   loadTripFull, saveTripFull,
@@ -28,6 +32,7 @@ import Walkthrough from './src/components/Walkthrough';
 import NewDayDialog from './src/components/NewDayDialog';
 
 const Tab = createMaterialTopTabNavigator();
+const BottomTab = createBottomTabNavigator();
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -66,8 +71,6 @@ export default function App() {
   const [showCreateTrip, setShowCreateTrip] = useState(false);
   const [reimportingTripId, setReimportingTripId] = useState<string | null>(null);
   const [reimportProgress, setReimportProgress] = useState('');
-  const [showExpenses, setShowExpenses] = useState(false);
-  const [showCulinary, setShowCulinary] = useState(false);
   const [expenseTarget, setExpenseTarget] = useState<{ dayDate: string; target: ExpenseInputTarget } | null>(null);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [showNewDayDialog, setShowNewDayDialog] = useState(false);
@@ -459,6 +462,7 @@ export default function App() {
   }, [tripList]);
 
   const navigationRef = useRef<any>(null);
+  const [activeBottomTab, setActiveBottomTab] = useState('Itinerary');
 
   const handleRemoveDay = useCallback((dayDate: string) => {
     if (!trip) return;
@@ -535,58 +539,134 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <TripHeader title={trip.title} onOpenDrawer={() => setDrawerOpen(true)} />
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <TripHeader
+          title={activeBottomTab === 'Culinary' ? 'Local Cuisine' : activeBottomTab === 'Expenses' ? 'Trip Expenses' : trip.title}
+          onOpenDrawer={() => setDrawerOpen(true)}
+        />
         <NavigationContainer key={trip.id} ref={navigationRef}>
-          <Tab.Navigator
-            initialRouteName={getTodayTabName(trip) as any}
-            tabBar={(props) => {
-              const tabs = trip.days.map((day) => {
-                const { dayOfWeek, monthDay } = formatDayLabel(day.date);
-                return {
-                  key: day.date,
-                  dayOfWeek,
-                  monthDay,
-                  isFocused: props.state.routes[props.state.index]?.name === day.date,
-                };
-              });
-              return (
-                <DayTabBar
-                  tabs={tabs}
-                  onTabPress={(key) => {
-                    const idx = props.state.routes.findIndex((r) => r.name === key);
-                    if (idx >= 0) props.navigation.navigate(props.state.routes[idx].name);
-                  }}
-                  onAddDay={handleAddDay}
-                />
-              );
-            }}
+          <BottomTab.Navigator
             screenOptions={{
-              tabBarScrollEnabled: true,
-              tabBarItemStyle: { width: 70 },
-              swipeEnabled: !isEditingActivity,
+              headerShown: false,
+              tabBarShowLabel: false,
+              tabBarActiveTintColor: '#007AFF',
+              tabBarInactiveTintColor: '#1a1a1a',
+              tabBarStyle: isEditingActivity
+                ? { display: 'none' }
+                : {
+                    backgroundColor: '#fff',
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderTopColor: '#ddd',
+                    paddingTop: 8,
+                    overflow: 'visible',
+                  },
+            }}
+            screenListeners={{
+              state: (e) => {
+                const state = (e as any).data?.state;
+                if (state) {
+                  setActiveBottomTab(state.routes[state.index].name);
+                }
+              },
             }}
           >
-            {trip.days.map((day) => (
-              <Tab.Screen
-                key={day.date}
-                name={day.date}
-                children={() => (
-                  <DayScreen
-                    day={day}
-                    onToggle={handleToggle}
-                    onOpenExpense={handleOpenExpense}
-                    onUpdateActivity={handleUpdateActivity}
-                    onInsertActivity={handleInsertActivity}
-                    onDeleteActivity={handleDeleteActivity}
-                    onRemoveDay={handleRemoveDay}
-                    onUpdateDayTheme={handleUpdateDayTheme}
-                    onEditingChange={setIsEditingActivity}
-                  />
-                )}
-              />
-            ))}
-          </Tab.Navigator>
+            <BottomTab.Screen
+              name="Itinerary"
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <WalkIcon size={size} color={color} />
+                ),
+              }}
+            >
+              {() => (
+                <Tab.Navigator
+                  initialRouteName={getTodayTabName(trip!) as any}
+                  tabBar={(props) => {
+                    const tabs = trip!.days.map((day) => {
+                      const { dayOfWeek, monthDay } = formatDayLabel(day.date);
+                      return {
+                        key: day.date,
+                        dayOfWeek,
+                        monthDay,
+                        isFocused: props.state.routes[props.state.index]?.name === day.date,
+                      };
+                    });
+                    return (
+                      <DayTabBar
+                        tabs={tabs}
+                        onTabPress={(key) => {
+                          const idx = props.state.routes.findIndex((r) => r.name === key);
+                          if (idx >= 0) props.navigation.navigate(props.state.routes[idx].name);
+                        }}
+                        onAddDay={handleAddDay}
+                      />
+                    );
+                  }}
+                  screenOptions={{
+                    tabBarScrollEnabled: true,
+                    tabBarItemStyle: { width: 70 },
+                    swipeEnabled: !isEditingActivity,
+                  }}
+                >
+                  {trip!.days.map((day) => (
+                    <Tab.Screen
+                      key={day.date}
+                      name={day.date}
+                      children={() => (
+                        <DayScreen
+                          day={day}
+                          onToggle={handleToggle}
+                          onOpenExpense={handleOpenExpense}
+                          onUpdateActivity={handleUpdateActivity}
+                          onInsertActivity={handleInsertActivity}
+                          onDeleteActivity={handleDeleteActivity}
+                          onRemoveDay={handleRemoveDay}
+                          onUpdateDayTheme={handleUpdateDayTheme}
+                          onEditingChange={setIsEditingActivity}
+                        />
+                      )}
+                    />
+                  ))}
+                </Tab.Navigator>
+              )}
+            </BottomTab.Screen>
+            <BottomTab.Screen
+              name="Culinary"
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <Ionicons name="restaurant-outline" size={size} color={color} />
+                ),
+              }}
+            >
+              {() => (
+                <CulinaryScreen
+                  regions={trip!.culinarySpecialties ?? []}
+                  onToggle={handleToggleCulinaryItem}
+                  onAddItem={handleAddCulinaryItem}
+                  onEditItem={handleEditCulinaryItem}
+                  onAddRegion={handleAddCulinaryRegion}
+                  onDeleteItem={handleDeleteCulinaryItem}
+                  onDeleteRegion={handleDeleteCulinaryRegion}
+                />
+              )}
+            </BottomTab.Screen>
+            <BottomTab.Screen
+              name="Expenses"
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <ReceiptIcon size={size} color={color} />
+                ),
+              }}
+            >
+              {() => (
+                <ExpenseSummaryScreen
+                  trip={trip!}
+                  defaultCurrency={trip!.defaultCurrency}
+                  onSetCurrency={handleSetCurrency}
+                />
+              )}
+            </BottomTab.Screen>
+          </BottomTab.Navigator>
         </NavigationContainer>
 
         <TripDrawer
@@ -601,11 +681,7 @@ export default function App() {
           onDeleteTrip={handleDeleteTrip}
           reimportingTripId={reimportingTripId}
           reimportProgress={reimportProgress}
-          onViewCulinary={() => { setDrawerOpen(false); setShowCulinary(true); }}
-          onViewExpenses={() => { setDrawerOpen(false); setShowExpenses(true); }}
           onReorderTrips={handleReorderTrips}
-          defaultCurrency={trip.defaultCurrency}
-          onSetCurrency={handleSetCurrency}
           onShowHelp={handleShowHelp}
         />
 
@@ -626,23 +702,6 @@ export default function App() {
               onCancel={() => setShowCreateTrip(false)}
             />
           </SafeAreaProvider>
-        </Modal>
-
-        <Modal visible={showExpenses} animationType="slide">
-          <ExpenseSummaryScreen trip={trip} onClose={() => setShowExpenses(false)} />
-        </Modal>
-
-        <Modal visible={showCulinary} animationType="slide">
-          <CulinaryScreen
-            regions={trip.culinarySpecialties ?? []}
-            onToggle={handleToggleCulinaryItem}
-            onAddItem={handleAddCulinaryItem}
-            onEditItem={handleEditCulinaryItem}
-            onAddRegion={handleAddCulinaryRegion}
-            onDeleteItem={handleDeleteCulinaryItem}
-            onDeleteRegion={handleDeleteCulinaryRegion}
-            onClose={() => setShowCulinary(false)}
-          />
         </Modal>
 
         {expenseTarget && (

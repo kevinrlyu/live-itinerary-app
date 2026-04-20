@@ -3,7 +3,7 @@ import {
   Modal, View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Dimensions, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { SafeAreaView, SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Demo1Drawer from './walkthrough/Demo1Drawer';
 import Demo2Day from './walkthrough/Demo2Day';
 import Demo3Activities from './walkthrough/Demo3Activities';
@@ -65,8 +65,7 @@ function WalkthroughContent({ visible, onClose }: Props) {
 
   return (
     <>
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={{ height: insets.top + 5, backgroundColor: '#fff' }} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Help</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -110,7 +109,7 @@ function WalkthroughContent({ visible, onClose }: Props) {
             <Text style={styles.nextText}>{isLast ? 'Got it' : 'Next'}</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -122,7 +121,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',

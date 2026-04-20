@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Share,
+  View, Text, ScrollView, TouchableOpacity, Pressable, Modal, Dimensions,
+  StyleSheet, Share, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip, Activity } from '../types';
+
+const CURRENCIES = ['CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'TWD', 'USD'];
+
+const CURRENCY_FLAGS: Record<string, string> = {
+  CAD: '\u{1F1E8}\u{1F1E6}', CHF: '\u{1F1E8}\u{1F1ED}', CNY: '\u{1F1E8}\u{1F1F3}',
+  EUR: '\u{1F1EA}\u{1F1FA}', GBP: '\u{1F1EC}\u{1F1E7}', JPY: '\u{1F1EF}\u{1F1F5}',
+  KRW: '\u{1F1F0}\u{1F1F7}', TWD: '\u{1F1F9}\u{1F1FC}', USD: '\u{1F1FA}\u{1F1F8}',
+};
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
@@ -27,10 +37,135 @@ function categoryOf(activity: Activity): string {
 
 interface Props {
   trip: Trip;
-  onClose: () => void;
+  onClose?: () => void;
+  defaultCurrency?: string;
+  onSetCurrency?: (currency: string) => void;
 }
 
-export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
+const PICKER_ITEM_H = 36;
+const PICKER_VISIBLE_ITEMS = 3;
+const PICKER_H = PICKER_ITEM_H * PICKER_VISIBLE_ITEMS;
+
+function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const [scrollY, setScrollY] = useState(0);
+  const lastTickIdx = useRef(-1);
+  const buttonRef = useRef<View>(null);
+  const [pickerPos, setPickerPos] = useState<{ top: number; right: number } | null>(null);
+
+  const openPicker = () => {
+    buttonRef.current?.measureInWindow((x, y, w, h) => {
+      // Position picker so its center slot aligns with the button center
+      const buttonMidY = y + h / 2;
+      const screenWidth = Dimensions.get('window').width;
+      setPickerPos({
+        top: buttonMidY - PICKER_H / 2,
+        right: screenWidth - (x + w),
+      });
+      setOpen(true);
+    });
+  };
+
+  useEffect(() => {
+    if (open) {
+      const idx = CURRENCIES.indexOf(value);
+      lastTickIdx.current = idx;
+      if (idx >= 0) {
+        const y = idx * PICKER_ITEM_H;
+        setScrollY(y);
+        setTimeout(() => {
+          scrollRef.current?.scrollTo({ y, animated: false });
+        }, 0);
+      }
+    }
+  }, [open]);
+
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const idx = Math.round(y / PICKER_ITEM_H);
+    const clamped = Math.max(0, Math.min(idx, CURRENCIES.length - 1));
+    if (CURRENCIES[clamped] !== value) {
+      onChange(CURRENCIES[clamped]);
+    }
+  };
+
+  // Derive per-item opacity from scroll position
+  const centeredIdx = Math.round(scrollY / PICKER_ITEM_H);
+  const getItemOpacity = (idx: number) => {
+    const dist = Math.abs(idx - centeredIdx);
+    if (dist === 0) return 1;
+    if (dist === 1) return 0.35;
+    return 0.15;
+  };
+
+  return (
+    <View style={styles.currencyRow}>
+      <Text style={styles.currencyLabel}>Default Currency</Text>
+      <View ref={buttonRef} collapsable={false}>
+        <TouchableOpacity
+          style={styles.currencyValue}
+          onPress={() => open ? setOpen(false) : openPicker()}
+        >
+          <Text style={styles.currencyValueText}>{value}</Text>
+          <Text style={styles.currencyChevron}>{open ? '▴' : '▾'}</Text>
+        </TouchableOpacity>
+      </View>
+      <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
+        <Pressable style={pickerStyles.backdrop} onPress={() => setOpen(false)} />
+        {pickerPos && (
+          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right }]}>
+            <ScrollView
+              ref={scrollRef}
+              style={pickerStyles.scroll}
+              showsVerticalScrollIndicator={false}
+              snapToInterval={PICKER_ITEM_H}
+              decelerationRate="fast"
+              onScroll={(e) => {
+                const y = e.nativeEvent.contentOffset.y;
+                setScrollY(y);
+                const idx = Math.round(y / PICKER_ITEM_H);
+                if (idx !== lastTickIdx.current && idx >= 0 && idx < CURRENCIES.length) {
+                  lastTickIdx.current = idx;
+                  Haptics.selectionAsync();
+                }
+              }}
+              scrollEventThrottle={16}
+              onMomentumScrollEnd={handleScrollEnd}
+              onScrollEndDrag={(e) => {
+                const v = e.nativeEvent.velocity?.y ?? 0;
+                if (Math.abs(v) < 0.1) handleScrollEnd(e);
+              }}
+              contentContainerStyle={{
+                paddingVertical: PICKER_ITEM_H,
+              }}
+            >
+              {CURRENCIES.map((cur, i) => (
+                <TouchableOpacity
+                  key={cur}
+                  style={pickerStyles.item}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    onChange(cur);
+                    setOpen(false);
+                  }}
+                >
+                  <Text style={[
+                    pickerStyles.itemText,
+                    i === centeredIdx && pickerStyles.itemTextSelected,
+                    { opacity: getItemOpacity(i) },
+                  ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </Modal>
+    </View>
+  );
+}
+
+export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, onSetCurrency }: Props) {
   const insets = useSafeAreaInsets();
   // Collect all activities with expenses
   const allExpenses: { activity: Activity; dayLabel: string; dayDate: string }[] = [];
@@ -90,13 +225,17 @@ export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.safeTop, { height: insets.top }]} />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle} numberOfLines={1}>Trip Expenses</Text>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeText}>Close</Text>
-        </TouchableOpacity>
-      </View>
+      {onClose && (
+        <>
+          <View style={[styles.safeTop, { height: insets.top }]} />
+          <View style={styles.header}>
+            <Text style={styles.headerTitle} numberOfLines={1}>Trip Expenses</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Grand totals */}
@@ -138,7 +277,7 @@ export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
           return (
             <View key={group.dayDate} style={styles.section}>
               <View style={styles.dayHeader}>
-                <Text style={styles.sectionTitle}>{group.dayLabel || group.dayDate}</Text>
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>{group.dayLabel || group.dayDate}</Text>
                 <View style={styles.dayTotals}>
                   {Object.entries(dayTotals).map(([cur, amt]) => (
                     <Text key={cur} style={styles.dayTotalText}>{formatAmount(amt, cur)}</Text>
@@ -156,6 +295,10 @@ export default function ExpenseSummaryScreen({ trip, onClose }: Props) {
             </View>
           );
         })}
+
+        {onSetCurrency && defaultCurrency && (
+          <CurrencyRollerPicker value={defaultCurrency} onChange={onSetCurrency} />
+        )}
 
         {allExpenses.length > 0 && (
           <TouchableOpacity style={styles.exportButton} onPress={exportCSV}>
@@ -180,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -255,7 +398,7 @@ const styles = StyleSheet.create({
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 6,
   },
   categoryName: {
@@ -273,7 +416,7 @@ const styles = StyleSheet.create({
   dayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
   dayTotals: {
@@ -300,8 +443,38 @@ const styles = StyleSheet.create({
   },
   expenseAmount: {
     fontSize: 14,
-    fontWeight: '600',
     color: '#1a1a1a',
+  },
+  currencyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginBottom: 8,
+    zIndex: 10,
+  },
+  currencyLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  currencyValue: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 70,
+  },
+  currencyValueText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  currencyChevron: {
+    fontSize: 11,
+    color: '#888',
+    marginLeft: 4,
   },
   exportButton: {
     backgroundColor: '#007AFF',
@@ -313,6 +486,43 @@ const styles = StyleSheet.create({
   exportButtonText: {
     color: '#fff',
     fontSize: 15,
+    fontWeight: '700',
+  },
+});
+
+// The button is PICKER_ITEM_H-ish tall (paddingVertical 6 + text ~18 ≈ 30).
+
+const pickerStyles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  container: {
+    position: 'absolute',
+    width: 100,
+    height: PICKER_H,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  scroll: {
+    flex: 1,
+  },
+  item: {
+    height: PICKER_ITEM_H,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  itemTextSelected: {
+    color: '#007AFF',
     fontWeight: '700',
   },
 });

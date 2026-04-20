@@ -12,14 +12,6 @@ import { loadApiKey, saveApiKey } from '../utils/storage';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const DRAWER_WIDTH = SCREEN_WIDTH;
 
-const CURRENCIES = ['CAD', 'CHF', 'CNY', 'EUR', 'GBP', 'JPY', 'KRW', 'TWD', 'USD'];
-
-const CURRENCY_FLAGS: Record<string, string> = {
-  CAD: '\u{1F1E8}\u{1F1E6}', CHF: '\u{1F1E8}\u{1F1ED}', CNY: '\u{1F1E8}\u{1F1F3}',
-  EUR: '\u{1F1EA}\u{1F1FA}', GBP: '\u{1F1EC}\u{1F1E7}', JPY: '\u{1F1EF}\u{1F1F5}',
-  KRW: '\u{1F1F0}\u{1F1F7}', TWD: '\u{1F1F9}\u{1F1FC}', USD: '\u{1F1FA}\u{1F1F8}',
-};
-
 interface Props {
   visible: boolean;
   trips: TripMeta[];
@@ -35,46 +27,7 @@ interface Props {
   reimportProgress?: string;
   onViewCulinary?: () => void;
   onViewExpenses?: () => void;
-  defaultCurrency?: string;
-  onSetCurrency?: (currency: string) => void;
   onShowHelp?: () => void;
-}
-
-function CurrencyPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <View style={styles.currencyRow}>
-      <Text style={styles.currencyLabel}>Default Currency</Text>
-      <View>
-        <TouchableOpacity
-          style={styles.currencyValue}
-          onPress={() => setOpen(!open)}
-        >
-          <Text style={styles.currencyValueText}>{value}</Text>
-          <Text style={styles.currencyChevron}>▾</Text>
-        </TouchableOpacity>
-        {open && (
-          <View style={styles.currencyDropdown}>
-            {CURRENCIES.map((cur) => (
-              <TouchableOpacity
-                key={cur}
-                style={[
-                  styles.currencyOption,
-                  cur === value && styles.currencyOptionSelected,
-                ]}
-                onPress={() => { onChange(cur); setOpen(false); }}
-              >
-                <Text style={[
-                  styles.currencyOptionText,
-                  cur === value && styles.currencyOptionTextSelected,
-                ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-    </View>
-  );
 }
 
 const ROW_HEIGHT = 61; // measured: paddingV 12*2 + content ~37
@@ -338,7 +291,7 @@ function TripRow({
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
   onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, reimportingTripId, reimportProgress,
-  onViewCulinary, onViewExpenses, onReorderTrips, defaultCurrency, onSetCurrency, onShowHelp,
+  onViewCulinary, onViewExpenses, onReorderTrips, onShowHelp,
 }: Props) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
@@ -417,25 +370,6 @@ export default function TripDrawer({
             </View>
           </TouchableOpacity>
         </View>
-
-        {onViewCulinary && (
-          <TouchableOpacity style={styles.actionButton} onPress={onViewCulinary}>
-            <Text style={styles.actionButtonText}>Local Cuisine</Text>
-          </TouchableOpacity>
-        )}
-
-        {onViewExpenses && (
-          <TouchableOpacity style={styles.actionButton} onPress={onViewExpenses}>
-            <Text style={styles.actionButtonText}>Trip Expenses</Text>
-          </TouchableOpacity>
-        )}
-
-        {onSetCurrency && defaultCurrency && (
-          <CurrencyPicker
-            value={defaultCurrency}
-            onChange={onSetCurrency}
-          />
-        )}
 
         <DraggableTripList
           trips={trips}
@@ -551,7 +485,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     marginHorizontal: -16,
     borderBottomWidth: 1,
@@ -641,68 +575,6 @@ const styles = StyleSheet.create({
   refreshTextDisabled: { opacity: 0.4 },
   deleteButton: { padding: 4 },
   deleteText: { fontSize: 14, color: '#FF3B30' },
-  currencyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 0,
-    paddingHorizontal: 4,
-    marginBottom: 4,
-  },
-  currencyLabel: {
-    fontSize: 14,
-    color: '#555',
-  },
-  currencyValue: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 70,
-  },
-  currencyValueText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  currencyChevron: {
-    fontSize: 11,
-    color: '#888',
-    marginLeft: 4,
-  },
-  currencyDropdown: {
-    position: 'absolute',
-    top: 36,
-    right: 0,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    zIndex: 10,
-    minWidth: 85,
-  },
-  currencyOption: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
-  },
-  currencyOptionSelected: {
-    backgroundColor: '#E8F0FE',
-  },
-  currencyOptionText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  currencyOptionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
   apiKeyRow: {
     flexDirection: 'row',
     alignItems: 'center',
