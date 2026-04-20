@@ -20,12 +20,11 @@ const IMPORT_CENTER_Y = CREATE_CENTER_Y - BTN_BLOCK_H / 2 - BTN_MARGIN_TOP - BTN
 // Trip row geometry (used for drag/reorder animation)
 // drawerHeader height is driven by the close button (padding 8*2 + icon 18 = 34),
 // not the title (lineHeight 20). Include border + marginBottom.
-const HEADER_BLOCK_H = s(10 * 2 + 34) + 1 + s(16);
-const ACTION_BTN_BLOCK_H = s(12 * 2 + 18) + s(8);
+const HEADER_BLOCK_H = s(8 * 2 + 34) + 1 + s(16);
 const LIST_TOP_PAD = s(8) + 1;
 const ROW_H = s(12 * 2 + 19 + 2 + 15) + 1; // paddingV + title + gap + date + border
 
-const LIST_TOP_Y = STATUS_H + HEADER_BLOCK_H + ACTION_BTN_BLOCK_H * 2;
+const LIST_TOP_Y = STATUS_H + HEADER_BLOCK_H;
 const VAN_ROW_TOP_Y = LIST_TOP_Y + LIST_TOP_PAD + ROW_H; // Japan row above
 const VAN_CENTER_Y = VAN_ROW_TOP_Y + ROW_H / 2;
 
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: s(10),
+    paddingVertical: s(8),
     paddingHorizontal: s(16),
     marginHorizontal: -s(16),
     borderBottomWidth: 1,
@@ -335,7 +334,7 @@ const styles = StyleSheet.create({
   apiKeyLabel: {
     fontSize: s(14),
     lineHeight: s(18),
-    color: '#555',
+    color: '#888',
   },
   apiKeyValue: {
     backgroundColor: '#f0f0f0',

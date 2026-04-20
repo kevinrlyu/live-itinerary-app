@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1a1a1a',
     marginBottom: 10,
@@ -203,5 +203,5 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
   },
-  nextText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  nextText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

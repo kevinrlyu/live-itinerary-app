@@ -390,7 +390,6 @@ export default function TripDrawer({
               onPress={() => setApiKeyVisible(!apiKeyVisible)}
             >
               <Text style={styles.apiKeyValueText}>{hasApiKey ? 'Set' : 'None'}</Text>
-              <Text style={styles.apiKeyChevron}>▾</Text>
             </TouchableOpacity>
             {apiKeyVisible && (
               <View style={styles.apiKeyDropdown}>
@@ -566,7 +565,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   tripInfo: { flex: 1 },
-  tripTitle: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
+  tripTitle: { fontSize: 16, fontWeight: '600', color: '#1a1a1a' },
   tripTitleActive: { color: '#007AFF' },
   tripDate: { fontSize: 12, color: '#888', marginTop: 2 },
   tripActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -585,7 +584,7 @@ const styles = StyleSheet.create({
   },
   apiKeyLabel: {
     fontSize: 14,
-    color: '#555',
+    color: '#888',
   },
   apiKeyValue: {
     backgroundColor: '#f0f0f0',
@@ -663,7 +662,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  createButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  createButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   helpButton: {
     alignItems: 'center',
     paddingVertical: 12,
@@ -682,5 +681,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  importButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  importButtonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });

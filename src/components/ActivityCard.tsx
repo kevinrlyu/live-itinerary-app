@@ -237,10 +237,10 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   description: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 12,
+    color: '#1a1a1a',
     marginTop: 4,
-    lineHeight: 18,
+    lineHeight: 17,
     fontStyle: 'italic',
   },
   hours: {
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   notes: {
     fontSize: 12,
-    color: '#666',
+    color: '#888',
     marginTop: 4,
   },
   // Button row with icon buttons
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   transportTitle: {
     flex: 1,
     fontSize: 12,
-    color: '#aaa',
+    color: '#888',
   },
   editModeHighlight: {
     borderWidth: 1,

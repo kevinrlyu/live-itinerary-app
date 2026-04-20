@@ -4,9 +4,9 @@ import Svg, { G, Path, Circle } from 'react-native-svg';
 import FingerCursor, { createCursor, moveTo, tap, hold } from './FingerCursor';
 import { FRAME_W as W, FRAME_H as H, s, STATUS_H } from './scale';
 
-const HEADER_H = s(8 + 20 + 8);
-const TAB_H = s(8 + 17 + 1 + 14 + 8);
-const BOTTOM_TAB_H = s(83); // 49 bar + 34 bottom safe area
+const HEADER_H = s(8 + 34 + 8);
+const TAB_H = HEADER_H;
+const BOTTOM_TAB_H = s(75); // 49 bar + 34 safe area, adjusted for frame aspect ratio
 // Matches real app: paddingV 8 + doneBtn (paddingV 6 + text ~16)
 const BANNER_H = s(8 + 28 + 8);
 const THEME_H = s(16 + 22 + 8);
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(8) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
   tabDow: { fontSize: s(13), lineHeight: s(17), fontWeight: '700', color: '#1a1a1a' },
-  tabDate: { fontSize: s(11), lineHeight: s(14), color: '#555', marginTop: 1 },
+  tabDate: { fontSize: s(11), lineHeight: s(14), color: '#888', marginTop: 1 },
   tabDowActive: { color: '#007AFF' },
   tabDateActive: { color: '#007AFF' },
   editBanner: {

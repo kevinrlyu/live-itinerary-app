@@ -299,7 +299,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                           style={styles.addInput}
                           value={editItemDesc}
                           onChangeText={setEditItemDesc}
-                          placeholder="Description (optional)"
+                          placeholder="Description"
                           placeholderTextColor="#bbb"
                         />
                         <View style={styles.addFormActions}>
@@ -364,7 +364,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                         style={styles.addInput}
                         value={itemDesc}
                         onChangeText={setItemDesc}
-                        placeholder="Description (optional)"
+                        placeholder="Description"
                         placeholderTextColor="#bbb"
                       />
                       <View style={styles.addFormActions}>
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   doneBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: '#fff',
   },
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: '#aaa',
+    color: '#888',
     textAlign: 'center',
     marginTop: 40,
   },
@@ -565,12 +565,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1a1a1a',
   },
   deleteSectionText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -596,13 +596,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontSize: 15,
-    color: '#333',
+    fontSize: 16,
+    color: '#1a1a1a',
     lineHeight: 20,
   },
   itemDesc: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#888',
+    fontStyle: 'italic',
     marginTop: 2,
   },
   itemNameChecked: {
@@ -611,14 +612,12 @@ const styles = StyleSheet.create({
   },
   deleteItemBtn: {
     paddingLeft: 12,
-    paddingVertical: 2,
   },
   deleteItemText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#FF3B30',
     fontWeight: '600',
     lineHeight: 20,
-    marginTop: 1,
   },
   // Add item button
   addItemBtn: {
@@ -627,7 +626,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f5f5f5',
   },
   addItemText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -657,6 +656,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 10,
+    height: 44,
+    textAlignVertical: 'center',
     fontSize: 14,
     color: '#1a1a1a',
     marginBottom: 8,

@@ -6,9 +6,9 @@ import { FRAME_W as W, FRAME_H as H, s, STATUS_H } from './scale';
 
 const HOLD_MS = 1000;
 
-const HEADER_H = s(8 + 20 + 8);
-const TAB_H = s(8 + 17 + 1 + 14 + 8);
-const BOTTOM_TAB_H = s(83); // 49 bar + 34 bottom safe area
+const HEADER_H = s(8 + 34 + 8); // paddingV 8 + menu button (pad 8 + icon 18 + pad 8) + paddingV 8
+const TAB_H = HEADER_H;           // match header thickness as in real app
+const BOTTOM_TAB_H = s(75); // 49 bar + 34 safe area, adjusted for frame aspect ratio
 const TAB_W_4 = W / 4;  // width when 4 days
 const TAB_W_5 = W / 5;  // width when 5 days
 
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: s(16),
-    paddingVertical: s(8),
+    height: HEADER_H,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
   tabDate: {
     fontSize: s(11),
     lineHeight: s(14),
-    color: '#555',
+    color: '#888',
     marginTop: s(1),
   },
   activeUnderline: {
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   emptyHint: {
     textAlign: 'center',
     fontSize: s(14),
-    color: '#aaa',
+    color: '#888',
     marginTop: s(80),
   },
   pullOverlay: {

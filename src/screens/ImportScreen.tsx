@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF', borderRadius: 12,
     padding: 16, alignItems: 'center', marginBottom: 12,
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  buttonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   progressText: { color: '#fff', fontSize: 14, marginLeft: 10 },
-  cancel: { color: '#007AFF', fontSize: 15, textAlign: 'center', marginBottom: 16 },
+  cancel: { color: '#007AFF', fontSize: 14, textAlign: 'center', marginBottom: 16 },
   hint: { fontSize: 12, color: '#999', marginBottom: 6 },
 });

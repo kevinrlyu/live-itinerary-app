@@ -185,13 +185,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#007AFF',
   },
   tabDayOfWeek: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#1a1a1a',
   },
   tabMonthDay: {
-    fontSize: 11,
-    color: '#555',
+    fontSize: 12,
+    color: '#888',
     marginTop: 1,
   },
   tabTextActive: {

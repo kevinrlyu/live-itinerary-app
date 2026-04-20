@@ -208,7 +208,7 @@ const pickerStyles = StyleSheet.create({
   },
   slotsContainer: { height: SLOT_H * 5, marginTop: -SLOT_H },
   slot: { height: SLOT_H, alignItems: 'center', justifyContent: 'center' },
-  slotText: { fontSize: 15, color: '#aaa' },
+  slotText: { fontSize: 15, color: '#888' },
   slotTextActive: { color: '#1a1a1a', fontWeight: '700' },
   colon: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginHorizontal: 1 },
 });
@@ -605,7 +605,8 @@ const styles = StyleSheet.create({
     padding: 12,
     height: 44,
     justifyContent: 'center',
-    fontSize: 15,
+    textAlignVertical: 'center',
+    fontSize: 14,
     color: '#1a1a1a',
   },
   multiline: {
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   timeDisplayText: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#1a1a1a',
   },
   placeholder: {
@@ -710,7 +711,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   cancelBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#888',
   },
@@ -721,7 +722,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   saveBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
   },

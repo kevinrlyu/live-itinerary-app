@@ -401,7 +401,7 @@ export default function DayScreen({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   theme: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#333',
     paddingHorizontal: 16,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   themeInput: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#333',
     paddingHorizontal: 16,
@@ -515,8 +515,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   doneBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#fff',
   },
 });
