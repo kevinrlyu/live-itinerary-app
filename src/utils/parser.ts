@@ -106,10 +106,26 @@ function detectYearFromText(text: string): number | null {
   return null;
 }
 
+// Keywords that signal the start of a culinary/food section (case-insensitive).
+// Used to detect a food list appended after the last day of the itinerary.
+const CULINARY_SECTION_KEYWORDS = [
+  'local cuisine', 'local specialties', 'local food',
+  'culinary', 'food guide', 'food list',
+  'what to eat', 'what to try', 'must.?eat', 'must.?try',
+  'regional (dishes|specialties|cuisine|food)',
+  'food recommendations', 'dining guide',
+  'dishes to try', 'foods to try',
+];
+const CULINARY_SECTION_PATTERN = new RegExp(
+  `^\\s*(?:#{1,3}\\s*)?(?:${CULINARY_SECTION_KEYWORDS.join('|')})`,
+  'im'
+);
+
 // Split raw document text into per-day chunks.
 // Looks for day header patterns like "December 10 (Wednesday)" or "Day 1 — December 10".
-// Returns { preamble, dayChunks } where preamble is text before the first day header.
-function splitTextByDay(text: string): { preamble: string; dayChunks: string[] } {
+// Returns { preamble, dayChunks, postamble } where preamble is text before the first day
+// header and postamble is a culinary section found after the last day.
+function splitTextByDay(text: string): { preamble: string; dayChunks: string[]; postamble: string } {
   // Match lines that start a new day: "Month Day" possibly followed by day-of-week
   const dayHeaderPattern = new RegExp(
     `^(?:day\\s+\\d+[^\\n]*)?\\s*(?:${MONTH_NAMES.join('|')})\\s+\\d{1,2}`,
@@ -124,7 +140,7 @@ function splitTextByDay(text: string): { preamble: string; dayChunks: string[] }
 
   if (matches.length <= 1) {
     // Can't split reliably — return the whole text
-    return { preamble: '', dayChunks: [text] };
+    return { preamble: '', dayChunks: [text], postamble: '' };
   }
 
   const preamble = matches[0].index > 0
@@ -139,7 +155,20 @@ function splitTextByDay(text: string): { preamble: string; dayChunks: string[] }
     if (chunk) dayChunks.push(chunk);
   }
 
-  return { preamble, dayChunks };
+  // Check if the last day chunk contains a culinary section after the itinerary content
+  let postamble = '';
+  if (dayChunks.length > 0) {
+    const lastChunk = dayChunks[dayChunks.length - 1];
+    const culinaryMatch = CULINARY_SECTION_PATTERN.exec(lastChunk);
+    if (culinaryMatch) {
+      // Split: everything before the keyword stays with the day, everything from the keyword becomes the postamble
+      const dayPart = lastChunk.slice(0, culinaryMatch.index).trim();
+      postamble = lastChunk.slice(culinaryMatch.index).trim();
+      dayChunks[dayChunks.length - 1] = dayPart;
+    }
+  }
+
+  return { preamble, dayChunks, postamble };
 }
 
 // Simple hash for cache comparison
@@ -242,7 +271,7 @@ export async function parseItineraryText(
     ? `IMPORTANT: The dates in this itinerary are from the year ${detectedYear}. Use ${detectedYear} for all dates.\n\n`
     : "";
 
-  const { preamble, dayChunks } = splitTextByDay(text);
+  const { preamble, dayChunks, postamble } = splitTextByDay(text);
 
   // If we couldn't split into multiple days, fall back to single-call parsing
   if (dayChunks.length <= 1) {
@@ -326,13 +355,14 @@ export async function parseItineraryText(
   // Save the new cache
   await saveDayCache(tripId, newCache);
 
-  // Extract culinary specialties from preamble if present
+  // Extract culinary specialties from preamble and/or postamble if present
   let culinarySpecialties: CulinaryRegion[] | undefined;
-  console.log('[parser] preamble length:', preamble.length, 'preview:', preamble.slice(0, 200));
-  if (preamble && preamble.length > 50) {
+  const culinaryText = [preamble, postamble].filter((t) => t && t.length > 50).join('\n\n');
+  console.log('[parser] culinary text length:', culinaryText.length, 'preview:', culinaryText.slice(0, 200));
+  if (culinaryText) {
     try {
       onProgress?.("Extracting local cuisine...");
-      culinarySpecialties = await parseCulinaryPreamble(preamble);
+      culinarySpecialties = await parseCulinaryPreamble(culinaryText);
     } catch {
       // Non-critical — skip if extraction fails
     }
