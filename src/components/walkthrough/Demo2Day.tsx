@@ -24,11 +24,10 @@ const BANNER_H = s(8 + 28 + 8);
 // Prompt dialog dimensions
 const DIALOG_W = s(270);
 const DIALOG_TITLE_H = s(14 + 18);
-const DIALOG_MSG_H = s(8 + 15);
 const DIALOG_INPUT_H = s(32);
 const DIALOG_BTNS_H = s(40);
 const DIALOG_PADDING = s(16);
-const DIALOG_H = DIALOG_PADDING + DIALOG_TITLE_H + DIALOG_MSG_H + s(12) + DIALOG_INPUT_H + s(4) + DIALOG_BTNS_H;
+const DIALOG_H = DIALOG_PADDING + DIALOG_TITLE_H + s(12) + DIALOG_INPUT_H + s(4) + DIALOG_BTNS_H;
 const DIALOG_TOP = (H - DIALOG_H) / 2;
 const DIALOG_LEFT = (W - DIALOG_W) / 2;
 
@@ -180,12 +179,12 @@ export default function Demo2Day({ active }: { active: boolean }) {
     const dayPulled = { x: W / 2, y: CONTENT_TOP + s(80) };
 
     // Dialog text input center (computed from actual rendered layout)
-    // pad(16) + title-height(18) + msg-mt(6) + msg-lh(15) + input-mt(12) + input-h/2(16)
-    const dialogInputY = DIALOG_TOP + s(16 + 18 + 6 + 15 + 12) + DIALOG_INPUT_H / 2;
+    // pad(16) + title-height(18) + input-mt(12) + input-h/2(16)
+    const dialogInputY = DIALOG_TOP + s(16 + 18 + 12) + DIALOG_INPUT_H / 2;
     const dialogInputCenter = { x: W / 2, y: dialogInputY };
     // Dialog Add button (right half of bottom row): above dialog bottom by half btn height
-    // Actual dialog rendered height: pad(16) + title(18) + msg-mt(6) + msg-lh(15) + input-mt(12) + input(32) + btns-mt(14) + btns(40)
-    const dialogRenderedH = s(16 + 18 + 6 + 15 + 12 + 32 + 14 + 40);
+    // Actual dialog rendered height: pad(16) + title(18) + input-mt(12) + input(32) + btns-mt(14) + btns(40)
+    const dialogRenderedH = s(16 + 18 + 12 + 32 + 14 + 40);
     const dialogBtnsY = DIALOG_TOP + dialogRenderedH - DIALOG_BTNS_H / 2;
     const dialogAddCenter = { x: DIALOG_LEFT + DIALOG_W * 0.75, y: dialogBtnsY };
 
@@ -389,7 +388,6 @@ export default function Demo2Day({ active }: { active: boolean }) {
           <Animated.Text style={[styles.theme, { opacity: themeNaraOpacity }]}>
             Nara
           </Animated.Text>
-          <Text style={styles.emptyHint}>No activities yet</Text>
         </Animated.View>
 
         {/* Edit banner — positioned over top of new day content */}
@@ -417,12 +415,11 @@ export default function Demo2Day({ active }: { active: boolean }) {
         <Animated.View style={[styles.dim, { opacity: dimOpacity }]} pointerEvents="none" />
         <Animated.View style={[styles.dialog, { opacity: dialogOpacity }]} pointerEvents="none">
           <Text style={styles.dialogTitle}>New Day</Text>
-          <Text style={styles.dialogMsg}>Enter a title for this day (optional)</Text>
           <View style={styles.dialogInput}>
             <Animated.Text
               style={[styles.dialogInputPlaceholder, { opacity: Animated.subtract(1, promptTypedOpacity) }]}
             >
-              e.g. Tokyo, Travel Day
+              Title
             </Animated.Text>
             <Animated.Text
               style={[styles.dialogInputText, { opacity: promptTypedOpacity }]}
@@ -645,12 +642,6 @@ const styles = StyleSheet.create({
     paddingTop: s(12),
     paddingBottom: s(12),
   },
-  emptyHint: {
-    textAlign: 'center',
-    fontSize: s(14),
-    color: '#888',
-    marginTop: s(80),
-  },
   pullOverlay: {
     position: 'absolute',
     left: 0, right: 0,
@@ -724,14 +715,6 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     textAlign: 'center',
     height: DIALOG_TITLE_H - s(14),
-  },
-  dialogMsg: {
-    fontSize: s(12),
-    lineHeight: s(15),
-    color: '#333',
-    textAlign: 'center',
-    marginTop: s(6),
-    paddingHorizontal: s(14),
   },
   dialogInput: {
     marginTop: s(12),

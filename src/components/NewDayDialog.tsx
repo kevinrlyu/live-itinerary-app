@@ -36,13 +36,12 @@ export default function NewDayDialog({ visible, onCancel, onAdd }: Props) {
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
         <View style={styles.dialog}>
           <Text style={styles.title}>New Day</Text>
-          <Text style={styles.message}>Enter a title for this day (optional)</Text>
           <TextInput
             ref={inputRef}
             style={styles.input}
             value={value}
             onChangeText={setValue}
-            placeholder="e.g. Tokyo, Travel Day"
+            placeholder="Title"
             placeholderTextColor="#bbb"
             returnKeyType="done"
             onSubmitEditing={submit}
@@ -83,14 +82,6 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     textAlign: 'center',
   },
-  message: {
-    fontSize: 12,
-    lineHeight: 15,
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 14,
-  },
   input: {
     marginTop: 12,
     marginHorizontal: 14,
@@ -100,7 +91,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 4,
     paddingHorizontal: 8,
-    fontSize: 13,
+    fontSize: 14,
     color: '#1a1a1a',
   },
   btns: {
@@ -124,7 +115,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   btnText: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#007AFF',
   },
   btnBold: {
