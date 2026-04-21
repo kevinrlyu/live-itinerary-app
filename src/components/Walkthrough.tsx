@@ -17,8 +17,8 @@ interface Panel {
 }
 
 const PANELS: Panel[] = [
-  { title: 'Add or reorder an itinerary', body: '' },
-  { title: 'Add or remove a day', body: '' },
+  { title: 'Add or reorder itineraries', body: '' },
+  { title: 'Add or remove days', body: '' },
   { title: 'Add or edit activities', body: '' },
   { title: 'Track expenses and navigate', body: '' },
 ];
