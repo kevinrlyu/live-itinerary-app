@@ -183,8 +183,8 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
     // 8 is row 2, col 1; 0 is row 3, col 1
     const rawTap8 = keyCenter(2, 1);
     const rawTap0 = keyCenter(3, 1);
-    const tap8 = { x: rawTap8.x - X_NUDGE + 0.25, y: rawTap8.y };
-    const tap0 = { x: rawTap0.x - X_NUDGE + 0.25, y: rawTap0.y };
+    const tap8 = { x: rawTap8.x - X_NUDGE + 0.25, y: rawTap8.y - 0.25 };
+    const tap0 = { x: rawTap0.x - X_NUDGE + 0.25, y: rawTap0.y - 0.25 };
     // Modal Save button in actions row (right-aligned)
     const actionsTop = MODAL_TOP + MODAL_PAD + TITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16);
     const SAVE_W = s(60);
