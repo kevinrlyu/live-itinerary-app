@@ -332,7 +332,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                         </Text>
                         {/\(.*\)$/.test(item.name || '') && (
                           <Text style={[styles.itemDesc, item.checked && styles.itemNameChecked]}>
-                            {(item.name || '').match(/\(.*\)$/)?.[0]}
+                            {(item.name || '').match(/\((.+)\)$/)?.[1]}
                           </Text>
                         )}
                       </View>
