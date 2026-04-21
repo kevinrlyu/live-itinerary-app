@@ -26,11 +26,10 @@ const MODAL_LEFT = (W - MODAL_W) / 2;
 // Heights — pad uses 3 cols × 4 rows, key paddingV s(12) + text s(22) ≈ s(46) per row
 const KEY_ROW_H = s(46);
 const PAD_ROWS_H = KEY_ROW_H * 4;
-const TITLE_H = s(22);
-const SUBTITLE_H = s(17);
+const TITLE_H = s(20);  // fontSize s(16) + lineHeight padding
 const AMOUNT_ROW_H = s(36);
 const ACTIONS_H = s(36);
-const MODAL_H = MODAL_PAD * 2 + TITLE_H + s(4) + SUBTITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16) + ACTIONS_H;
+const MODAL_H = MODAL_PAD * 2 + TITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16) + ACTIONS_H;
 const MODAL_TOP = (H - MODAL_H) / 2;
 
 function ReceiptIconMini({ size, color = '#fff' }: { size: number; color?: string }) {
@@ -172,7 +171,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
     const pinBtn = { x: CARD_INNER_R - PIN_W / 2 - X_NUDGE, y: CARD2_TOP + CARD_FULL_H - PAD_B - BTN_H / 2 };
 
     // Keypad keys within modal (3 cols × 4 rows)
-    const padTopInModal = MODAL_PAD + TITLE_H + s(4) + SUBTITLE_H + s(16) + AMOUNT_ROW_H + s(16);
+    const padTopInModal = MODAL_PAD + TITLE_H + s(16) + AMOUNT_ROW_H + s(16);
     const PAD_TOP = MODAL_TOP + padTopInModal;
     const PAD_LEFT = MODAL_LEFT + MODAL_PAD;
     const PAD_W = MODAL_W - MODAL_PAD * 2;
@@ -187,7 +186,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
     const tap8 = { x: rawTap8.x - X_NUDGE + 0.5, y: rawTap8.y };
     const tap0 = { x: rawTap0.x - X_NUDGE + 0.5, y: rawTap0.y };
     // Modal Save button in actions row (right-aligned)
-    const actionsTop = MODAL_TOP + MODAL_PAD + TITLE_H + s(4) + SUBTITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16);
+    const actionsTop = MODAL_TOP + MODAL_PAD + TITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16);
     const SAVE_W = s(60);
     const saveCenter = { x: MODAL_LEFT + MODAL_W - MODAL_PAD - SAVE_W / 2 - X_NUDGE, y: actionsTop + ACTIONS_H / 2 - 2 };
     const start = { x: W - 22, y: H - 22 };
@@ -319,8 +318,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
         <Animated.View style={[styles.modalOverlay, { opacity: modalOpacity }]} pointerEvents="none">
           <View style={styles.modalBackdrop} />
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Expense</Text>
-            <Text style={styles.modalSubtitle} numberOfLines={1}>Fushimi Inari Shrine</Text>
+            <Text style={styles.modalTitle} numberOfLines={1}>Fushimi Inari Shrine</Text>
 
             <View style={styles.modalAmountRow}>
               <View style={styles.modalAmountText}>
@@ -519,12 +517,6 @@ const styles = StyleSheet.create({
     lineHeight: s(20),
     fontWeight: '700',
     color: '#1a1a1a',
-    marginBottom: s(2),
-  },
-  modalSubtitle: {
-    fontSize: s(12),
-    lineHeight: s(15),
-    color: '#888',
     marginBottom: s(16),
   },
   modalAmountRow: {
