@@ -492,8 +492,8 @@ Format:
   {
     "region": "Region Name",
     "items": [
-      { "name": "Dish name (description in parentheses if present)" },
-      { "name": "Another dish" }
+      { "name": "Dish name", "description": "brief description if one is provided, or null" },
+      { "name": "Another dish", "description": null }
     ]
   }
 ]
@@ -501,9 +501,11 @@ Format:
 Rules:
 - Group items by region/city as they appear in the text
 - IMPORTANT: Copy each dish/food name EXACTLY as it appears in the original text — do not paraphrase, translate, or reword
-- If a dish has a description in parentheses, include the full text with parentheses verbatim in the "name" field
+- If a dish has a description in parentheses like "Tonkotsu Ramen (rich pork bone broth)", put "Tonkotsu Ramen" in "name" and "rich pork bone broth" in "description" — strip the parentheses
+- If a dish has no description, set "description" to null
 - Include all food items, drinks, and culinary experiences mentioned
 - If no culinary content is found, return []
+- IMPORTANT: To keep the output compact, OMIT any field whose value is null.
 - Return ONLY the raw JSON array. No code blocks, no extra text.`,
         cache_control: { type: "ephemeral" },
       },
@@ -525,10 +527,13 @@ Rules:
   return parsed.map((r: any) => ({
     region: r.region || 'General',
     items: (r.items || [])
-      .map((item: any) => ({
-        name: typeof item === 'string' ? item : (item.name || ''),
-        checked: false,
-      }))
+      .map((item: any) => {
+        const rawName = typeof item === 'string' ? item : (item.name || '');
+        const desc = typeof item === 'object' ? (item.description || '') : '';
+        // Combine name and description (without parentheses) for display
+        const name = desc ? `${rawName} — ${desc}` : rawName;
+        return { name, checked: false };
+      })
       .filter((item: any) => item.name),
   }));
 }
