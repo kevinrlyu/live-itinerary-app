@@ -62,7 +62,7 @@ const pillStyles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8,
     borderRadius: 20, backgroundColor: '#f0f0f0',
   },
-  pillText: { fontSize: 13, fontWeight: '600', color: '#666' },
+  pillText: { fontSize: 14, fontWeight: '600', color: '#666' },
   pillTextActive: { color: '#fff' },
 });
 

@@ -80,27 +80,25 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Text style={styles.title}>Let's Get Started</Text>
-      {!hasStoredKey && (
-        <>
-          <Text style={styles.label}>Anthropic API Key</Text>
-          <Text style={styles.hint}>Get an API key at console.anthropic.com</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="sk-ant-..."
-            value={apiKey}
-            onChangeText={setApiKey}
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            editable={!loading}
-          />
-        </>
-      )}
+      <Text style={styles.label}>Anthropic API Key</Text>
+      <Text style={styles.hint}>Get an API key at console.anthropic.com</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="sk-ant-..."
+        placeholderTextColor="#bbb"
+        value={apiKey}
+        onChangeText={(text) => { setApiKey(text); if (hasStoredKey) setHasStoredKey(false); }}
+        autoCapitalize="none"
+        autoCorrect={false}
+        secureTextEntry={hasStoredKey}
+        editable={!loading}
+      />
       <Text style={styles.label}>Google Doc URL</Text>
       <Text style={styles.hint}>Change general access setting to "Anyone with the link"</Text>
       <TextInput
         style={styles.input}
         placeholder="https://docs.google.com/document/d/..."
+        placeholderTextColor="#bbb"
         value={url}
         onChangeText={setUrl}
         autoCapitalize="none"
@@ -132,7 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', padding: 24,
   },
   title: { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 32 },
-  label: { fontSize: 13, fontWeight: '600', color: '#444', marginBottom: 2 },
+  label: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 2 },
   input: {
     backgroundColor: '#fff', borderRadius: 12, padding: 16,
     fontSize: 14, borderWidth: 1, borderColor: '#ddd', marginBottom: 16,
@@ -145,5 +143,5 @@ const styles = StyleSheet.create({
   loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   progressText: { color: '#fff', fontSize: 14, marginLeft: 10 },
   cancel: { color: '#007AFF', fontSize: 14, textAlign: 'center', marginBottom: 16 },
-  hint: { fontSize: 12, color: '#999', marginBottom: 6 },
+  hint: { fontSize: 12, color: '#888', marginBottom: 6 },
 });

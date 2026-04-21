@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Animated,
-  ScrollView, StyleSheet, Dimensions, Alert, TextInput,
+  ScrollView, StyleSheet, Dimensions, Alert,
   PanResponder,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TripMeta } from '../types';
-import { loadApiKey, saveApiKey } from '../utils/storage';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const DRAWER_WIDTH = SCREEN_WIDTH;
@@ -297,19 +296,6 @@ export default function TripDrawer({
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(false);
-  const [apiKeyVisible, setApiKeyVisible] = useState(false);
-  const [apiKeyValue, setApiKeyValue] = useState('');
-  const [hasApiKey, setHasApiKey] = useState(false);
-
-  useEffect(() => {
-    if (visible) {
-      loadApiKey().then((key) => {
-        setHasApiKey(!!key);
-        setApiKeyValue(key || '');
-      });
-    }
-  }, [visible]);
-
   useEffect(() => {
     if (visible) {
       setMounted(true);
@@ -381,67 +367,6 @@ export default function TripDrawer({
           onDeletePress={confirmDelete}
           onReorder={onReorderTrips}
         />
-
-        <View style={styles.apiKeyRow}>
-          <Text style={styles.apiKeyLabel}>API Key</Text>
-          <View>
-            <TouchableOpacity
-              style={styles.apiKeyValue}
-              onPress={() => setApiKeyVisible(!apiKeyVisible)}
-            >
-              <Text style={styles.apiKeyValueText}>{hasApiKey ? 'Set' : 'None'}</Text>
-            </TouchableOpacity>
-            {apiKeyVisible && (
-              <View style={styles.apiKeyDropdown}>
-                <TextInput
-                  style={styles.apiKeyInput}
-                  value={apiKeyValue}
-                  onChangeText={setApiKeyValue}
-                  placeholder="sk-ant-..."
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry
-                />
-                <View style={styles.apiKeyButtons}>
-                  <TouchableOpacity
-                    style={styles.apiKeySave}
-                    onPress={() => {
-                      if (!apiKeyValue.trim()) {
-                        Alert.alert('Enter a valid API key');
-                        return;
-                      }
-                      saveApiKey(apiKeyValue.trim());
-                      setHasApiKey(true);
-                      setApiKeyVisible(false);
-                    }}
-                  >
-                    <Text style={styles.apiKeySaveText}>Save</Text>
-                  </TouchableOpacity>
-                  {hasApiKey && (
-                    <TouchableOpacity
-                      style={styles.apiKeyRemove}
-                      onPress={() => {
-                        Alert.alert('Remove API Key', 'Are you sure?', [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Remove', style: 'destructive', onPress: async () => {
-                              await saveApiKey('');
-                              setApiKeyValue('');
-                              setHasApiKey(false);
-                              setApiKeyVisible(false);
-                            },
-                          },
-                        ]);
-                      }}
-                    >
-                      <Text style={styles.apiKeyRemoveText}>Remove</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            )}
-          </View>
-        </View>
 
         <TouchableOpacity style={styles.importButton} onPress={onImportNew}>
           <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
@@ -574,87 +499,6 @@ const styles = StyleSheet.create({
   refreshTextDisabled: { opacity: 0.4 },
   deleteButton: { padding: 4 },
   deleteText: { fontSize: 14, color: '#FF3B30' },
-  apiKeyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 0,
-    paddingHorizontal: 4,
-    marginBottom: 0,
-  },
-  apiKeyLabel: {
-    fontSize: 14,
-    color: '#888',
-  },
-  apiKeyValue: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 70,
-  },
-  apiKeyValueText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  apiKeyChevron: {
-    fontSize: 11,
-    color: '#888',
-    marginLeft: 4,
-  },
-  apiKeyDropdown: {
-    position: 'absolute',
-    top: 36,
-    right: 0,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    zIndex: 10,
-    padding: 12,
-    minWidth: 220,
-  },
-  apiKeyInput: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 8,
-  },
-  apiKeyButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  apiKeySave: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  apiKeySaveText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  apiKeyRemove: {
-    backgroundColor: '#ff3b30',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  apiKeyRemoveText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
   createButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,

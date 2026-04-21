@@ -17,7 +17,7 @@ const WED_IDX = 4;
 
 const CONTENT_TOP = STATUS_H + HEADER_H + TAB_H;
 
-const THEME_H = s(16 + 22 + 8);
+const THEME_H = s(12 + 20 + 12);
 // Banner rendered height: paddingV 8 + max content. Done btn is taller: paddingV 6 + text lineHeight ~16
 const BANNER_H = s(8 + 28 + 8);
 
@@ -476,6 +476,7 @@ const cardStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#007AFF44',
     borderStyle: 'dashed',
+    borderRadius: s(10),
   },
   time: {
     fontSize: s(12),
@@ -500,9 +501,9 @@ const cardStyles = StyleSheet.create({
     color: '#1a1a1a',
   },
   description: {
-    fontSize: s(13),
-    lineHeight: s(18),
-    color: '#666',
+    fontSize: s(12),
+    lineHeight: s(17),
+    color: '#1a1a1a',
     fontStyle: 'italic',
     marginTop: s(4),
   },
@@ -590,14 +591,14 @@ const styles = StyleSheet.create({
     paddingVertical: s(8),
   },
   tabDow: {
-    fontSize: s(13),
-    lineHeight: s(17),
+    fontSize: s(12),
+    lineHeight: s(16),
     fontWeight: '700',
     color: '#1a1a1a',
   },
   tabDate: {
-    fontSize: s(11),
-    lineHeight: s(14),
+    fontSize: s(12),
+    lineHeight: s(16),
     color: '#888',
     marginTop: s(1),
   },
@@ -636,13 +637,13 @@ const styles = StyleSheet.create({
     bottom: BOTTOM_TAB_H,
   },
   theme: {
-    fontSize: s(18),
-    lineHeight: s(22),
+    fontSize: s(16),
+    lineHeight: s(20),
     fontWeight: '700',
     color: '#333',
     paddingHorizontal: s(16),
-    paddingTop: s(16),
-    paddingBottom: s(8),
+    paddingTop: s(12),
+    paddingBottom: s(12),
   },
   emptyHint: {
     textAlign: 'center',
@@ -685,8 +686,8 @@ const styles = StyleSheet.create({
     paddingVertical: s(8),
   },
   removeDayText: {
-    fontSize: s(13),
-    lineHeight: s(17),
+    fontSize: s(14),
+    lineHeight: s(18),
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -697,9 +698,9 @@ const styles = StyleSheet.create({
     paddingVertical: s(6),
   },
   doneBtnText: {
-    fontSize: s(13),
-    lineHeight: s(17),
-    fontWeight: '700',
+    fontSize: s(14),
+    lineHeight: s(18),
+    fontWeight: '600',
     color: '#fff',
   },
   dim: {

@@ -278,7 +278,8 @@ const styles = StyleSheet.create({
   transportRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
+    marginHorizontal: 16,
+    paddingHorizontal: 4,
     marginVertical: 1,
     paddingVertical: 4,
   },
@@ -295,6 +296,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#007AFF44',
     borderStyle: 'dashed',
+    borderRadius: 10,
   },
   buttonDisabled: {
     opacity: 0.4,

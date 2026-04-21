@@ -184,8 +184,8 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
     // 8 is row 2, col 1; 0 is row 3, col 1
     const rawTap8 = keyCenter(2, 1);
     const rawTap0 = keyCenter(3, 1);
-    const tap8 = { x: rawTap8.x - X_NUDGE, y: rawTap8.y };
-    const tap0 = { x: rawTap0.x - X_NUDGE, y: rawTap0.y };
+    const tap8 = { x: rawTap8.x - X_NUDGE + 0.5, y: rawTap8.y };
+    const tap0 = { x: rawTap0.x - X_NUDGE + 0.5, y: rawTap0.y };
     // Modal Save button in actions row (right-aligned)
     const actionsTop = MODAL_TOP + MODAL_PAD + TITLE_H + s(4) + SUBTITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16);
     const SAVE_W = s(60);
@@ -428,9 +428,9 @@ const cardStyles = StyleSheet.create({
     color: '#1a1a1a',
   },
   description: {
-    fontSize: s(13),
-    lineHeight: s(18),
-    color: '#666',
+    fontSize: s(12),
+    lineHeight: s(17),
+    color: '#1a1a1a',
     fontStyle: 'italic',
     marginTop: s(4),
   },
@@ -486,16 +486,16 @@ const styles = StyleSheet.create({
   },
   tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(8) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
-  tabDow: { fontSize: s(13), lineHeight: s(17), fontWeight: '700', color: '#1a1a1a' },
-  tabDate: { fontSize: s(11), lineHeight: s(14), color: '#888', marginTop: 1 },
+  tabDow: { fontSize: s(12), lineHeight: s(16), fontWeight: '700', color: '#1a1a1a' },
+  tabDate: { fontSize: s(12), lineHeight: s(16), color: '#888', marginTop: 1 },
   tabDowActive: { color: '#007AFF' },
   tabDateActive: { color: '#007AFF' },
   dayTitle: {
     paddingHorizontal: s(16),
-    paddingTop: s(16),
-    paddingBottom: s(8),
-    fontSize: s(18),
-    lineHeight: s(22),
+    paddingTop: s(12),
+    paddingBottom: s(12),
+    fontSize: s(16),
+    lineHeight: s(20),
     fontWeight: '700',
     color: '#333',
   },

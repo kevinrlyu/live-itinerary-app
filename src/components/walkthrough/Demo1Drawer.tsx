@@ -7,7 +7,7 @@ import { FRAME_W as W, FRAME_H as H, s, STATUS_H } from './scale';
 const HELP_BLOCK_H = s(12 * 2 + 18);       // paddingV 12 + lineHeight 18
 const HELP_MARGIN_BOTTOM = s(16);
 const HELP_MARGIN_TOP = s(8);
-const BTN_BLOCK_H = s(14 * 2 + 19);        // padding 14 + lineHeight 19
+const BTN_BLOCK_H = s(14 * 2 + 18);        // padding 14 + lineHeight 18
 const BTN_MARGIN_TOP = s(8);
 
 const HELP_CENTER_Y = H - HELP_MARGIN_BOTTOM - HELP_BLOCK_H / 2;
@@ -22,7 +22,7 @@ const IMPORT_CENTER_Y = CREATE_CENTER_Y - BTN_BLOCK_H / 2 - BTN_MARGIN_TOP - BTN
 // not the title (lineHeight 20). Include border + marginBottom.
 const HEADER_BLOCK_H = s(8 * 2 + 34) + 1 + s(16);
 const LIST_TOP_PAD = s(8) + 1;
-const ROW_H = s(12 * 2 + 19 + 2 + 15) + 1; // paddingV + title + gap + date + border
+const ROW_H = s(12 * 2 + 20 + 2 + 15) + 1; // paddingV + title + gap + date + border
 
 const LIST_TOP_Y = STATUS_H + HEADER_BLOCK_H;
 const VAN_ROW_TOP_Y = LIST_TOP_Y + LIST_TOP_PAD + ROW_H; // Japan row above
@@ -171,15 +171,6 @@ export default function Demo1Drawer({ active }: Props) {
             </Animated.View>
           </View>
 
-          {/* API Key row */}
-          <View style={styles.apiKeyRow}>
-            <Text style={styles.apiKeyLabel}>API Key</Text>
-            <View style={styles.apiKeyValue}>
-              <Text style={styles.apiKeyValueText}>Set</Text>
-              <Text style={styles.apiKeyChevron}>▾</Text>
-            </View>
-          </View>
-
           {/* Import button */}
           <Animated.View style={[styles.importButton, { transform: [{ scale: importScale }] }]}>
             <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
@@ -300,8 +291,8 @@ const styles = StyleSheet.create({
   },
   tripInfo: { flex: 1 },
   tripTitle: {
-    fontSize: s(15),
-    lineHeight: s(19),
+    fontSize: s(16),
+    lineHeight: s(20),
     fontWeight: '600',
     color: '#1a1a1a',
   },
@@ -325,37 +316,6 @@ const styles = StyleSheet.create({
     fontSize: s(14),
     color: '#FF3B30',
   },
-  apiKeyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: s(4),
-  },
-  apiKeyLabel: {
-    fontSize: s(14),
-    lineHeight: s(18),
-    color: '#888',
-  },
-  apiKeyValue: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: s(8),
-    paddingVertical: s(6),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: s(70),
-  },
-  apiKeyValueText: {
-    fontSize: s(14),
-    lineHeight: s(18),
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  apiKeyChevron: {
-    fontSize: s(11),
-    color: '#888',
-    marginLeft: s(4),
-  },
   importButton: {
     backgroundColor: '#007AFF',
     borderRadius: s(12),
@@ -365,8 +325,8 @@ const styles = StyleSheet.create({
   },
   importButtonText: {
     color: '#fff',
-    fontSize: s(15),
-    lineHeight: s(19),
+    fontSize: s(14),
+    lineHeight: s(18),
     fontWeight: '700',
   },
   createButton: {
@@ -378,8 +338,8 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     color: '#fff',
-    fontSize: s(15),
-    lineHeight: s(19),
+    fontSize: s(14),
+    lineHeight: s(18),
     fontWeight: '700',
   },
   helpButton: {

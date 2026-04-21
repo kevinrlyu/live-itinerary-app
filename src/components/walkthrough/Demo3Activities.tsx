@@ -268,10 +268,10 @@ export default function Demo3Activities({ active }: { active: boolean }) {
     // Save button: paddingH s(24) + "Save" ~s(30) wide ≈ s(78) total, paddingV s(10) + text ~s(18) ≈ s(38) tall
     const saveBtnW = s(78);
     const saveBtnH = s(38);
-    const saveBtnCenter = { x: W - s(20) - saveBtnW / 2 - s(3) - 2, y: H - s(16) - saveBtnH / 2 - s(3) - 1 };
+    const saveBtnCenter = { x: W - s(20) - saveBtnW / 2 - s(3) - 1, y: H - s(16) - saveBtnH / 2 - s(3) };
     // Cancel text: paddingH s(16) + "Cancel" ~s(45) wide ≈ s(77), same height
     const cancelW = s(77);
-    const cancelCenter = { x: W - s(20) - saveBtnW - s(12) - cancelW / 2 - s(3) - 6.5, y: H - s(16) - saveBtnH / 2 - s(3) - 1 };
+    const cancelCenter = { x: W - s(20) - saveBtnW - s(12) - cancelW / 2 - s(3) - 4.5, y: H - s(16) - saveBtnH / 2 - s(3) };
     const start = { x: W - 22, y: H - 22 };
 
     const script = Animated.loop(
@@ -438,6 +438,7 @@ const cardStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#007AFF44',
     borderStyle: 'dashed',
+    borderRadius: s(10),
   },
   time: {
     fontSize: s(12),
@@ -462,9 +463,9 @@ const cardStyles = StyleSheet.create({
     color: '#1a1a1a',
   },
   description: {
-    fontSize: s(13),
-    lineHeight: s(18),
-    color: '#666',
+    fontSize: s(12),
+    lineHeight: s(17),
+    color: '#1a1a1a',
     fontStyle: 'italic',
     marginTop: s(4),
   },
@@ -518,8 +519,8 @@ const styles = StyleSheet.create({
   },
   tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(8) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
-  tabDow: { fontSize: s(13), lineHeight: s(17), fontWeight: '700', color: '#1a1a1a' },
-  tabDate: { fontSize: s(11), lineHeight: s(14), color: '#888', marginTop: 1 },
+  tabDow: { fontSize: s(12), lineHeight: s(16), fontWeight: '700', color: '#1a1a1a' },
+  tabDate: { fontSize: s(12), lineHeight: s(16), color: '#888', marginTop: 1 },
   tabDowActive: { color: '#007AFF' },
   tabDateActive: { color: '#007AFF' },
   editBanner: {
@@ -529,8 +530,8 @@ const styles = StyleSheet.create({
     paddingVertical: s(8),
   },
   removeDayText: {
-    fontSize: s(13),
-    lineHeight: s(17),
+    fontSize: s(14),
+    lineHeight: s(18),
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -538,13 +539,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF', borderRadius: s(8),
     paddingHorizontal: s(16), paddingVertical: s(6),
   },
-  doneBtnText: { fontSize: s(13), lineHeight: s(17), fontWeight: '700', color: '#fff' },
+  doneBtnText: { fontSize: s(14), lineHeight: s(18), fontWeight: '600', color: '#fff' },
   dayTitle: {
     paddingHorizontal: s(16),
-    paddingTop: s(16),
-    paddingBottom: s(8),
-    fontSize: s(18),
-    lineHeight: s(22),
+    paddingTop: s(12),
+    paddingBottom: s(12),
+    fontSize: s(16),
+    lineHeight: s(20),
     fontWeight: '700',
     color: '#333',
   },
@@ -631,8 +632,8 @@ const styles = StyleSheet.create({
   pillActive: {
     backgroundColor: '#007AFF',
   },
-  pillText: { fontSize: s(13), fontWeight: '600', color: '#666' },
-  pillTextActive: { fontSize: s(13), fontWeight: '600', color: '#fff' },
+  pillText: { fontSize: s(14), fontWeight: '600', color: '#666' },
+  pillTextActive: { fontSize: s(14), fontWeight: '600', color: '#fff' },
   parentChip: {
     minWidth: s(68),
     alignItems: 'center',
@@ -659,7 +660,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timeText: { fontSize: s(15), color: '#1a1a1a' },
+  timeText: { fontSize: s(14), color: '#1a1a1a' },
   placeholder: { color: '#bbb', fontWeight: '400' },
   input: {
     backgroundColor: '#f5f5f5',
@@ -669,7 +670,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: s(8),
   },
-  inputText: { fontSize: s(15), color: '#1a1a1a' },
+  inputText: { fontSize: s(14), color: '#1a1a1a' },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -678,7 +679,7 @@ const styles = StyleSheet.create({
     marginTop: s(12),
   },
   cancelText: {
-    fontSize: s(15),
+    fontSize: s(14),
     fontWeight: '600',
     color: '#888',
     paddingHorizontal: s(16),
@@ -691,7 +692,7 @@ const styles = StyleSheet.create({
     paddingVertical: s(10),
   },
   saveText: {
-    fontSize: s(15),
+    fontSize: s(14),
     fontWeight: '600',
     color: '#fff',
   },
