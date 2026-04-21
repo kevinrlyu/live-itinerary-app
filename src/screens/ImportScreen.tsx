@@ -40,6 +40,14 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
     });
   }, []);
 
+  // Persist the API key whenever it changes (debounced to avoid saving on every keystroke)
+  useEffect(() => {
+    const trimmed = apiKey.trim();
+    if (!trimmed || hasStoredKey) return;
+    const timer = setTimeout(() => saveApiKey(trimmed), 500);
+    return () => clearTimeout(timer);
+  }, [apiKey, hasStoredKey]);
+
   const handleImport = async () => {
     if (!apiKey.trim()) {
       Alert.alert('API Key Required', 'Please enter your Anthropic API key.');
@@ -88,7 +96,6 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
         placeholderTextColor="#bbb"
         value={apiKey}
         onChangeText={(text) => { setApiKey(text); if (hasStoredKey) setHasStoredKey(false); }}
-        onBlur={() => { if (apiKey.trim()) saveApiKey(apiKey.trim()); }}
         autoCapitalize="none"
         autoCorrect={false}
         secureTextEntry={hasStoredKey}
