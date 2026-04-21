@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 0,
-    marginTop: 16,
+    marginTop: 8,
   },
   currencyLabel: {
     fontSize: 14,

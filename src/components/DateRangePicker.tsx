@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   arrow: {
     width: `${100 / 7}%`,
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   arrowText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },

@@ -621,8 +621,8 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: '100%', borderRadius: 2, backgroundColor: '#007AFF' },
   addLabel: {
-    fontSize: s(11),
-    lineHeight: s(14),
+    fontSize: s(12),
+    lineHeight: s(15),
     fontWeight: '700',
     color: '#007AFF',
     marginTop: s(4),

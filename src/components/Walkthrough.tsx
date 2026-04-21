@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 18, color: '#888' },
+  closeText: { fontSize: 16, color: '#888' },
   scroll: { flex: 1 },
   panel: {
     width: SCREEN_WIDTH,
@@ -149,11 +149,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  placeholderText: {
-    fontSize: 13,
-    color: '#999',
-    fontWeight: '600',
   },
   caption: {
     paddingHorizontal: 28,
@@ -170,7 +165,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   body: {
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 22,
     color: '#444',
   },

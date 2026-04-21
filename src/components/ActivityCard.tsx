@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   expenseAmountText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#fff',
   },
@@ -282,10 +282,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     marginVertical: 1,
     paddingVertical: 4,
-  },
-  transportTime: {
-    fontSize: 11,
-    color: '#bbb',
   },
   transportTitle: {
     flex: 1,

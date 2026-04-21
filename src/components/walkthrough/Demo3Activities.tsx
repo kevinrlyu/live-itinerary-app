@@ -647,8 +647,8 @@ const styles = StyleSheet.create({
   parentChipActive: {
     backgroundColor: '#007AFF',
   },
-  parentChipText: { fontSize: s(13), fontWeight: '600', color: '#666' },
-  parentChipTextActive: { fontSize: s(13), fontWeight: '600', color: '#fff' },
+  parentChipText: { fontSize: s(14), fontWeight: '600', color: '#666' },
+  parentChipTextActive: { fontSize: s(14), fontWeight: '600', color: '#fff' },
   timeRow: {
     flexDirection: 'row',
     gap: s(12),

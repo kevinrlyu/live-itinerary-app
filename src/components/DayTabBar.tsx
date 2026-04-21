@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   addLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#007AFF',
   },

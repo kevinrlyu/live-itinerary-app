@@ -208,7 +208,7 @@ const pickerStyles = StyleSheet.create({
   },
   slotsContainer: { height: SLOT_H * 5, marginTop: -SLOT_H },
   slot: { height: SLOT_H, alignItems: 'center', justifyContent: 'center' },
-  slotText: { fontSize: 15, color: '#888' },
+  slotText: { fontSize: 14, color: '#888' },
   slotTextActive: { color: '#1a1a1a', fontWeight: '700' },
   colon: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginHorizontal: 1 },
 });
@@ -369,6 +369,7 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
             contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardHeight || 16 }]}
             keyboardShouldPersistTaps="handled"
             scrollEnabled={activeTimeField === null}
+            directionalLockEnabled
             onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
             scrollEventThrottle={16}
           >
@@ -398,7 +399,7 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
             {actType === 'activity' && parentOptions.length > 0 && (
               <View style={styles.parentRow}>
                 <Text style={styles.parentLabel}>Parent Activity</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.parentScroll}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.parentScroll} nestedScrollEnabled alwaysBounceVertical={false} directionalLockEnabled>
                   <TouchableOpacity
                     style={[styles.parentChip, !parentId && styles.parentChipActive]}
                     onPress={() => setParentId(null)}
@@ -691,7 +692,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   parentChipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#666',
     maxWidth: 120,

@@ -453,7 +453,7 @@ const cardStyles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBtnAmount: {
-    fontSize: s(13),
+    fontSize: s(14),
     fontWeight: '700',
     color: '#fff',
   },

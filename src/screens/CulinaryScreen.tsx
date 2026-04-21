@@ -539,12 +539,6 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     flexGrow: 1,
   },
-  emptyText: {
-    fontSize: 15,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 40,
-  },
   section: {
     backgroundColor: '#fff',
     borderRadius: 12,
