@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
     marginBottom: s(12),
   },
   sheetHeading: {
-    fontSize: s(18), lineHeight: s(22),
+    fontSize: s(16), lineHeight: s(20),
     fontWeight: '700', color: '#1a1a1a',
   },
   sheetDelete: {
