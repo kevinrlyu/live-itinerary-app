@@ -557,9 +557,10 @@ const styles = StyleSheet.create({
     height: INSERT_H,
   },
   insertText: {
-    fontSize: s(18),
+    fontSize: s(14),
     fontWeight: '600',
     color: '#007AFF',
+    marginTop: -s(1),
     backgroundColor: '#D6EAFF',
     paddingHorizontal: s(20),
     height: s(32),
