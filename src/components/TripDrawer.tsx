@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   tripDate: { fontSize: 12, color: '#888', marginTop: 2 },
   tripActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   refreshButton: { padding: 4 },
-  refreshText: { fontSize: 18, color: '#34C759', fontWeight: '700' },
+  refreshText: { fontSize: 14, color: '#34C759', fontWeight: '700' },
   refreshTextDisabled: { opacity: 0.4 },
   deleteButton: { padding: 4 },
   deleteText: { fontSize: 14, color: '#FF3B30' },

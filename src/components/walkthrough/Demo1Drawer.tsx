@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     gap: s(8),
   },
   refreshText: {
-    fontSize: s(18),
+    fontSize: s(14),
     color: '#34C759',
     fontWeight: '700',
   },
