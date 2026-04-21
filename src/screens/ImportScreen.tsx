@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
+  View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard,
   ActivityIndicator, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { fetchDocText, fetchDocTitle } from '../utils/googleDocs';
@@ -86,6 +86,7 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
   };
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Text style={styles.title}>Let's Get Started</Text>
       <Text style={styles.label}>Anthropic API Key</Text>
@@ -129,6 +130,7 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
         </TouchableOpacity>
       )}
     </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
