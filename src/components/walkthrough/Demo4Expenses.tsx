@@ -21,7 +21,7 @@ const CARD3_TOP = CARD2_TOP + CARD_FULL_H + CARD_GAP;
 
 // ExpenseInput modal dimensions (mirrors real component: width 85%, padding 24)
 const MODAL_W = Math.min(W * 0.85, s(340));
-const MODAL_PAD = s(20);
+const MODAL_PAD = s(24);
 const MODAL_LEFT = (W - MODAL_W) / 2;
 // Heights — pad uses 3 cols × 4 rows, key paddingV s(12) + text s(22) ≈ s(46) per row
 const KEY_ROW_H = s(46);
@@ -335,8 +335,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
                 </View>
               </View>
               <View style={styles.modalCurrencyBtn}>
-                <Text style={styles.modalCurrencyText}>JPY</Text>
-                <Text style={styles.modalCurrencyChevron}>▾</Text>
+                <Text style={styles.modalCurrencyText}>{'\u{1F1EF}\u{1F1F5}'} JPY</Text>
               </View>
             </View>
 
@@ -508,7 +507,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: '#fff',
-    borderRadius: s(14),
+    borderRadius: s(16),
     padding: MODAL_PAD,
     width: MODAL_W,
   },
@@ -534,7 +533,7 @@ const styles = StyleSheet.create({
   modalAmountPlaceholder: {
     position: 'absolute',
     left: 0,
-    fontSize: s(24),
+    fontSize: s(28),
     fontWeight: '700',
     color: '#ccc',
   },
@@ -543,42 +542,38 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   modalAmountSymInactive: {
-    fontSize: s(24),
+    fontSize: s(28),
     fontWeight: '700',
     color: '#ccc',
   },
   modalAmountSym: {
-    fontSize: s(24),
+    fontSize: s(28),
     fontWeight: '700',
     color: '#1a1a1a',
   },
   modalAmountDigit: {
-    fontSize: s(24),
+    fontSize: s(28),
     fontWeight: '700',
     color: '#1a1a1a',
   },
   modalCurrencyBtn: {
     backgroundColor: '#f0f0f0',
     borderRadius: s(8),
-    paddingHorizontal: s(10),
     paddingVertical: s(6),
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: s(70),
   },
   modalCurrencyText: {
-    fontSize: s(13),
-    fontWeight: '600',
-    color: '#333',
-  },
-  modalCurrencyChevron: {
-    fontSize: s(9),
-    color: '#888',
-    marginLeft: s(3),
+    fontSize: s(14),
+    fontWeight: '700',
+    color: '#007AFF',
   },
   modalPad: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: s(8),
+    marginBottom: s(16),
   },
   modalPadKey: {
     width: '33.33%',
@@ -587,7 +582,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalPadKeyText: {
-    fontSize: s(19),
+    fontSize: s(20),
     fontWeight: '500',
     color: '#1a1a1a',
   },
