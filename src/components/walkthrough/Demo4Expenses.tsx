@@ -188,7 +188,7 @@ export default function Demo4Expenses({ active }: { active: boolean }) {
     // Modal Save button in actions row (right-aligned)
     const actionsTop = MODAL_TOP + MODAL_PAD + TITLE_H + s(16) + AMOUNT_ROW_H + s(16) + PAD_ROWS_H + s(16);
     const SAVE_W = s(60);
-    const saveCenter = { x: MODAL_LEFT + MODAL_W - MODAL_PAD - SAVE_W / 2 - X_NUDGE, y: actionsTop + ACTIONS_H / 2 + 2 };
+    const saveCenter = { x: MODAL_LEFT + MODAL_W - MODAL_PAD - SAVE_W / 2 - X_NUDGE, y: actionsTop + ACTIONS_H / 2 + 1.5 };
     const start = { x: W - 22, y: H - 22 };
 
     const script = Animated.loop(
