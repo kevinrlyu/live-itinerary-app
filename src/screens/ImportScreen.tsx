@@ -88,6 +88,7 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
         placeholderTextColor="#bbb"
         value={apiKey}
         onChangeText={(text) => { setApiKey(text); if (hasStoredKey) setHasStoredKey(false); }}
+        onBlur={() => { if (apiKey.trim()) saveApiKey(apiKey.trim()); }}
         autoCapitalize="none"
         autoCorrect={false}
         secureTextEntry={hasStoredKey}
