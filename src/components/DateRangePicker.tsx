@@ -132,6 +132,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   arrow: {
+    width: `${100 / 7}%`,
+    alignItems: 'center',
     padding: 8,
   },
   arrowText: {
