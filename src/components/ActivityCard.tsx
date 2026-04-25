@@ -4,12 +4,7 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
 import ReceiptIcon from './icons/ReceiptIcon';
-
-const ACCENT_COLORS: Record<string, string> = {
-  default: '#007AFF',
-  hotel: '#E91E63',
-  meal: '#E53935',
-};
+import { useSettings, ThemeColors, MapsProvider } from '../contexts/SettingsContext';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
@@ -61,8 +56,13 @@ function to12h(time: string): string {
   return `${h}:${m}${suffix}`;
 }
 
+function formatTime(time: string, format: '12h' | '24h'): string {
+  return format === '24h' ? time : to12h(time);
+}
+
 // Convert any HH:MM (24h) times found in a string to 12h format
-function convertTimesIn(text: string): string {
+function convertTimesIn(text: string, format: '12h' | '24h'): string {
+  if (format === '24h') return text;
   return text.replace(/\b(\d{1,2}):(\d{2})\b/g, (match, hStr, m) => {
     const h = parseInt(hStr, 10);
     if (h > 23) return match; // not a valid time
@@ -72,18 +72,38 @@ function convertTimesIn(text: string): string {
   });
 }
 
+function buildMapsUrl(query: string, provider: MapsProvider): string {
+  switch (provider) {
+    case 'apple':
+      return `https://maps.apple.com/?q=${encodeURIComponent(query)}`;
+    case 'amap':
+      return `https://uri.amap.com/search?keyword=${encodeURIComponent(query)}`;
+    case 'google':
+    default:
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+}
+
+function getActivityAccent(category: string | null, colors: ThemeColors): string {
+  if (category === 'hotel') return colors.stayAccent;
+  if (category === 'meal') return colors.foodAccent;
+  return colors.accent;
+}
+
 export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense, isEditMode, onLongPress }: Props) {
+  const { settings, colors } = useSettings();
+
   const openDirections = () => {
-    const query = encodeURIComponent(activity.location || activity.title || '');
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+    const query = activity.location || activity.title || '';
+    Linking.openURL(buildMapsUrl(query, settings.mapsProvider));
   };
 
-  const accent = ACCENT_COLORS[activity.category ?? 'default'] ?? ACCENT_COLORS.default;
+  const accent = getActivityAccent(activity.category ?? null, colors);
 
   const formatTimeRange = () => {
     if (!activity.time) return null;
-    if (activity.timeEnd) return `${to12h(activity.time)} – ${to12h(activity.timeEnd)}`;
-    return to12h(activity.time);
+    if (activity.timeEnd) return `${formatTime(activity.time, settings.timeFormat)} – ${formatTime(activity.timeEnd, settings.timeFormat)}`;
+    return formatTime(activity.time, settings.timeFormat);
   };
 
   const handleLongPress = () => {
@@ -96,16 +116,16 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
   // Transport: faint tappable row — entire row opens Google Maps
   if (activity.type === 'transport') {
     const label = activity.time
-      ? `${to12h(activity.time)}: ${activity.title}`
+      ? `${formatTime(activity.time, settings.timeFormat)}: ${activity.title}`
       : activity.title;
     return (
       <Pressable
-        style={[styles.transportRow, isEditMode && styles.editModeHighlight]}
+        style={[styles.transportRow, isEditMode && [styles.editModeHighlight, { borderColor: colors.accent + '44' }]]}
         onPress={isEditMode ? undefined : openDirections}
         onLongPress={isEditMode ? handleLongPress : undefined}
         delayLongPress={400}
       >
-        <Text style={styles.transportTitle} numberOfLines={2}>{label}</Text>
+        <Text style={[styles.transportTitle, { color: colors.textSecondary }]} numberOfLines={2}>{label}</Text>
       </Pressable>
     );
   }
@@ -119,13 +139,14 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
     >
       <View style={[
         styles.card,
+        { backgroundColor: colors.cardBackground, shadowColor: colors.shadow },
         activity.completed && styles.completedCard,
         isChild && styles.childCard,
         isGroupHeader && styles.groupHeaderCard,
         isCurrent && [styles.currentCard, { borderLeftColor: accent, shadowColor: accent }],
-        isEditMode && styles.editModeHighlight,
+        isEditMode && [styles.editModeHighlight, { borderColor: colors.accent + '44' }],
       ]}>
-        {timeLabel && <Text style={styles.time}>{timeLabel}</Text>}
+        {timeLabel && <Text style={[styles.time, { color: colors.textSecondary }]}>{timeLabel}</Text>}
         <View style={[styles.row, isGroupHeader && styles.groupHeaderRow]}>
           <TouchableOpacity testID="toggle-button" onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(activity.id); }} style={styles.checkbox}>
             <Text style={[styles.checkboxText, { color: accent }]}>
@@ -133,12 +154,12 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
             </Text>
           </TouchableOpacity>
           <View style={styles.content}>
-            <Text style={[styles.title, activity.completed && styles.completedText]}>
+            <Text style={[styles.title, { color: colors.textPrimary }, activity.completed && styles.completedText]}>
               {(activity.title || '').replace(/[\u2018\u2019]/g, "'").replace(/[\u200B\u200C\u200D\uFEFF]/g, '')}
             </Text>
-            {activity.description?.trim() ? <Text style={styles.description}>{activity.description.trim()}</Text> : null}
-            {activity.hours?.trim() ? <Text style={styles.hours}>Hours: {convertTimesIn(activity.hours.trim())}</Text> : null}
-            {activity.notes?.trim() ? <Text style={styles.notes}>{activity.notes.trim()}</Text> : null}
+            {activity.description?.trim() ? <Text style={[styles.description, { color: colors.textPrimary }]}>{activity.description.trim()}</Text> : null}
+            {activity.hours?.trim() ? <Text style={[styles.hours, { color: colors.textSecondary }]}>Hours: {convertTimesIn(activity.hours.trim(), settings.timeFormat)}</Text> : null}
+            {activity.notes?.trim() ? <Text style={[styles.notes, { color: colors.textSecondary }]}>{activity.notes.trim()}</Text> : null}
           </View>
         </View>
         <View style={styles.buttonRow}>

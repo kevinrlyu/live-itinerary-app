@@ -4,6 +4,7 @@ import {
   Animated, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useSettings } from '../contexts/SettingsContext';
 
 const MIN_TAB_WIDTH = 70;
 
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
+  const { colors } = useSettings();
   const scrollViewRef = useRef<ScrollView>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -118,7 +120,7 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
   });
 
   return (
-    <View style={styles.container} onLayout={onContainerLayout}>
+    <View style={[styles.container, { backgroundColor: colors.headerBackground, borderBottomColor: colors.border }]} onLayout={onContainerLayout}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -134,23 +136,24 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.key}
-            style={[styles.tab, { width: tabWidth }, tab.isFocused && styles.tabActive]}
+            style={[styles.tab, { width: tabWidth }, tab.isFocused && [styles.tabActive, { borderBottomColor: colors.accent }]]}
             onPress={() => onTabPress(tab.key)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.tabDayOfWeek, tab.isFocused && styles.tabTextActive]}>{tab.dayOfWeek}</Text>
-            <Text style={[styles.tabMonthDay, tab.isFocused && styles.tabTextActive]}>{tab.monthDay}</Text>
+            <Text style={[styles.tabDayOfWeek, { color: colors.textPrimary }, tab.isFocused && { color: colors.accent }]}>{tab.dayOfWeek}</Text>
+            <Text style={[styles.tabMonthDay, { color: colors.textSecondary }, tab.isFocused && { color: colors.accent }]}>{tab.monthDay}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {/* Overlay progress indicator — does not affect tab bar size */}
       {showAddIndicator && (
-        <View style={styles.addOverlay} pointerEvents="none">
-          <View style={styles.progressTrack}>
+        <View style={[styles.addOverlay, { backgroundColor: colors.headerBackground + 'D9' }]} pointerEvents="none">
+          <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
             <Animated.View
               style={[
                 styles.progressFill,
+                { backgroundColor: colors.accent },
                 {
                   width: holdProgressAnim.interpolate({
                     inputRange: [0, 1],
@@ -160,7 +163,7 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
               ]}
             />
           </View>
-          <Animated.Text style={[styles.addLabel, { opacity: addLabelOpacity }]}>
+          <Animated.Text style={[styles.addLabel, { opacity: addLabelOpacity, color: colors.accent }]}>
             Adding day
           </Animated.Text>
         </View>

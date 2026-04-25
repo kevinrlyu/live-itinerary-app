@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Day, Activity } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 import ActivityCard from '../components/ActivityCard';
 import ActivityEditSheet from '../components/ActivityEditSheet';
 import InsertActivityButton from '../components/InsertActivityButton';
@@ -39,6 +40,7 @@ export default function DayScreen({
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [isNewActivity, setIsNewActivity] = useState(false);
+  const { colors } = useSettings();
 
   useEffect(() => {
     onEditingChange?.(editingActivity !== null);
@@ -244,14 +246,14 @@ export default function DayScreen({
           <TouchableOpacity
             activeOpacity={0.6}
             onPress={() => toggleCollapse(header.id)}
-            style={styles.chevronBadge}
+            style={[styles.chevronBadge, { backgroundColor: colors.borderMedium }]}
           >
-            <Text style={styles.chevronText}>{isCollapsed ? '▸' : '▾'} {children.length}</Text>
+            <Text style={[styles.chevronText, { color: colors.textSecondary }]}>{isCollapsed ? '▸' : '▾'} {children.length}</Text>
           </TouchableOpacity>
         </View>
         {!isCollapsed && (
           <View style={styles.childrenWrapper}>
-            <View style={styles.groupLine} />
+            <View style={[styles.groupLine, { backgroundColor: colors.border }]} />
             <View style={styles.childrenList}>
               {children.map((child) => renderActivity(child, true))}
             </View>
@@ -284,18 +286,18 @@ export default function DayScreen({
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Edit mode banner */}
       {editMode && (
-        <View style={styles.editBanner}>
+        <View style={[styles.editBanner, { backgroundColor: colors.editBannerBackground }]}>
           {onRemoveDay ? (
             <TouchableOpacity onPress={() => { exitEditMode(); onRemoveDay(day.date); }}>
-              <Text style={styles.removeDayText}>Remove Day</Text>
+              <Text style={[styles.removeDayText, { color: colors.destructive }]}>Remove Day</Text>
             </TouchableOpacity>
           ) : (
-            <Text style={styles.editBannerText}>Editing</Text>
+            <Text style={[styles.editBannerText, { color: colors.accent }]}>Editing</Text>
           )}
-          <TouchableOpacity onPress={exitEditMode} style={styles.doneBtnBanner}>
+          <TouchableOpacity onPress={exitEditMode} style={[styles.doneBtnBanner, { backgroundColor: colors.accent }]}>
             <Text style={styles.doneBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -303,22 +305,22 @@ export default function DayScreen({
 
       {editMode && editingTheme ? (
         <TextInput
-          style={styles.themeInput}
+          style={[styles.themeInput, { color: colors.textPrimary, backgroundColor: colors.cardBackground, borderBottomColor: colors.accent }]}
           value={themeText}
           onChangeText={setThemeText}
           onBlur={saveTheme}
           onSubmitEditing={saveTheme}
           placeholder="Day title (e.g. Tokyo, Travel Day)"
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.textTertiary}
           autoFocus
           returnKeyType="done"
         />
       ) : editMode ? (
         <TouchableOpacity onPress={() => { setThemeText(day.theme); setEditingTheme(true); }}>
-          <Text style={styles.theme}>{day.theme || 'Tap to add title'}</Text>
+          <Text style={[styles.theme, { color: colors.textPrimary }]}>{day.theme || 'Tap to add title'}</Text>
         </TouchableOpacity>
       ) : (
-        day.theme ? <Text style={styles.theme}>{day.theme}</Text> : null
+        day.theme ? <Text style={[styles.theme, { color: colors.textPrimary }]}>{day.theme}</Text> : null
       )}
 
       <ScrollView
@@ -354,12 +356,13 @@ export default function DayScreen({
 
       {/* Pull-and-hold overlay — absolutely positioned so it doesn't affect ScrollView layout */}
       {isPulling && !editMode && (
-        <View style={styles.pullOverlay} pointerEvents="none">
+        <View style={[styles.pullOverlay, { backgroundColor: colors.background + 'EB' }]} pointerEvents="none">
           <View style={styles.pullContent}>
-            <View style={styles.progressTrack}>
+            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
               <Animated.View
                 style={[
                   styles.progressFill,
+                  { backgroundColor: colors.accent },
                   {
                     width: holdProgressAnim.interpolate({
                       inputRange: [0, 1],
@@ -372,6 +375,7 @@ export default function DayScreen({
             <Animated.Text
               style={[
                 styles.holdLabel,
+                { color: colors.accent },
                 {
                   opacity: editLabelOpacity,
                   transform: [{ scale: editLabelScale }],

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSettings } from '../contexts/SettingsContext';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_HEADERS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
@@ -23,6 +24,7 @@ function isBetween(date: string, start: string, end: string): boolean {
 }
 
 export default function DateRangePicker({ startDate, endDate, onSelect }: Props) {
+  const { colors } = useSettings();
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -51,10 +53,8 @@ export default function DateRangePicker({ startDate, endDate, onSelect }: Props)
   const handleDayPress = (day: number) => {
     const dateStr = toDateStr(viewYear, viewMonth, day);
     if (!startDate || endDate) {
-      // First tap or reset: set start date
       onSelect(dateStr, null);
     } else {
-      // Second tap: set end date (ensure order)
       if (isSameOrAfter(dateStr, startDate)) {
         onSelect(startDate, dateStr);
       } else {
@@ -66,24 +66,23 @@ export default function DateRangePicker({ startDate, endDate, onSelect }: Props)
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  // Pad to always have 6 rows (42 cells) so grid height doesn't shift
   while (cells.length < 42) cells.push(null);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handlePrev} style={styles.arrow}>
-          <Text style={styles.arrowText}>{'<'}</Text>
+          <Text style={[styles.arrowText, { color: colors.accent }]}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={styles.monthLabel}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
+        <Text style={[styles.monthLabel, { color: colors.textPrimary }]}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
         <TouchableOpacity onPress={handleNext} style={styles.arrow}>
-          <Text style={styles.arrowText}>{'>'}</Text>
+          <Text style={[styles.arrowText, { color: colors.accent }]}>{'>'}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.dayHeaders}>
         {DAY_HEADERS.map((d) => (
-          <Text key={d} style={styles.dayHeaderText}>{d}</Text>
+          <Text key={d} style={[styles.dayHeaderText, { color: colors.textSecondary }]}>{d}</Text>
         ))}
       </View>
 
@@ -103,14 +102,15 @@ export default function DateRangePicker({ startDate, endDate, onSelect }: Props)
               key={dateStr}
               style={[
                 styles.cell,
-                isInRange && !isSelected && styles.cellInRange,
-                isSelected && styles.cellSelected,
+                isInRange && !isSelected && { backgroundColor: colors.editBannerBackground },
+                isSelected && { backgroundColor: colors.accent },
               ]}
               onPress={() => handleDayPress(day)}
               activeOpacity={0.6}
             >
               <Text style={[
                 styles.cellText,
+                { color: colors.textPrimary },
                 isSelected && styles.cellTextSelected,
               ]}>{day}</Text>
             </TouchableOpacity>
@@ -139,12 +139,10 @@ const styles = StyleSheet.create({
   arrowText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
   },
   monthLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -155,7 +153,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '600',
-    color: '#888',
   },
   grid: {
     flexDirection: 'row',
@@ -167,15 +164,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cellInRange: {
-    backgroundColor: '#D6EAFF',
-  },
-  cellSelected: {
-    backgroundColor: '#007AFF',
-  },
   cellText: {
     fontSize: 14,
-    color: '#1a1a1a',
   },
   cellTextSelected: {
     color: '#fff',

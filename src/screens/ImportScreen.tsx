@@ -7,6 +7,7 @@ import { fetchDocText, fetchDocTitle } from '../utils/googleDocs';
 import { parseItineraryText } from '../utils/parser';
 import { saveTripFull, saveTripList, loadTripList, saveActiveTripId, loadApiKey, saveApiKey } from '../utils/storage';
 import { Trip, TripMeta } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface Props {
   onImport: (trip: Trip) => void;
@@ -25,6 +26,7 @@ function buildDateRange(trip: Trip): string {
 }
 
 export default function ImportScreen({ onImport, onCancel }: Props) {
+  const { colors } = useSettings();
   const [url, setUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [hasStoredKey, setHasStoredKey] = useState(false);
@@ -87,14 +89,14 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.title}>Let's Get Started</Text>
-      <Text style={styles.label}>Anthropic API Key</Text>
-      <Text style={styles.hint}>Get an API key at console.anthropic.com</Text>
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>Let's Get Started</Text>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>Anthropic API Key</Text>
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>Get an API key at console.anthropic.com</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
         placeholder="sk-ant-..."
-        placeholderTextColor="#bbb"
+        placeholderTextColor={colors.textTertiary}
         value={apiKey}
         onChangeText={(text) => { setApiKey(text); if (hasStoredKey) setHasStoredKey(false); }}
         autoCapitalize="none"
@@ -102,19 +104,19 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
         secureTextEntry={hasStoredKey}
         editable={!loading}
       />
-      <Text style={styles.label}>Google Doc URL</Text>
-      <Text style={styles.hint}>Change general access setting to "Anyone with the link"</Text>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>Google Doc URL</Text>
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>Change general access setting to "Anyone with the link"</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
         placeholder="https://docs.google.com/document/d/..."
-        placeholderTextColor="#bbb"
+        placeholderTextColor={colors.textTertiary}
         value={url}
         onChangeText={setUrl}
         autoCapitalize="none"
         autoCorrect={false}
         editable={!loading}
       />
-      <TouchableOpacity style={styles.button} onPress={handleImport} disabled={loading}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: colors.accent }]} onPress={handleImport} disabled={loading}>
         {loading ? (
           <View style={styles.loadingRow}>
             <ActivityIndicator color="#fff" />
@@ -126,7 +128,7 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
       </TouchableOpacity>
       {onCancel && (
         <TouchableOpacity onPress={onCancel} disabled={loading}>
-          <Text style={styles.cancel}>Cancel</Text>
+          <Text style={[styles.cancel, { color: colors.accent }]}>Cancel</Text>
         </TouchableOpacity>
       )}
     </KeyboardAvoidingView>

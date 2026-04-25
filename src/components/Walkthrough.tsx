@@ -8,6 +8,7 @@ import Demo1Drawer from './walkthrough/Demo1Drawer';
 import Demo2Day from './walkthrough/Demo2Day';
 import Demo3Activities from './walkthrough/Demo3Activities';
 import Demo4Expenses from './walkthrough/Demo4Expenses';
+import { useSettings } from '../contexts/SettingsContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ export default function Walkthrough({ visible, onClose }: Props) {
 }
 
 function WalkthroughContent({ visible, onClose }: Props) {
+  const { colors } = useSettings();
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const insets = useSafeAreaInsets();
@@ -65,11 +67,11 @@ function WalkthroughContent({ visible, onClose }: Props) {
 
   return (
     <>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Help</Text>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.cardBackground }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Help</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Text style={styles.closeText}>✕</Text>
+            <Text style={[styles.closeText, { color: colors.textSecondary }]}>✕</Text>
           </TouchableOpacity>
         </View>
 
@@ -84,10 +86,10 @@ function WalkthroughContent({ visible, onClose }: Props) {
         >
           {PANELS.map((panel, idx) => (
             <View key={idx} style={styles.panel}>
-              <View style={styles.visual}>{renderVisual(idx)}</View>
+              <View style={[styles.visual, { backgroundColor: colors.background }]}>{renderVisual(idx)}</View>
               <View style={styles.caption}>
-                <Text style={[styles.title, !panel.body && styles.titleNoBody]}>{panel.title}</Text>
-                {panel.body ? <Text style={styles.body}>{panel.body}</Text> : null}
+                <Text style={[styles.title, { color: colors.textPrimary }, !panel.body && styles.titleNoBody]}>{panel.title}</Text>
+                {panel.body ? <Text style={[styles.body, { color: colors.textSecondary }]}>{panel.body}</Text> : null}
               </View>
             </View>
           ))}
@@ -98,12 +100,12 @@ function WalkthroughContent({ visible, onClose }: Props) {
             {PANELS.map((_, idx) => (
               <View
                 key={idx}
-                style={[styles.dot, idx === page && styles.dotActive]}
+                style={[styles.dot, { backgroundColor: colors.border }, idx === page && { backgroundColor: colors.accent, width: 22 }]}
               />
             ))}
           </View>
           <TouchableOpacity
-            style={styles.nextBtn}
+            style={[styles.nextBtn, { backgroundColor: colors.accent }]}
             onPress={() => (isLast ? onClose() : goTo(page + 1))}
           >
             <Text style={styles.nextText}>{isLast ? 'Got it' : 'Next'}</Text>

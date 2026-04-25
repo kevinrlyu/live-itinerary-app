@@ -5,6 +5,7 @@ const TRIP_LIST_KEY = 'trip_list';
 const ACTIVE_TRIP_KEY = 'active_trip_id';
 const API_KEY_KEY = 'anthropic_api_key';
 const WALKTHROUGH_SEEN_KEY = 'has_seen_walkthrough';
+const SETTINGS_KEY = 'app_settings';
 const tripKey = (id: string) => `trip_${id}`;
 
 export async function saveTripFull(trip: Trip): Promise<void> {
@@ -66,6 +67,15 @@ export async function loadHasSeenWalkthrough(): Promise<boolean> {
 
 export async function saveHasSeenWalkthrough(): Promise<void> {
   await AsyncStorage.setItem(WALKTHROUGH_SEEN_KEY, '1');
+}
+
+export async function loadSettings(): Promise<Record<string, any> | null> {
+  const json = await AsyncStorage.getItem(SETTINGS_KEY);
+  return json ? JSON.parse(json) : null;
+}
+
+export async function saveSettings(settings: Record<string, any>): Promise<void> {
+  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

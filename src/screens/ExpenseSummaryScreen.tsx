@@ -6,6 +6,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip, Activity } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 const CURRENCY_FLAGS: Record<string, string> = {
   AED: '\u{1F1E6}\u{1F1EA}', AFN: '\u{1F1E6}\u{1F1EB}', ALL: '\u{1F1E6}\u{1F1F1}',
@@ -102,6 +103,7 @@ const PICKER_VISIBLE_ITEMS = 3;
 const PICKER_H = PICKER_ITEM_H * PICKER_VISIBLE_ITEMS;
 
 function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+  const { colors } = useSettings();
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -156,19 +158,19 @@ function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c
 
   return (
     <View style={styles.currencyRow}>
-      <Text style={styles.currencyLabel}>Default Currency</Text>
+      <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>Default Currency</Text>
       <View ref={buttonRef} collapsable={false}>
         <TouchableOpacity
-          style={styles.currencyValue}
+          style={[styles.currencyValue, { backgroundColor: colors.pillBackground }]}
           onPress={() => open ? setOpen(false) : openPicker()}
         >
-          <Text style={styles.currencyValueText}>{CURRENCY_FLAGS[value] || ''} {value}</Text>
+          <Text style={[styles.currencyValueText, { color: colors.accent }]}>{CURRENCY_FLAGS[value] || ''} {value}</Text>
         </TouchableOpacity>
       </View>
       <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
         <Pressable style={pickerStyles.backdrop} onPress={() => setOpen(false)} />
         {pickerPos && (
-          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right }]}>
+          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right, backgroundColor: colors.pickerBackground }]}>
             <ScrollView
               ref={scrollRef}
               style={pickerStyles.scroll}
@@ -206,7 +208,8 @@ function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c
                 >
                   <Text style={[
                     pickerStyles.itemText,
-                    i === centeredIdx && pickerStyles.itemTextSelected,
+                    { color: colors.textPrimary },
+                    i === centeredIdx && { color: colors.accent, fontWeight: '700' },
                     { opacity: getItemOpacity(i) },
                   ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
                 </TouchableOpacity>
@@ -220,6 +223,7 @@ function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c
 }
 
 export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, onSetCurrency }: Props) {
+  const { colors } = useSettings();
   const insets = useSafeAreaInsets();
   // Collect all activities with expenses
   const allExpenses: { activity: Activity; dayLabel: string; dayDate: string }[] = [];
@@ -278,14 +282,14 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {onClose && (
         <>
-          <View style={[styles.safeTop, { height: insets.top }]} />
-          <View style={styles.header}>
-            <Text style={styles.headerTitle} numberOfLines={1}>Trip Expenses</Text>
+          <View style={[styles.safeTop, { height: insets.top, backgroundColor: colors.background }]} />
+          <View style={[styles.header, { backgroundColor: colors.headerBackground, borderBottomColor: colors.borderMedium }]}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>Trip Expenses</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>Close</Text>
+              <Text style={[styles.closeText, { color: colors.accent }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -293,26 +297,26 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Grand totals */}
-        <View style={styles.totalsCard}>
-          <Text style={styles.totalsLabel}>Total</Text>
+        <View style={[styles.totalsCard, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}>
+          <Text style={[styles.totalsLabel, { color: colors.textSecondary }]}>Total</Text>
           {Object.keys(grandTotals).length === 0 ? (
-            <Text style={styles.emptyText}>No expenses yet</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No expenses yet</Text>
           ) : (
             Object.entries(grandTotals).map(([cur, amt]) => (
-              <Text key={cur} style={styles.totalAmount}>{formatAmount(amt, cur)}</Text>
+              <Text key={cur} style={[styles.totalAmount, { color: colors.textPrimary }]}>{formatAmount(amt, cur)}</Text>
             ))
           )}
         </View>
 
         {/* Category breakdown */}
         {Object.keys(categoryTotals).length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}>
             {Object.entries(categoryTotals).map(([cat, currencies]) => (
               <View key={cat} style={styles.categoryRow}>
-                <Text style={styles.categoryName}>{cat}</Text>
+                <Text style={[styles.categoryName, { color: colors.textPrimary }]}>{cat}</Text>
                 <View style={styles.categoryAmounts}>
                   {Object.entries(currencies).map(([cur, amt]) => (
-                    <Text key={cur} style={styles.categoryAmount}>{formatAmount(amt, cur)}</Text>
+                    <Text key={cur} style={[styles.categoryAmount, { color: colors.textPrimary }]}>{formatAmount(amt, cur)}</Text>
                   ))}
                 </View>
               </View>
@@ -328,19 +332,19 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
             dayTotals[e.currency] = (dayTotals[e.currency] || 0) + e.amount;
           }
           return (
-            <View key={group.dayDate} style={styles.section}>
+            <View key={group.dayDate} style={[styles.section, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}>
               <View style={styles.dayHeader}>
-                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>{group.dayLabel || group.dayDate}</Text>
+                <Text style={[styles.sectionTitle, { marginBottom: 0, color: colors.textPrimary }]}>{group.dayLabel || group.dayDate}</Text>
                 <View style={styles.dayTotals}>
                   {Object.entries(dayTotals).map(([cur, amt]) => (
-                    <Text key={cur} style={styles.dayTotalText}>{formatAmount(amt, cur)}</Text>
+                    <Text key={cur} style={[styles.dayTotalText, { color: colors.accent }]}>{formatAmount(amt, cur)}</Text>
                   ))}
                 </View>
               </View>
               {group.items.map(({ activity }) => (
-                <View key={activity.id} style={styles.expenseRow}>
-                  <Text style={styles.expenseName} numberOfLines={1}>{activity.title}</Text>
-                  <Text style={styles.expenseAmount}>
+                <View key={activity.id} style={[styles.expenseRow, { borderTopColor: colors.background }]}>
+                  <Text style={[styles.expenseName, { color: colors.textSecondary }]} numberOfLines={1}>{activity.title}</Text>
+                  <Text style={[styles.expenseAmount, { color: colors.textSecondary }]}>
                     {formatAmount(activity.expense!.amount, activity.expense!.currency)}
                   </Text>
                 </View>
@@ -354,7 +358,7 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
         )}
 
         {allExpenses.length > 0 && (
-          <TouchableOpacity style={styles.exportButton} onPress={exportCSV}>
+          <TouchableOpacity style={[styles.exportButton, { backgroundColor: colors.accent }]} onPress={exportCSV}>
             <Text style={styles.exportButtonText}>Export CSV</Text>
           </TouchableOpacity>
         )}

@@ -30,6 +30,8 @@ import DayTabBar from './src/components/DayTabBar';
 import ExpenseInput, { ExpenseInputTarget } from './src/components/ExpenseInput';
 import Walkthrough from './src/components/Walkthrough';
 import NewDayDialog from './src/components/NewDayDialog';
+import SettingsScreen from './src/screens/SettingsScreen';
+import { SettingsProvider, useSettings } from './src/contexts/SettingsContext';
 
 const Tab = createMaterialTopTabNavigator();
 const BottomTab = createBottomTabNavigator();
@@ -63,6 +65,15 @@ function buildDateRange(trip: Trip): string {
 }
 
 export default function App() {
+  return (
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
+  );
+}
+
+function AppContent() {
+  const { colors } = useSettings();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [tripList, setTripList] = useState<TripMeta[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -75,6 +86,7 @@ export default function App() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [showNewDayDialog, setShowNewDayDialog] = useState(false);
   const [isEditingActivity, setIsEditingActivity] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -102,6 +114,11 @@ export default function App() {
   const handleShowHelp = useCallback(() => {
     setDrawerOpen(false);
     setShowWalkthrough(true);
+  }, []);
+
+  const handleShowSettings = useCallback(() => {
+    setDrawerOpen(false);
+    setShowSettings(true);
   }, []);
 
   const handleImport = useCallback(async (newTrip: Trip) => {
@@ -513,7 +530,7 @@ export default function App() {
   if (!trip) {
     return (
       <SafeAreaProvider>
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
           {showCreateTrip ? (
             <CreateTripScreen
               defaultCurrency="USD"
@@ -521,13 +538,13 @@ export default function App() {
               onCancel={() => setShowCreateTrip(false)}
             />
           ) : (
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
               <ImportScreen onImport={handleImport} />
               <TouchableOpacity
                 style={styles.createFromEmptyBtn}
                 onPress={() => setShowCreateTrip(true)}
               >
-                <Text style={styles.createFromEmptyText}>or Create New Itinerary</Text>
+                <Text style={[styles.createFromEmptyText, { color: colors.accent }]}>or Create New Itinerary</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -539,7 +556,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         <TripHeader
           title={activeBottomTab === 'Culinary' ? 'Local Cuisine' : activeBottomTab === 'Expenses' ? 'Trip Expenses' : trip.title}
           onOpenDrawer={() => setDrawerOpen(true)}
@@ -549,14 +566,14 @@ export default function App() {
             screenOptions={{
               headerShown: false,
               tabBarShowLabel: false,
-              tabBarActiveTintColor: '#007AFF',
-              tabBarInactiveTintColor: '#1a1a1a',
+              tabBarActiveTintColor: colors.accent,
+              tabBarInactiveTintColor: colors.textPrimary,
               tabBarStyle: isEditingActivity
                 ? { display: 'none' }
                 : {
-                    backgroundColor: '#fff',
+                    backgroundColor: colors.cardBackground,
                     borderTopWidth: StyleSheet.hairlineWidth,
-                    borderTopColor: '#ddd',
+                    borderTopColor: colors.border,
                     paddingTop: 8,
                     overflow: 'visible',
                   },
@@ -683,6 +700,7 @@ export default function App() {
           reimportProgress={reimportProgress}
           onReorderTrips={handleReorderTrips}
           onShowHelp={handleShowHelp}
+          onShowSettings={handleShowSettings}
         />
 
         <Modal visible={showImport} animationType="slide">
@@ -711,6 +729,12 @@ export default function App() {
             onClose={() => setExpenseTarget(null)}
           />
         )}
+
+        <Modal visible={showSettings} animationType="slide">
+          <SafeAreaProvider>
+            <SettingsScreen onClose={() => setShowSettings(false)} />
+          </SafeAreaProvider>
+        </Modal>
 
         <Walkthrough visible={showWalkthrough} onClose={handleCloseWalkthrough} />
 

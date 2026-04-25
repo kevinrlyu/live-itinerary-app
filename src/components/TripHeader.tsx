@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface Props {
   title: string;
@@ -7,14 +8,15 @@ interface Props {
 }
 
 export default function TripHeader({ title, onOpenDrawer }: Props) {
+  const { colors } = useSettings();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+    <View style={[styles.container, { backgroundColor: colors.headerBackground, borderBottomColor: colors.borderMedium }]}>
+      <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
       <TouchableOpacity onPress={onOpenDrawer} style={styles.menuButton} testID="menu-button">
         <View style={styles.menuIconContainer}>
-          <View style={styles.menuBar} />
-          <View style={styles.menuBar} />
-          <View style={styles.menuBar} />
+          <View style={[styles.menuBar, { backgroundColor: colors.accent }]} />
+          <View style={[styles.menuBar, { backgroundColor: colors.accent }]} />
+          <View style={[styles.menuBar, { backgroundColor: colors.accent }]} />
         </View>
       </TouchableOpacity>
     </View>
@@ -28,14 +30,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1a1a1a',
     flex: 1,
     marginRight: 8,
   },
@@ -50,7 +48,6 @@ const styles = StyleSheet.create({
   menuBar: {
     width: 22,
     height: 2.5,
-    backgroundColor: '#007AFF',
     borderRadius: 1,
   },
 });

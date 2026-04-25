@@ -11,7 +11,7 @@ interface AppSettings {
   displayMode: 'light' | 'dark' | 'system';
   accentColor: string;       // hex value from preset palette — primary app accent
   stayAccentColor: string;   // accent for hotel/stay activity cards
-  mealAccentColor: string;   // accent for meal/food activity cards
+  foodAccentColor: string;   // accent for meal/food activity cards
   timeFormat: '12h' | '24h';
   mapsProvider: 'google' | 'apple' | 'amap';
 }
@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   displayMode: 'system',
   accentColor: '#007AFF',
   stayAccentColor: '#E91E63',
-  mealAccentColor: '#E53935',
+  foodAccentColor: '#E53935',
   timeFormat: '12h',
   mapsProvider: 'google',
 };
@@ -43,7 +43,7 @@ Preset options (user taps a color circle to select). The same palette is shared 
 Each has a different default:
 - **Primary accent**: Blue (`#007AFF`) — used for buttons, active states, UI chrome
 - **Stay accent**: Pink (`#E91E63`) — used for hotel/stay activity cards
-- **Meal accent**: Red (`#E53935`) — used for meal/food activity cards
+- **Food accent**: Red (`#E53935`) — used for meal/food activity cards
 
 ## Architecture
 
@@ -73,7 +73,7 @@ const lightColors = {
   // accents injected from settings
   accent: '<from settings.accentColor>',
   stayAccent: '<from settings.stayAccentColor>',
-  mealAccent: '<from settings.mealAccentColor>',
+  foodAccent: '<from settings.foodAccentColor>',
   accentText: '#fff',         // text on accent-colored backgrounds
   overlay: 'rgba(0,0,0,0.4)',
   modalBackground: '#f9f9f9',
@@ -95,7 +95,7 @@ const darkColors = {
   borderMedium: '#38383a',
   accent: '<from settings.accentColor>',
   stayAccent: '<from settings.stayAccentColor>',
-  mealAccent: '<from settings.mealAccentColor>',
+  foodAccent: '<from settings.foodAccentColor>',
   accentText: '#fff',
   overlay: 'rgba(0,0,0,0.6)',
   modalBackground: '#2c2c2e',
@@ -184,7 +184,7 @@ The `to12hDisplay` function in ActivityEditSheet also respects this setting.
   - Walkthrough + Demo panels
 
 ### Accent color references to replace
-Every instance of `#007AFF` becomes `colors.accent`. The `ACCENT_COLORS` map in ActivityCard (`hotel: '#E91E63'`, `meal: '#E53935'`) is replaced by `colors.stayAccent` and `colors.mealAccent`. Key locations:
+Every instance of `#007AFF` becomes `colors.accent`. The `ACCENT_COLORS` map in ActivityCard (`hotel: '#E91E63'`, `meal: '#E53935'`) is replaced by `colors.stayAccent` and `colors.foodAccent`. Key locations:
 - ActivityCard (checkbox, buttons, current card border, category-based accents)
 - ActivityEditSheet (pills, save button)
 - DayTabBar (active tab, progress bar)
@@ -214,7 +214,7 @@ Display Mode
 Theme Color
   Primary    [o] [o] [o] [o] [o] [o] [o]  ← row of colored circles, checkmark on selected
   Stays      [o] [o] [o] [o] [o] [o] [o]  ← same palette, different default
-  Meals      [o] [o] [o] [o] [o] [o] [o]  ← same palette, different default
+  Food      [o] [o] [o] [o] [o] [o] [o]  ← same palette, different default
 
 Time Format
   [12-hour]  [24-hour]          ← segmented control, 2 options

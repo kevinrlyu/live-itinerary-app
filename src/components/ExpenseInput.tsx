@@ -4,6 +4,7 @@ import {
   StyleSheet, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useSettings } from '../contexts/SettingsContext';
 
 const CURRENCY_FLAGS: Record<string, string> = {
   AED: '\u{1F1E6}\u{1F1EA}', AFN: '\u{1F1E6}\u{1F1EB}', ALL: '\u{1F1E6}\u{1F1F1}',
@@ -93,6 +94,7 @@ const PICKER_VISIBLE_ITEMS = 3;
 const PICKER_H = PICKER_ITEM_H * PICKER_VISIBLE_ITEMS;
 
 export default function ExpenseInput({ target, onSave, onClose }: Props) {
+  const { colors } = useSettings();
   const [amount, setAmount] = useState(
     target.existingExpense ? String(target.existingExpense.amount) : ''
   );
@@ -177,21 +179,21 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
 
   return (
     <View style={styles.overlay}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.card}>
-        <Text style={styles.title} numberOfLines={1}>{target.activityTitle}</Text>
+      <Pressable style={[styles.backdrop, { backgroundColor: colors.overlay }]} onPress={onClose} />
+      <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{target.activityTitle}</Text>
 
         {/* Amount display */}
         <View style={styles.amountRow}>
-          <Text style={[styles.amountDisplay, !amount && styles.amountPlaceholder]}>
+          <Text style={[styles.amountDisplay, { color: colors.textPrimary }, !amount && { color: colors.textTertiary }]}>
             {sym}{displayAmount}
           </Text>
           <View ref={buttonRef} collapsable={false}>
             <Pressable
-              style={styles.currencyButton}
+              style={[styles.currencyButton, { backgroundColor: colors.pillBackground }]}
               onPress={() => pickerOpen ? setPickerOpen(false) : openPicker()}
             >
-              <Text style={styles.currencyButtonText}>{CURRENCY_FLAGS[currency] || ''} {currency}</Text>
+              <Text style={[styles.currencyButtonText, { color: colors.accent }]}>{CURRENCY_FLAGS[currency] || ''} {currency}</Text>
             </Pressable>
           </View>
         </View>
@@ -201,10 +203,10 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
           {PAD_KEYS.map((key) => (
             <Pressable
               key={key}
-              style={({ pressed }) => [styles.padKey, pressed && styles.padKeyPressed]}
+              style={({ pressed }) => [styles.padKey, pressed && [styles.padKeyPressed, { backgroundColor: colors.padKeyPressed }]]}
               onPress={() => handleKey(key)}
             >
-              <Text style={styles.padKeyText}>{key}</Text>
+              <Text style={[styles.padKeyText, { color: colors.textPrimary }]}>{key}</Text>
             </Pressable>
           ))}
         </View>
@@ -213,14 +215,14 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
         <View style={styles.actions}>
           {target.existingExpense && (
             <Pressable onPress={handleDelete} style={styles.deleteBtn}>
-              <Text style={styles.deleteBtnText}>Delete</Text>
+              <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>Delete</Text>
             </Pressable>
           )}
           <View style={{ flex: 1 }} />
           <Pressable onPress={onClose} style={styles.cancelBtn}>
-            <Text style={styles.cancelBtnText}>Cancel</Text>
+            <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
           </Pressable>
-          <Pressable onPress={handleSave} style={styles.saveBtn}>
+          <Pressable onPress={handleSave} style={[styles.saveBtn, { backgroundColor: colors.accent }]}>
             <Text style={styles.saveBtnText}>Save</Text>
           </Pressable>
         </View>
@@ -229,7 +231,7 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
       <Modal visible={pickerOpen} transparent animationType="none" onRequestClose={() => setPickerOpen(false)}>
         <Pressable style={pickerStyles.backdrop} onPress={() => setPickerOpen(false)} />
         {pickerPos && (
-          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right }]}>
+          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right, backgroundColor: colors.pickerBackground }]}>
             <ScrollView
               ref={scrollRef}
               style={pickerStyles.scroll}
@@ -267,7 +269,8 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
                 >
                   <Text style={[
                     pickerStyles.itemText,
-                    i === centeredIdx && pickerStyles.itemTextSelected,
+                    { color: colors.textPrimary },
+                    i === centeredIdx && { color: colors.accent, fontWeight: '700' },
                     { opacity: getItemOpacity(i) },
                   ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
                 </TouchableOpacity>

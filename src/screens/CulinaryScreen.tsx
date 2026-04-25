@@ -6,6 +6,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CulinaryRegion } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 const PULL_THRESHOLD = 15;
 const PULL_MAX = 70;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditItem, onAddRegion, onDeleteItem, onDeleteRegion, onClose }: Props) {
+  const { colors } = useSettings();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const [editMode, setEditMode] = useState(false);
@@ -224,23 +226,23 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {onClose && (
         <>
-          <View style={[styles.safeTop, { height: insets.top }]} />
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Local Cuisine</Text>
+          <View style={[styles.safeTop, { height: insets.top, backgroundColor: colors.background }]} />
+          <View style={[styles.header, { backgroundColor: colors.headerBackground, borderBottomColor: colors.border }]}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Local Cuisine</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>Close</Text>
+              <Text style={[styles.closeText, { color: colors.accent }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
 
       {editMode && (
-        <View style={styles.editBanner}>
-          <Text style={styles.editBannerText}>Editing</Text>
-          <TouchableOpacity onPress={exitEditMode} style={styles.doneBtnBanner}>
+        <View style={[styles.editBanner, { backgroundColor: colors.editBannerBackground }]}>
+          <Text style={[styles.editBannerText, { color: colors.accent }]}>Editing</Text>
+          <TouchableOpacity onPress={exitEditMode} style={[styles.doneBtnBanner, { backgroundColor: colors.accent }]}>
             <Text style={styles.doneBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -262,10 +264,10 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
             regions.map((region, rIdx) => (
               <View
                 key={region.region}
-                style={styles.section}
+                style={[styles.section, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}
               >
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>{region.region}</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{region.region}</Text>
                   {editMode && (
                     <TouchableOpacity
                       onPress={() => Alert.alert(
@@ -277,7 +279,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                         ]
                       )}
                     >
-                      <Text style={styles.deleteSectionText}>Delete</Text>
+                      <Text style={[styles.deleteSectionText, { color: colors.destructive }]}>Delete</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -286,27 +288,27 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
 
                   if (isEditing) {
                     return (
-                      <View key={`${region.region}-${item.name}-${iIdx}`} style={styles.editItemForm}>
+                      <View key={`${region.region}-${item.name}-${iIdx}`} style={[styles.editItemForm, { borderTopColor: colors.borderLight }]}>
                         <TextInput
-                          style={styles.addInput}
+                          style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                           value={editItemName}
                           onChangeText={setEditItemName}
                           placeholder="Item name"
-                          placeholderTextColor="#bbb"
+                          placeholderTextColor={colors.textTertiary}
                           autoFocus
                         />
                         <TextInput
-                          style={styles.addInput}
+                          style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                           value={editItemDesc}
                           onChangeText={setEditItemDesc}
                           placeholder="Description"
-                          placeholderTextColor="#bbb"
+                          placeholderTextColor={colors.textTertiary}
                         />
                         <View style={styles.addFormActions}>
                           <TouchableOpacity onPress={cancelEditItem}>
-                            <Text style={styles.addCancelText}>Cancel</Text>
+                            <Text style={[styles.addCancelText, { color: colors.textSecondary }]}>Cancel</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity onPress={handleSaveEditItem} style={styles.addSaveBtn}>
+                          <TouchableOpacity onPress={handleSaveEditItem} style={[styles.addSaveBtn, { backgroundColor: colors.accent }]}>
                             <Text style={styles.addSaveText}>Save</Text>
                           </TouchableOpacity>
                         </View>
@@ -317,21 +319,21 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                   return (
                     <TouchableOpacity
                       key={`${region.region}-${item.name}-${iIdx}`}
-                      style={styles.itemRow}
+                      style={[styles.itemRow, { borderTopColor: colors.borderLight }]}
                       onPress={() => editMode ? undefined : handleToggle(rIdx, iIdx)}
                       onLongPress={editMode ? () => startEditItem(rIdx, iIdx) : undefined}
                       delayLongPress={400}
                       activeOpacity={0.6}
                     >
-                      <Text style={[styles.checkbox, item.checked && styles.checkboxChecked]}>
+                      <Text style={[styles.checkbox, { color: colors.accent }, item.checked && { color: colors.accent }]}>
                         {item.checked ? '✓' : '○'}
                       </Text>
                       <View style={styles.itemTextWrap}>
-                        <Text style={[styles.itemName, item.checked && styles.itemNameChecked]}>
+                        <Text style={[styles.itemName, { color: colors.textPrimary }, item.checked && { textDecorationLine: 'line-through', color: colors.textTertiary }]}>
                           {(item.name || '').replace(/\s*\(.*\)$/, '')}
                         </Text>
                         {/\(.*\)$/.test(item.name || '') && (
-                          <Text style={[styles.itemDesc, item.checked && styles.itemNameChecked]}>
+                          <Text style={[styles.itemDesc, { color: colors.textSecondary }, item.checked && { textDecorationLine: 'line-through', color: colors.textTertiary }]}>
                             {(item.name || '').match(/\((.+)\)$/)?.[1]}
                           </Text>
                         )}
@@ -341,7 +343,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                           onPress={() => confirmDeleteItem(rIdx, iIdx, item.name)}
                           style={styles.deleteItemBtn}
                         >
-                          <Text style={styles.deleteItemText}>✕</Text>
+                          <Text style={[styles.deleteItemText, { color: colors.destructive }]}>✕</Text>
                         </TouchableOpacity>
                       )}
                     </TouchableOpacity>
@@ -353,32 +355,32 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                   addingItemForRegion === rIdx ? (
                     <View ref={addItemFormRef} style={styles.addForm}>
                       <TextInput
-                        style={styles.addInput}
+                        style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                         value={itemName}
                         onChangeText={setItemName}
                         placeholder="Item name"
-                        placeholderTextColor="#bbb"
+                        placeholderTextColor={colors.textTertiary}
                         autoFocus
                       />
                       <TextInput
-                        style={styles.addInput}
+                        style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                         value={itemDesc}
                         onChangeText={setItemDesc}
                         placeholder="Description"
-                        placeholderTextColor="#bbb"
+                        placeholderTextColor={colors.textTertiary}
                       />
                       <View style={styles.addFormActions}>
                         <TouchableOpacity onPress={cancelAddItem}>
-                          <Text style={styles.addCancelText}>Cancel</Text>
+                          <Text style={[styles.addCancelText, { color: colors.textSecondary }]}>Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleAddItem(rIdx)} style={styles.addSaveBtn}>
+                        <TouchableOpacity onPress={() => handleAddItem(rIdx)} style={[styles.addSaveBtn, { backgroundColor: colors.accent }]}>
                           <Text style={styles.addSaveText}>Add</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                   ) : (
                     <TouchableOpacity
-                      style={styles.addItemBtn}
+                      style={[styles.addItemBtn, { borderTopColor: colors.borderLight }]}
                       onPress={() => {
                         cancelAddSection();
                         cancelEditItem();
@@ -386,7 +388,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                         scrollToAddItemForm();
                       }}
                     >
-                      <Text style={styles.addItemText}>+ Add item</Text>
+                      <Text style={[styles.addItemText, { color: colors.accent }]}>+ Add item</Text>
                     </TouchableOpacity>
                   )
                 )}
@@ -397,27 +399,27 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
           {/* Add section — only in edit mode */}
           {editMode && (
             addingSection ? (
-              <View style={[styles.section, styles.addForm]}>
+              <View style={[styles.section, styles.addForm, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}>
                 <TextInput
-                  style={styles.addInput}
+                  style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={sectionName}
                   onChangeText={setSectionName}
                   placeholder="Section name (e.g. region or cuisine)"
-                  placeholderTextColor="#bbb"
+                  placeholderTextColor={colors.textTertiary}
                   autoFocus
                 />
                 <View style={styles.addFormActions}>
                   <TouchableOpacity onPress={cancelAddSection}>
-                    <Text style={styles.addCancelText}>Cancel</Text>
+                    <Text style={[styles.addCancelText, { color: colors.textSecondary }]}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={handleAddSection} style={styles.addSaveBtn}>
+                  <TouchableOpacity onPress={handleAddSection} style={[styles.addSaveBtn, { backgroundColor: colors.accent }]}>
                     <Text style={styles.addSaveText}>Add</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.addSectionBtn}
+                style={[styles.addSectionBtn, { backgroundColor: colors.cardBackground }]}
                 onPress={() => {
                   cancelAddItem();
                   cancelEditItem();
@@ -431,7 +433,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                   }
                 }}
               >
-                <Text style={styles.addSectionText}>+ Add section</Text>
+                <Text style={[styles.addSectionText, { color: colors.accent }]}>+ Add section</Text>
               </TouchableOpacity>
             )
           )}
@@ -442,13 +444,14 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
 
       {/* Pull-and-hold overlay — positioned below safe area + header */}
       {isPulling && !editMode && (
-        <View style={[styles.pullOverlay, { top: onClose ? insets.top + 46 : 0 }]} pointerEvents="none">
+        <View style={[styles.pullOverlay, { top: onClose ? insets.top + 46 : 0, backgroundColor: colors.background + 'EB' }]} pointerEvents="none">
           <View style={styles.pullContent}>
-            <View style={styles.progressTrack}>
+            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
               <Animated.View
                 style={[
                   styles.progressFill,
                   {
+                    backgroundColor: colors.accent,
                     width: holdProgressAnim.interpolate({
                       inputRange: [0, 1],
                       outputRange: ['0%', '100%'],
@@ -461,6 +464,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
               style={[
                 styles.holdLabel,
                 {
+                  color: colors.accent,
                   opacity: editLabelOpacity,
                   transform: [{ scale: editLabelScale }],
                 },

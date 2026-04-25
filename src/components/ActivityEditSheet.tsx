@@ -5,12 +5,9 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
-const ACCENT_COLORS: Record<string, string> = {
-  none: '#007AFF',
-  hotel: '#E91E63',
-  meal: '#E53935',
-};
+// Legacy accent color map removed — now using colors from SettingsContext
 
 interface Props {
   activity: Activity;
@@ -24,25 +21,26 @@ interface Props {
 type ActivityType = 'activity' | 'transport';
 type CategoryValue = 'none' | 'hotel' | 'meal';
 
-function PillToggle<T extends string>({ label, options, value, onChange }: {
+function PillToggle<T extends string>({ label, options, value, onChange, colors }: {
   label: string;
   options: { label: string; value: T; color?: string }[];
   value: T;
   onChange: (v: T) => void;
+  colors: { textSecondary: string; pillBackground: string; textTertiary: string };
 }) {
   return (
     <View style={pillStyles.row}>
-      <Text style={pillStyles.label}>{label}</Text>
+      <Text style={[pillStyles.label, { color: colors.textSecondary }]}>{label}</Text>
       {options.map((opt) => {
         const isActive = opt.value === value;
         const activeColor = opt.color || '#007AFF';
         return (
           <TouchableOpacity
             key={opt.value}
-            style={[pillStyles.pill, isActive && { backgroundColor: activeColor }]}
+            style={[pillStyles.pill, { backgroundColor: colors.pillBackground }, isActive && { backgroundColor: activeColor }]}
             onPress={() => onChange(opt.value)}
           >
-            <Text style={[pillStyles.pillText, isActive && pillStyles.pillTextActive]}>
+            <Text style={[pillStyles.pillText, { color: colors.textTertiary }, isActive && pillStyles.pillTextActive]}>
               {opt.label}
             </Text>
           </TouchableOpacity>
@@ -76,11 +74,12 @@ function wrap(idx: number, count: number) {
   return ((idx % count) + count) % count;
 }
 
-function DragColumn({ items, selectedIndex, onSelect, cyclic }: {
+function DragColumn({ items, selectedIndex, onSelect, cyclic, colors }: {
   items: string[];
   selectedIndex: number;
   onSelect: (index: number) => void;
   cyclic?: boolean;
+  colors: { pickerBackground: string; textPrimary: string; textSecondary: string };
 }) {
   const count = items.length;
   const offsetY = useRef(new Animated.Value(0)).current;
@@ -150,11 +149,11 @@ function DragColumn({ items, selectedIndex, onSelect, cyclic }: {
 
   return (
     <View style={pickerStyles.colWrapper} {...panResponder.panHandlers}>
-      <View style={pickerStyles.highlight} pointerEvents="none" />
+      <View style={[pickerStyles.highlight, { backgroundColor: colors.pickerBackground }]} pointerEvents="none" />
       <Animated.View style={[pickerStyles.slotsContainer, { transform: [{ translateY: offsetY }] }]}>
         {[-2, -1, 0, 1, 2].map((offset) => (
           <View key={offset} style={pickerStyles.slot}>
-            <Text style={[pickerStyles.slotText, offset === 0 && pickerStyles.slotTextActive]}>
+            <Text style={[pickerStyles.slotText, { color: colors.textSecondary }, offset === 0 && [pickerStyles.slotTextActive, { color: colors.textPrimary }]]}>
               {getItem(offset)}
             </Text>
           </View>
@@ -164,7 +163,7 @@ function DragColumn({ items, selectedIndex, onSelect, cyclic }: {
   );
 }
 
-function ScrollTimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function ScrollTimePicker({ value, onChange, colors }: { value: string; onChange: (v: string) => void; colors: { pickerBackground: string; textPrimary: string; textSecondary: string } }) {
   const parsed = value.match(/^(\d{1,2}):(\d{2})(am|pm)$/i);
   const initH = parsed ? parseInt(parsed[1], 10) : 12;
   const initM = parsed ? parseInt(parsed[2], 10) : 0;
@@ -188,10 +187,10 @@ function ScrollTimePicker({ value, onChange }: { value: string; onChange: (v: st
   return (
     <View style={pickerStyles.container}>
       <View style={pickerStyles.columns}>
-        <DragColumn items={HOUR_ITEMS} selectedIndex={hourIdx} onSelect={setHourIdx} cyclic />
-        <Text style={pickerStyles.colon}>:</Text>
-        <DragColumn items={MIN_ITEMS} selectedIndex={minIdx} onSelect={setMinIdx} cyclic />
-        <DragColumn items={PERIOD_ITEMS} selectedIndex={periodIdx} onSelect={setPeriodIdx} />
+        <DragColumn items={HOUR_ITEMS} selectedIndex={hourIdx} onSelect={setHourIdx} cyclic colors={colors} />
+        <Text style={[pickerStyles.colon, { color: colors.textPrimary }]}>:</Text>
+        <DragColumn items={MIN_ITEMS} selectedIndex={minIdx} onSelect={setMinIdx} cyclic colors={colors} />
+        <DragColumn items={PERIOD_ITEMS} selectedIndex={periodIdx} onSelect={setPeriodIdx} colors={colors} />
       </View>
     </View>
   );
@@ -243,6 +242,7 @@ function to24h(time: string): string {
 }
 
 export default function ActivityEditSheet({ activity, dayActivities, isNew, onSave, onDelete, onClose }: Props) {
+  const { colors, settings } = useSettings();
   const scrollRef = React.useRef<ScrollView>(null);
   const fieldRefs = React.useRef<Record<string, View | null>>({});
   const scrollOffsetRef = React.useRef(0);
@@ -351,14 +351,14 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
 
   return (
     <View style={styles.overlay}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable style={[styles.backdrop, { backgroundColor: colors.overlay }]} onPress={onClose} />
       <View style={styles.sheetWrapper}>
-        <Pressable style={styles.sheet} onPress={Keyboard.dismiss}>
+        <Pressable style={[styles.sheet, { backgroundColor: colors.cardBackground }]} onPress={Keyboard.dismiss}>
           <View style={styles.headerRow}>
-            <Text style={styles.heading}>{isNew ? 'New Activity' : 'Edit Activity'}</Text>
+            <Text style={[styles.heading, { color: colors.textPrimary }]}>{isNew ? 'New Activity' : 'Edit Activity'}</Text>
             {!isNew && onDelete && (
               <Pressable onPress={handleDelete}>
-                <Text style={styles.deleteText}>Delete</Text>
+                <Text style={[styles.deleteText, { color: colors.destructive }]}>Delete</Text>
               </Pressable>
             )}
           </View>
@@ -376,44 +376,46 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
             <PillToggle
               label="Type"
               options={[
-                { label: 'Place', value: 'activity' },
-                { label: 'Transit', value: 'transport' },
+                { label: 'Place', value: 'activity', color: colors.accent },
+                { label: 'Transit', value: 'transport', color: colors.accent },
               ]}
               value={actType}
               onChange={handleTypeChange}
+              colors={colors}
             />
 
             {actType === 'activity' && (
               <PillToggle
                 label="Category"
                 options={[
-                  { label: 'Default', value: 'none', color: ACCENT_COLORS.none },
-                  { label: 'Stay', value: 'hotel', color: ACCENT_COLORS.hotel },
-                  { label: 'Food', value: 'meal', color: ACCENT_COLORS.meal },
+                  { label: 'Default', value: 'none', color: colors.accent },
+                  { label: 'Stay', value: 'hotel', color: colors.stayAccent },
+                  { label: 'Food', value: 'meal', color: colors.foodAccent },
                 ]}
                 value={category}
                 onChange={setCategory}
+                colors={colors}
               />
             )}
 
             {actType === 'activity' && parentOptions.length > 0 && (
               <View style={styles.parentRow}>
-                <Text style={styles.parentLabel}>Parent Activity</Text>
+                <Text style={[styles.parentLabel, { color: colors.textSecondary }]}>Parent Activity</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.parentScroll} nestedScrollEnabled alwaysBounceVertical={false} directionalLockEnabled>
                   <TouchableOpacity
-                    style={[styles.parentChip, !parentId && styles.parentChipActive]}
+                    style={[styles.parentChip, { backgroundColor: colors.pillBackground }, !parentId && { backgroundColor: colors.accent }]}
                     onPress={() => setParentId(null)}
                   >
-                    <Text style={[styles.parentChipText, !parentId && styles.parentChipTextActive]}>None</Text>
+                    <Text style={[styles.parentChipText, { color: colors.textTertiary }, !parentId && styles.parentChipTextActive]}>None</Text>
                   </TouchableOpacity>
                   {parentOptions.map((a) => (
                     <TouchableOpacity
                       key={a.id}
-                      style={[styles.parentChip, parentId === a.id && styles.parentChipActive]}
+                      style={[styles.parentChip, { backgroundColor: colors.pillBackground }, parentId === a.id && { backgroundColor: colors.accent }]}
                       onPress={() => setParentId(a.id)}
                     >
                       <Text
-                        style={[styles.parentChipText, parentId === a.id && styles.parentChipTextActive]}
+                        style={[styles.parentChipText, { color: colors.textTertiary }, parentId === a.id && styles.parentChipTextActive]}
                         numberOfLines={1}
                       >
                         {a.title || a.id}
@@ -428,15 +430,15 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
             <View style={styles.timeRow}>
               <View style={styles.timeCol}>
                 <Pressable
-                  style={[styles.timeInput, activeTimeField === 'start' && styles.timeInputActive]}
+                  style={[styles.timeInput, { backgroundColor: colors.inputBackground }, activeTimeField === 'start' && { borderWidth: 2, borderColor: colors.accent }]}
                   onPress={() => { Keyboard.dismiss(); setActiveTimeField(activeTimeField === 'start' ? null : 'start'); }}
                 >
-                  <Text style={[styles.timeDisplayText, !startTime && styles.placeholder]}>
+                  <Text style={[styles.timeDisplayText, { color: colors.textPrimary }, !startTime && { color: colors.textTertiary, fontWeight: '400' }]}>
                     {startTime || 'Start Time'}
                   </Text>
                   {!!startTime && (
                     <TouchableOpacity
-                      style={styles.timeClear}
+                      style={[styles.timeClear, { backgroundColor: colors.textTertiary }]}
                       onPress={() => { setStartTime(''); setActiveTimeField(null); }}
                       hitSlop={8}
                     >
@@ -445,20 +447,20 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
                   )}
                 </Pressable>
                 {activeTimeField === 'start' && (
-                  <ScrollTimePicker value={startTime} onChange={setStartTime} />
+                  <ScrollTimePicker value={startTime} onChange={setStartTime} colors={colors} />
                 )}
               </View>
               <View style={styles.timeCol}>
                 <Pressable
-                  style={[styles.timeInput, activeTimeField === 'end' && styles.timeInputActive]}
+                  style={[styles.timeInput, { backgroundColor: colors.inputBackground }, activeTimeField === 'end' && { borderWidth: 2, borderColor: colors.accent }]}
                   onPress={() => { Keyboard.dismiss(); setActiveTimeField(activeTimeField === 'end' ? null : 'end'); }}
                 >
-                  <Text style={[styles.timeDisplayText, !endTime && styles.placeholder]}>
+                  <Text style={[styles.timeDisplayText, { color: colors.textPrimary }, !endTime && { color: colors.textTertiary, fontWeight: '400' }]}>
                     {endTime || 'End Time'}
                   </Text>
                   {!!endTime && (
                     <TouchableOpacity
-                      style={styles.timeClear}
+                      style={[styles.timeClear, { backgroundColor: colors.textTertiary }]}
                       onPress={() => { setEndTime(''); setActiveTimeField(null); }}
                       hitSlop={8}
                     >
@@ -467,29 +469,29 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
                   )}
                 </Pressable>
                 {activeTimeField === 'end' && (
-                  <ScrollTimePicker value={endTime} onChange={setEndTime} />
+                  <ScrollTimePicker value={endTime} onChange={setEndTime} colors={colors} />
                 )}
               </View>
             </View>
 
             <View ref={(r) => { fieldRefs.current['title'] = r; }}>
               <TextInput
-                style={[styles.input, styles.fieldSpacing]}
+                style={[styles.input, styles.fieldSpacing, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Title"
-                placeholderTextColor="#bbb"
+                placeholderTextColor={colors.textTertiary}
                 onFocus={() => { setActiveTimeField(null); scrollToField('title'); }}
               />
             </View>
 
             <View ref={(r) => { fieldRefs.current['description'] = r; }}>
               <TextInput
-                style={[styles.input, styles.multiline, styles.fieldSpacing]}
+                style={[styles.input, styles.multiline, styles.fieldSpacing, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Description"
-                placeholderTextColor="#bbb"
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 onFocus={() => { setActiveTimeField(null); scrollToField('description'); }}
               />
@@ -497,22 +499,22 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
 
             <View ref={(r) => { fieldRefs.current['hours'] = r; }}>
               <TextInput
-                style={[styles.input, styles.fieldSpacing]}
+                style={[styles.input, styles.fieldSpacing, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={hours}
                 onChangeText={setHours}
                 placeholder="Opening Hours"
-                placeholderTextColor="#bbb"
+                placeholderTextColor={colors.textTertiary}
                 onFocus={() => { setActiveTimeField(null); scrollToField('hours'); }}
               />
             </View>
 
             <View ref={(r) => { fieldRefs.current['notes'] = r; }}>
               <TextInput
-                style={[styles.input, styles.multiline, styles.fieldSpacing]}
+                style={[styles.input, styles.multiline, styles.fieldSpacing, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Additional Notes"
-                placeholderTextColor="#bbb"
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 onFocus={() => { setActiveTimeField(null); scrollToField('notes'); }}
               />
@@ -520,11 +522,11 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
 
             <View ref={(r) => { fieldRefs.current['location'] = r; }}>
               <TextInput
-                style={[styles.input, styles.fieldSpacing]}
+                style={[styles.input, styles.fieldSpacing, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={location}
                 onChangeText={setLocation}
                 placeholder="Location / Address"
-                placeholderTextColor="#bbb"
+                placeholderTextColor={colors.textTertiary}
                 onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
               />
             </View>
@@ -534,9 +536,9 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
           <View style={{ flexGrow: 1 }} />
           <View style={styles.actions}>
             <Pressable onPress={onClose} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
+              <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Cancel</Text>
             </Pressable>
-            <Pressable onPress={handleSave} style={styles.saveBtn}>
+            <Pressable onPress={handleSave} style={[styles.saveBtn, { backgroundColor: colors.accent }]}>
               <Text style={styles.saveBtnText}>Save</Text>
             </Pressable>
           </View>

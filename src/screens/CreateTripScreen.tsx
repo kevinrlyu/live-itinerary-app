@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip } from '../types';
 import { createBlankTrip } from '../utils/tripBuilder';
 import DateRangePicker from '../components/DateRangePicker';
+import { useSettings } from '../contexts/SettingsContext';
 
 const CURRENCY_FLAGS: Record<string, string> = {
   AED: '\u{1F1E6}\u{1F1EA}', AFN: '\u{1F1E6}\u{1F1EB}', ALL: '\u{1F1E6}\u{1F1F1}',
@@ -84,6 +85,7 @@ interface Props {
 }
 
 export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCancel }: Props) {
+  const { colors } = useSettings();
   const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState<string | null>(null);
@@ -155,23 +157,23 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>New Itinerary</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.cardBackground }]}>
+    <View style={[styles.header, { backgroundColor: colors.headerBackground, borderBottomColor: colors.borderMedium }]}>
+      <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>New Itinerary</Text>
     </View>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary }]}
         value={title}
         onChangeText={setTitle}
         placeholder="Trip title"
-        placeholderTextColor="#bbb"
+        placeholderTextColor={colors.textTertiary}
         autoFocus
       />
 
-      <Text style={styles.label}>Dates</Text>
-      <Text style={startDate ? styles.dateDisplay : styles.dateHint}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Dates</Text>
+      <Text style={startDate ? [styles.dateDisplay, { color: colors.accent }] : [styles.dateHint, { color: colors.textSecondary }]}>
         {startDate
           ? `${formatDate(startDate)}${endDate ? ` – ${formatDate(endDate)}` : ' – select end date'}`
           : 'Tap a start date, then an end date'}
@@ -183,13 +185,13 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
       />
 
       <View style={styles.currencyRow}>
-        <Text style={styles.currencyLabel}>Default Currency</Text>
+        <Text style={[styles.currencyLabel, { color: colors.textSecondary }]}>Default Currency</Text>
         <View ref={buttonRef} collapsable={false}>
           <TouchableOpacity
-            style={styles.currencyButton}
+            style={[styles.currencyButton, { backgroundColor: colors.pillBackground }]}
             onPress={() => pickerOpen ? setPickerOpen(false) : openPicker()}
           >
-            <Text style={styles.currencyButtonText}>{CURRENCY_FLAGS[currency] || ''} {currency}</Text>
+            <Text style={[styles.currencyButtonText, { color: colors.accent }]}>{CURRENCY_FLAGS[currency] || ''} {currency}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -197,7 +199,7 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
       <Modal visible={pickerOpen} transparent animationType="none" onRequestClose={() => setPickerOpen(false)}>
         <Pressable style={pickerStyles.backdrop} onPress={() => setPickerOpen(false)} />
         {pickerPos && (
-          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right }]}>
+          <View style={[pickerStyles.container, { top: pickerPos.top, right: pickerPos.right, backgroundColor: colors.pickerBackground }]}>
             <ScrollView
               ref={pickerScrollRef}
               style={pickerStyles.scroll}
@@ -235,7 +237,8 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
                 >
                   <Text style={[
                     pickerStyles.itemText,
-                    i === centeredIdx && pickerStyles.itemTextSelected,
+                    { color: colors.textPrimary },
+                    i === centeredIdx && { color: colors.accent, fontWeight: '700' },
                     { opacity: getItemOpacity(i) },
                   ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
                 </TouchableOpacity>
@@ -247,11 +250,11 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
 
       <View style={styles.actions}>
         <TouchableOpacity onPress={onCancel} style={styles.cancelBtn}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleCreate}
-          style={[styles.createBtn, !canCreate && styles.createBtnDisabled]}
+          style={[styles.createBtn, { backgroundColor: colors.accent }, !canCreate && styles.createBtnDisabled]}
           disabled={!canCreate}
         >
           <Text style={styles.createText}>Create</Text>

@@ -7,6 +7,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TripMeta } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const DRAWER_WIDTH = SCREEN_WIDTH;
@@ -27,6 +28,7 @@ interface Props {
   onViewCulinary?: () => void;
   onViewExpenses?: () => void;
   onShowHelp?: () => void;
+  onShowSettings?: () => void;
 }
 
 const ROW_HEIGHT = 61; // measured: paddingV 12*2 + content ~37
@@ -149,6 +151,7 @@ function TripRow({
   disableActions, dragY, onSelectTrip, onReimportTrip, onDeletePress,
   onDragStart, onDragMove, onDragEnd,
 }: TripRowProps) {
+  const { colors } = useSettings();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragActiveRef = useRef(false);
   const startYRef = useRef(0);
@@ -248,7 +251,8 @@ function TripRow({
     <Animated.View
       style={[
         styles.tripRowAbs,
-        isActive && styles.tripRowActive,
+        { backgroundColor: colors.cardBackground, borderBottomColor: colors.borderLight },
+        isActive && [styles.tripRowActive, { borderLeftColor: colors.accent, shadowColor: colors.accent }],
         isDragging && styles.tripRowDragging,
         {
           top: animatedTop,
@@ -260,8 +264,8 @@ function TripRow({
       {...panResponder.panHandlers}
     >
       <View style={styles.tripInfo}>
-        <Text style={[styles.tripTitle, isActive && styles.tripTitleActive]} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.tripDate}>
+        <Text style={[styles.tripTitle, { color: colors.textPrimary }, isActive && { color: colors.accent }]} numberOfLines={1}>{item.title}</Text>
+        <Text style={[styles.tripDate, { color: colors.textSecondary }]}>
           {isReimporting ? (reimportProgress || 'Re-importing...') : item.dateRange}
         </Text>
       </View>
@@ -272,7 +276,7 @@ function TripRow({
             style={styles.refreshButton}
             disabled={disableActions || isDragging}
           >
-            <Text style={[styles.refreshText, disableActions && styles.refreshTextDisabled]}>↻</Text>
+            <Text style={[styles.refreshText, { color: colors.success }, disableActions && styles.refreshTextDisabled]}>↻</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -280,7 +284,7 @@ function TripRow({
           style={styles.deleteButton}
           disabled={isDragging}
         >
-          <Text style={styles.deleteText}>✕</Text>
+          <Text style={[styles.deleteText, { color: colors.destructive }]}>✕</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -290,8 +294,9 @@ function TripRow({
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
   onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, reimportingTripId, reimportProgress,
-  onViewCulinary, onViewExpenses, onReorderTrips, onShowHelp,
+  onViewCulinary, onViewExpenses, onReorderTrips, onShowHelp, onShowSettings,
 }: Props) {
+  const { colors } = useSettings();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(DRAWER_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -345,14 +350,14 @@ export default function TripDrawer({
       <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
       </Animated.View>
-      <Animated.View style={[styles.drawer, { paddingTop: insets.top, transform: [{ translateX: slideAnim }] }]}>
-        <View style={styles.drawerHeader}>
-          <Text style={styles.drawerTitle}>My Itineraries</Text>
+      <Animated.View style={[styles.drawer, { paddingTop: insets.top, transform: [{ translateX: slideAnim }], backgroundColor: colors.cardBackground }]}>
+        <View style={[styles.drawerHeader, { borderBottomColor: colors.borderMedium }]}>
+          <Text style={[styles.drawerTitle, { color: colors.textPrimary }]}>My Itineraries</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <View style={styles.menuIconContainer}>
-              <View style={styles.menuBar} />
-              <View style={styles.menuBar} />
-              <View style={styles.menuBar} />
+              <View style={[styles.menuBar, { backgroundColor: colors.accent }]} />
+              <View style={[styles.menuBar, { backgroundColor: colors.accent }]} />
+              <View style={[styles.menuBar, { backgroundColor: colors.accent }]} />
             </View>
           </TouchableOpacity>
         </View>
@@ -368,17 +373,22 @@ export default function TripDrawer({
           onReorder={onReorderTrips}
         />
 
-        <TouchableOpacity style={styles.importButton} onPress={onImportNew}>
+        <TouchableOpacity style={[styles.importButton, { backgroundColor: colors.accent }]} onPress={onImportNew}>
           <Text style={styles.importButtonText}>+ Import New Itinerary</Text>
         </TouchableOpacity>
         {onCreateNew && (
-          <TouchableOpacity style={styles.createButton} onPress={onCreateNew}>
+          <TouchableOpacity style={[styles.createButton, { backgroundColor: colors.accent }]} onPress={onCreateNew}>
             <Text style={styles.createButtonText}>+ Create New Itinerary</Text>
+          </TouchableOpacity>
+        )}
+        {onShowSettings && (
+          <TouchableOpacity style={styles.helpButton} onPress={onShowSettings}>
+            <Text style={[styles.helpButtonText, { color: colors.accent }]}>Settings</Text>
           </TouchableOpacity>
         )}
         {onShowHelp && (
           <TouchableOpacity style={styles.helpButton} onPress={onShowHelp}>
-            <Text style={styles.helpButtonText}>Help</Text>
+            <Text style={[styles.helpButtonText, { color: colors.accent }]}>Help</Text>
           </TouchableOpacity>
         )}
       </Animated.View>

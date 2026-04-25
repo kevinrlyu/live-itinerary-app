@@ -3,6 +3,7 @@ import {
   Modal, View, Text, TextInput, Pressable,
   StyleSheet, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface Props {
   visible: boolean;
@@ -13,6 +14,7 @@ interface Props {
 export default function NewDayDialog({ visible, onCancel, onAdd }: Props) {
   const [value, setValue] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const { colors } = useSettings();
 
   useEffect(() => {
     if (visible) {
@@ -31,29 +33,29 @@ export default function NewDayDialog({ visible, onCancel, onAdd }: Props) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.overlay}
+        style={[styles.overlay, { backgroundColor: colors.overlay }]}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
-        <View style={styles.dialog}>
-          <Text style={styles.title}>New Day</Text>
+        <View style={[styles.dialog, { backgroundColor: colors.modalBackground }]}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>New Day</Text>
           <TextInput
             ref={inputRef}
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
             value={value}
             onChangeText={setValue}
             placeholder="Title"
-            placeholderTextColor="#bbb"
+            placeholderTextColor={colors.textTertiary}
             returnKeyType="done"
             onSubmitEditing={submit}
             autoCapitalize="sentences"
           />
-          <View style={styles.btns}>
-            <Pressable style={[styles.btn, styles.btnLeft]} onPress={onCancel}>
-              <Text style={styles.btnText}>Cancel</Text>
+          <View style={[styles.btns, { borderTopColor: colors.border }]}>
+            <Pressable style={[styles.btn, styles.btnLeft, { borderRightColor: colors.border }]} onPress={onCancel}>
+              <Text style={[styles.btnText, { color: colors.accent }]}>Cancel</Text>
             </Pressable>
-            <View style={styles.btnDivider} />
+            <View style={[styles.btnDivider, { backgroundColor: colors.border }]} />
             <Pressable style={styles.btn} onPress={submit}>
-              <Text style={[styles.btnText, styles.btnBold]}>Add</Text>
+              <Text style={[styles.btnText, styles.btnBold, { color: colors.accent }]}>Add</Text>
             </Pressable>
           </View>
         </View>
