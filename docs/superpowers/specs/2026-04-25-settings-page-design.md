@@ -9,7 +9,9 @@ Add a Settings page to Trotter, accessible from the trip drawer. Users can confi
 ```ts
 interface AppSettings {
   displayMode: 'light' | 'dark' | 'system';
-  accentColor: string;       // hex value from preset palette
+  accentColor: string;       // hex value from preset palette — primary app accent
+  stayAccentColor: string;   // accent for hotel/stay activity cards
+  mealAccentColor: string;   // accent for meal/food activity cards
   timeFormat: '12h' | '24h';
   mapsProvider: 'google' | 'apple' | 'amap';
 }
@@ -17,6 +19,8 @@ interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   displayMode: 'system',
   accentColor: '#007AFF',
+  stayAccentColor: '#E91E63',
+  mealAccentColor: '#E53935',
   timeFormat: '12h',
   mapsProvider: 'google',
 };
@@ -24,7 +28,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 ## Accent Color Palette
 
-Preset options (user taps a color circle to select):
+Preset options (user taps a color circle to select). The same palette is shared across all three color pickers:
 
 | Name   | Hex       |
 |--------|-----------|
@@ -35,6 +39,11 @@ Preset options (user taps a color circle to select):
 | Orange | `#FF9500` |
 | Teal   | `#5AC8FA` |
 | Pink   | `#FF2D55` |
+
+Each has a different default:
+- **Primary accent**: Blue (`#007AFF`) — used for buttons, active states, UI chrome
+- **Stay accent**: Pink (`#E91E63`) — used for hotel/stay activity cards
+- **Meal accent**: Red (`#E53935`) — used for meal/food activity cards
 
 ## Architecture
 
@@ -61,8 +70,10 @@ const lightColors = {
   border: '#ddd',
   borderLight: '#f0f0f0',
   borderMedium: '#eee',
-  // accent is injected from settings.accentColor
-  accent: '<from settings>',
+  // accents injected from settings
+  accent: '<from settings.accentColor>',
+  stayAccent: '<from settings.stayAccentColor>',
+  mealAccent: '<from settings.mealAccentColor>',
   accentText: '#fff',         // text on accent-colored backgrounds
   overlay: 'rgba(0,0,0,0.4)',
   modalBackground: '#f9f9f9',
@@ -82,7 +93,9 @@ const darkColors = {
   border: '#38383a',
   borderLight: '#2c2c2e',
   borderMedium: '#38383a',
-  accent: '<from settings>',
+  accent: '<from settings.accentColor>',
+  stayAccent: '<from settings.stayAccentColor>',
+  mealAccent: '<from settings.mealAccentColor>',
   accentText: '#fff',
   overlay: 'rgba(0,0,0,0.6)',
   modalBackground: '#2c2c2e',
@@ -171,8 +184,8 @@ The `to12hDisplay` function in ActivityEditSheet also respects this setting.
   - Walkthrough + Demo panels
 
 ### Accent color references to replace
-Every instance of `#007AFF` becomes `colors.accent`. Key locations:
-- ActivityCard (checkbox, buttons, current card border)
+Every instance of `#007AFF` becomes `colors.accent`. The `ACCENT_COLORS` map in ActivityCard (`hotel: '#E91E63'`, `meal: '#E53935'`) is replaced by `colors.stayAccent` and `colors.mealAccent`. Key locations:
+- ActivityCard (checkbox, buttons, current card border, category-based accents)
 - ActivityEditSheet (pills, save button)
 - DayTabBar (active tab, progress bar)
 - TripDrawer (menu bars, active row, buttons)
@@ -199,7 +212,9 @@ Display Mode
   [Light]  [Dark]  [System]     ← segmented control, 3 options
 
 Theme Color
-  [o] [o] [o] [o] [o] [o] [o]  ← row of colored circles, checkmark on selected
+  Primary    [o] [o] [o] [o] [o] [o] [o]  ← row of colored circles, checkmark on selected
+  Stays      [o] [o] [o] [o] [o] [o] [o]  ← same palette, different default
+  Meals      [o] [o] [o] [o] [o] [o] [o]  ← same palette, different default
 
 Time Format
   [12-hour]  [24-hour]          ← segmented control, 2 options
