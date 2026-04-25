@@ -388,6 +388,9 @@ export default function Demo2Day({ active }: { active: boolean }) {
           <Animated.Text style={[styles.theme, { opacity: themeNaraOpacity }]}>
             Nara
           </Animated.Text>
+          <Animated.View style={[styles.insertRow, { opacity: themeNaraOpacity }]}>
+            <Text style={styles.insertText}>+</Text>
+          </Animated.View>
         </Animated.View>
 
         {/* Edit banner — positioned over top of new day content */}
@@ -641,6 +644,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(16),
     paddingTop: s(12),
     paddingBottom: s(12),
+  },
+  insertRow: {
+    alignItems: 'center',
+  },
+  insertText: {
+    fontSize: s(14),
+    fontWeight: '600',
+    color: '#007AFF',
+    backgroundColor: '#D6EAFF',
+    paddingHorizontal: s(20),
+    height: s(32),
+    lineHeight: s(32),
+    borderRadius: s(16),
+    overflow: 'hidden',
+    textAlign: 'center',
   },
   pullOverlay: {
     position: 'absolute',

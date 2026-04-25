@@ -14,7 +14,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.kevin.rl.yu.live-itinerary-app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "iosamap"
+        ]
       }
     },
     "android": {
@@ -24,7 +27,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kevin.rl.yu.liveitineraryapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

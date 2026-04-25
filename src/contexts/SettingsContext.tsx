@@ -28,12 +28,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export const ACCENT_PALETTE = [
   { name: 'Blue', hex: '#007AFF' },
-  { name: 'Red', hex: '#FF3B30' },
   { name: 'Green', hex: '#34C759' },
-  { name: 'Purple', hex: '#AF52DE' },
+  { name: 'Yellow', hex: '#FFCC00' },
   { name: 'Orange', hex: '#FF9500' },
-  { name: 'Teal', hex: '#5AC8FA' },
-  { name: 'Pink', hex: '#FF2D55' },
+  { name: 'Red', hex: '#FF3B30' },
+  { name: 'Purple', hex: '#AF52DE' },
+  { name: 'Pink', hex: '#FC7368' },
 ];
 
 // --- Color Themes ---
@@ -84,7 +84,7 @@ function buildColors(mode: 'light' | 'dark', settings: AppSettings): ThemeColors
       pillBackground: '#2c2c2e',
       destructive: '#FF453A',
       success: '#30D158',
-      inputBackground: '#1c1c1e',
+      inputBackground: '#2c2c2e',
       headerBackground: '#1c1c1e',
       editBannerBackground: '#1a2a3a',
       pickerBackground: '#2c2c2e',
@@ -110,7 +110,7 @@ function buildColors(mode: 'light' | 'dark', settings: AppSettings): ThemeColors
     pillBackground: '#f0f0f0',
     destructive: '#FF3B30',
     success: '#34C759',
-    inputBackground: '#fff',
+    inputBackground: '#f5f5f5',
     headerBackground: '#fff',
     editBannerBackground: '#D6EAFF',
     pickerBackground: '#f0f0f0',

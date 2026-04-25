@@ -73,14 +73,17 @@ function convertTimesIn(text: string, format: '12h' | '24h'): string {
 }
 
 function buildMapsUrl(query: string, provider: MapsProvider): string {
+  const encoded = encodeURIComponent(query);
   switch (provider) {
     case 'apple':
-      return `https://maps.apple.com/?q=${encodeURIComponent(query)}`;
+      // maps: scheme opens Apple Maps app directly; ll=0,0 forces a place search rather than address
+      return `maps:?q=${encoded}`;
     case 'amap':
-      return `https://uri.amap.com/search?keyword=${encodeURIComponent(query)}`;
+      // iosamap: scheme opens Amap app directly with a POI search
+      return `iosamap://poi?keyword=${encoded}&dev=0`;
     case 'google':
     default:
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+      return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
   }
 }
 
@@ -93,9 +96,18 @@ function getActivityAccent(category: string | null, colors: ThemeColors): string
 export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense, isEditMode, onLongPress }: Props) {
   const { settings, colors } = useSettings();
 
-  const openDirections = () => {
+  const openDirections = async () => {
     const query = activity.location || activity.title || '';
-    Linking.openURL(buildMapsUrl(query, settings.mapsProvider));
+    const url = buildMapsUrl(query, settings.mapsProvider);
+    if (settings.mapsProvider === 'amap') {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        // Fall back to Amap web search if app not installed
+        Linking.openURL(`https://uri.amap.com/search?keyword=${encodeURIComponent(query)}`);
+        return;
+      }
+    }
+    Linking.openURL(url);
   };
 
   const accent = getActivityAccent(activity.category ?? null, colors);

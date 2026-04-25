@@ -68,7 +68,7 @@ function WalkthroughContent({ visible, onClose }: Props) {
   return (
     <>
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.cardBackground }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { borderBottomColor: colors.borderMedium }]}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Help</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <Text style={[styles.closeText, { color: colors.textSecondary }]}>✕</Text>
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 13.5,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     flex: 1,
     marginRight: 8,
+    marginTop: -0.5,
   },
   closeBtn: { padding: 4 },
   closeText: { fontSize: 16, color: '#888' },

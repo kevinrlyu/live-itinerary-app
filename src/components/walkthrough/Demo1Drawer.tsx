@@ -4,17 +4,19 @@ import FingerCursor, { createCursor, moveTo, tap } from './FingerCursor';
 import { FRAME_W as W, FRAME_H as H, s, STATUS_H } from './scale';
 
 // Finger animation targets (computed from bottom-up with scaled values)
-const HELP_BLOCK_H = s(12 * 2 + 18);       // paddingV 12 + lineHeight 18
+const LINK_BLOCK_H = s(12 * 2 + 18);       // paddingV 12 + lineHeight 18
 const HELP_MARGIN_BOTTOM = s(16);
-const HELP_MARGIN_TOP = s(8);
+const HELP_MARGIN_TOP = s(-4);              // Help has marginTop -4 in real app
+const SETTINGS_MARGIN_TOP = s(8);
 const BTN_BLOCK_H = s(14 * 2 + 18);        // padding 14 + lineHeight 18
 const BTN_MARGIN_TOP = s(8);
 
-const HELP_CENTER_Y = H - HELP_MARGIN_BOTTOM - HELP_BLOCK_H / 2;
+const HELP_CENTER_Y = H - HELP_MARGIN_BOTTOM - LINK_BLOCK_H / 2;
+const SETTINGS_CENTER_Y = HELP_CENTER_Y - LINK_BLOCK_H / 2 - HELP_MARGIN_TOP - LINK_BLOCK_H / 2;
 // Buttons render slightly taller than padding+lineHeight math predicts (shadow + tap-target);
 // nudge finger centers up to visually center them.
 const BTN_Y_NUDGE = s(5);
-const CREATE_CENTER_Y = HELP_CENTER_Y - HELP_BLOCK_H / 2 - HELP_MARGIN_TOP - BTN_BLOCK_H / 2 - BTN_Y_NUDGE;
+const CREATE_CENTER_Y = SETTINGS_CENTER_Y - LINK_BLOCK_H / 2 - SETTINGS_MARGIN_TOP - BTN_BLOCK_H / 2 - BTN_Y_NUDGE;
 const IMPORT_CENTER_Y = CREATE_CENTER_Y - BTN_BLOCK_H / 2 - BTN_MARGIN_TOP - BTN_BLOCK_H / 2;
 
 // Trip row geometry (used for drag/reorder animation)
@@ -181,8 +183,13 @@ export default function Demo1Drawer({ active }: Props) {
             <Text style={styles.createButtonText}>+ Create New Itinerary</Text>
           </Animated.View>
 
+          {/* Settings link */}
+          <View style={styles.settingsButton}>
+            <Text style={styles.helpButtonText}>Settings</Text>
+          </View>
+
           {/* Help link */}
-          <View style={styles.helpButton}>
+          <View style={[styles.settingsButton, { marginTop: s(-4), marginBottom: s(16) }]}>
             <Text style={styles.helpButtonText}>Help</Text>
           </View>
         </View>
@@ -342,11 +349,10 @@ const styles = StyleSheet.create({
     lineHeight: s(18),
     fontWeight: '700',
   },
-  helpButton: {
+  settingsButton: {
     alignItems: 'center',
     paddingVertical: s(12),
     marginTop: s(8),
-    marginBottom: s(16),
   },
   helpButtonText: {
     fontSize: s(14),

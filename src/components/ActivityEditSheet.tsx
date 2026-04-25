@@ -334,6 +334,7 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
       type: actType,
       category: actType === 'transport' ? null : (category === 'none' ? null : category),
       parentId: actType === 'transport' ? null : (parentId || null),
+      expense: actType === 'transport' ? null : activity.expense,
     };
     onSave(updated);
   };

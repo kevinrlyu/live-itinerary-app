@@ -39,15 +39,16 @@ interface DraggableListProps {
   reimportingTripId?: string | null;
   reimportProgress?: string;
   onSelectTrip: (id: string) => void;
-  onReimportTrip: (id: string) => void;
+  onReimportPress: (trip: TripMeta) => void;
   onDeletePress: (trip: TripMeta) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
 }
 
 function DraggableTripList({
   trips, activeTripId, reimportingTripId, reimportProgress,
-  onSelectTrip, onReimportTrip, onDeletePress, onReorder,
+  onSelectTrip, onReimportPress, onDeletePress, onReorder,
 }: DraggableListProps) {
+  const { colors } = useSettings();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const dragY = useRef(new Animated.Value(0)).current;
@@ -67,7 +68,7 @@ function DraggableTripList({
       scrollEnabled={draggingId === null}
       contentContainerStyle={{ paddingTop: 8 }}
     >
-      <View style={{ borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginHorizontal: 8 }} />
+      <View style={{ borderBottomWidth: 1, borderBottomColor: colors.borderLight, marginHorizontal: 8 }} />
       <View style={{ height: trips.length * ROW_HEIGHT, position: 'relative' }}>
         {trips.map((item, idx) => {
           const isDragging = item.id === draggingId;
@@ -95,7 +96,7 @@ function DraggableTripList({
               disableActions={!!reimportingTripId}
               dragY={dragY}
               onSelectTrip={onSelectTrip}
-              onReimportTrip={onReimportTrip}
+              onReimportPress={onReimportPress}
               onDeletePress={onDeletePress}
               onDragStart={(startIdx) => {
                 draggingIdxRef.current = startIdx;
@@ -139,7 +140,7 @@ interface TripRowProps {
   disableActions: boolean;
   dragY: Animated.Value;
   onSelectTrip: (id: string) => void;
-  onReimportTrip: (id: string) => void;
+  onReimportPress: (trip: TripMeta) => void;
   onDeletePress: (trip: TripMeta) => void;
   onDragStart: (index: number) => void;
   onDragMove: (dy: number) => void;
@@ -148,7 +149,7 @@ interface TripRowProps {
 
 function TripRow({
   item, index, top, isDragging, isActive, isReimporting, reimportProgress,
-  disableActions, dragY, onSelectTrip, onReimportTrip, onDeletePress,
+  disableActions, dragY, onSelectTrip, onReimportPress, onDeletePress,
   onDragStart, onDragMove, onDragEnd,
 }: TripRowProps) {
   const { colors } = useSettings();
@@ -252,8 +253,8 @@ function TripRow({
       style={[
         styles.tripRowAbs,
         { backgroundColor: colors.cardBackground, borderBottomColor: colors.borderLight },
-        isActive && [styles.tripRowActive, { borderLeftColor: colors.accent, shadowColor: colors.accent }],
-        isDragging && styles.tripRowDragging,
+        isActive && [styles.tripRowActive, { borderLeftColor: colors.accent, shadowColor: colors.accent, backgroundColor: colors.cardBackground }],
+        isDragging && [styles.tripRowDragging, { backgroundColor: colors.cardBackground }],
         {
           top: animatedTop,
           transform: [{ translateY }],
@@ -272,7 +273,7 @@ function TripRow({
       <View style={styles.tripActions}>
         {!!item.docUrl && (
           <TouchableOpacity
-            onPress={() => onReimportTrip(item.id)}
+            onPress={() => onReimportPress(item)}
             style={styles.refreshButton}
             disabled={disableActions || isDragging}
           >
@@ -332,6 +333,17 @@ export default function TripDrawer({
     }
   }, [visible]);
 
+  const confirmReimport = (trip: TripMeta) => {
+    Alert.alert(
+      'Refresh Itinerary',
+      `Refresh "${trip.title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Refresh', isPreferred: true, onPress: () => onReimportTrip(trip.id) },
+      ]
+    );
+  };
+
   const confirmDelete = (trip: TripMeta) => {
     Alert.alert(
       'Delete Itinerary',
@@ -368,7 +380,7 @@ export default function TripDrawer({
           reimportingTripId={reimportingTripId}
           reimportProgress={reimportProgress}
           onSelectTrip={onSelectTrip}
-          onReimportTrip={onReimportTrip}
+          onReimportPress={confirmReimport}
           onDeletePress={confirmDelete}
           onReorder={onReorderTrips}
         />
@@ -387,7 +399,7 @@ export default function TripDrawer({
           </TouchableOpacity>
         )}
         {onShowHelp && (
-          <TouchableOpacity style={styles.helpButton} onPress={onShowHelp}>
+          <TouchableOpacity style={[styles.helpButton, { marginTop: -4, marginBottom: 16 }]} onPress={onShowHelp}>
             <Text style={[styles.helpButtonText, { color: colors.accent }]}>Help</Text>
           </TouchableOpacity>
         )}
@@ -521,7 +533,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     marginTop: 8,
-    marginBottom: 16,
   },
   helpButtonText: {
     fontSize: 14,

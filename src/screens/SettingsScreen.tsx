@@ -56,14 +56,18 @@ function ColorRow({
   value,
   onChange,
   colors,
+  showTopBorder,
 }: {
   label: string;
   value: string;
   onChange: (hex: string) => void;
   colors: ReturnType<typeof useSettings>['colors'];
+  showTopBorder?: boolean;
 }) {
   return (
-    <View style={[rowStyles.container, { borderBottomColor: colors.borderLight }]}>
+    <View>
+      {showTopBorder && <View style={[rowStyles.divider, { backgroundColor: colors.borderLight }]} />}
+      <View style={rowStyles.container}>
       <Text style={[rowStyles.label, { color: colors.textSecondary }]}>{label}</Text>
       <View style={rowStyles.circles}>
         {ACCENT_PALETTE.map((c) => {
@@ -84,6 +88,8 @@ function ColorRow({
           );
         })}
       </View>
+      </View>
+      <View style={[rowStyles.divider, { backgroundColor: colors.borderLight }]} />
     </View>
   );
 }
@@ -93,8 +99,8 @@ export default function SettingsScreen({ onClose }: Props) {
   const { settings, colors, updateSettings } = useSettings();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View style={[styles.header, { backgroundColor: colors.headerBackground, borderBottomColor: colors.borderMedium }]}>
+    <View style={[styles.container, { backgroundColor: colors.cardBackground, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: colors.borderMedium }]}>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Settings</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={[styles.closeText, { color: colors.textSecondary }]}>✕</Text>
@@ -125,6 +131,7 @@ export default function SettingsScreen({ onClose }: Props) {
             value={settings.accentColor}
             onChange={(hex) => updateSettings({ accentColor: hex })}
             colors={colors}
+            showTopBorder
           />
           <ColorRow
             label="Stays"
@@ -182,17 +189,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 15,
-    paddingBottom: 16,
+    paddingTop: 13.5,
+    paddingBottom: 12,
     borderBottomWidth: 1,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
     flex: 1,
+    marginRight: 8,
+    marginTop: -0.5,
   },
   closeButton: {
-    padding: 8,
+    padding: 4,
   },
   closeText: {
     fontSize: 16,
@@ -202,11 +211,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sectionLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   colorSection: {
     borderRadius: 12,
@@ -243,10 +250,13 @@ const rowStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     width: 70,
   },
@@ -257,21 +267,13 @@ const rowStyles = StyleSheet.create({
     gap: 10,
   },
   circle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  circleSelected: {
-    borderWidth: 2.5,
-    borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 4,
-  },
+  circleSelected: {},
   check: {
     color: '#fff',
     fontSize: 14,
