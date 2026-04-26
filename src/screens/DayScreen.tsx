@@ -10,6 +10,7 @@ import ActivityCard from '../components/ActivityCard';
 import ActivityEditSheet from '../components/ActivityEditSheet';
 import InsertActivityButton from '../components/InsertActivityButton';
 import { getCurrentActivityIndex } from '../utils/tracking';
+import { useStepCount } from '../hooks/useStepCount';
 
 const PULL_THRESHOLD = 15;     // negative contentOffset.y needed to start hold
 const PULL_MAX = 70;           // max visual pull distance (with resistance)
@@ -25,14 +26,16 @@ interface Props {
   onRemoveDay?: (dayDate: string) => void;
   onUpdateDayTheme?: (dayDate: string, theme: string) => void;
   onEditingChange?: (editing: boolean) => void;
+  scrollToTopTrigger?: number;
 }
 
 export default function DayScreen({
   day, onToggle, onOpenExpense,
   onUpdateActivity, onInsertActivity, onDeleteActivity, onRemoveDay, onUpdateDayTheme,
-  onEditingChange,
+  onEditingChange, scrollToTopTrigger,
 }: Props) {
   const [now, setNow] = useState(new Date());
+  const steps = useStepCount(day.date);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
   const [editingTheme, setEditingTheme] = useState(false);
@@ -41,6 +44,7 @@ export default function DayScreen({
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [isNewActivity, setIsNewActivity] = useState(false);
   const { colors } = useSettings();
+  const showSteps = steps !== null && !editMode;
 
   useEffect(() => {
     onEditingChange?.(editingActivity !== null);
@@ -54,11 +58,18 @@ export default function DayScreen({
   const isOverscrollingRef = useRef(false);
   const hasFiredRef = useRef(false);
   const [isPulling, setIsPulling] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (scrollToTopTrigger) {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [scrollToTopTrigger]);
 
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const isToday = day.date === todayStr;
@@ -315,15 +326,10 @@ export default function DayScreen({
           autoFocus
           returnKeyType="done"
         />
-      ) : editMode ? (
-        <TouchableOpacity onPress={() => { setThemeText(day.theme); setEditingTheme(true); }}>
-          <Text style={[styles.theme, { color: colors.textPrimary }]}>{day.theme || 'Tap to add title'}</Text>
-        </TouchableOpacity>
-      ) : (
-        day.theme ? <Text style={[styles.theme, { color: colors.textPrimary }]}>{day.theme}</Text> : null
-      )}
+      ) : null}
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.list}
         alwaysBounceVertical
         onScroll={handleScroll}
@@ -331,6 +337,19 @@ export default function DayScreen({
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
+        {editMode && !editingTheme ? (
+          <TouchableOpacity onPress={() => { setThemeText(day.theme); setEditingTheme(true); }}>
+            <Text style={[styles.theme, { color: colors.textPrimary }]}>{day.theme || 'Tap to add title'}</Text>
+          </TouchableOpacity>
+        ) : !editMode && day.theme ? (
+          <Text style={[styles.theme, { color: colors.textPrimary }, showSteps && styles.themeWithSteps]}>{day.theme}</Text>
+        ) : null}
+
+        {showSteps && (
+          <Text style={[styles.stepCount, { color: colors.textSecondary }, !day.theme && { paddingTop: 12 }]}>
+            {steps.toLocaleString()} steps
+          </Text>
+        )}
         {editMode && (
           <InsertActivityButton onPress={() => handleInsertPress(-1)} />
         )}
@@ -410,6 +429,15 @@ const styles = StyleSheet.create({
     color: '#333',
     paddingHorizontal: 16,
     paddingTop: 12,
+    paddingBottom: 12,
+  },
+  themeWithSteps: {
+    paddingBottom: 4,
+  },
+  stepCount: {
+    fontSize: 12,
+    color: '#888',
+    paddingHorizontal: 16,
     paddingBottom: 12,
   },
   themeInput: {

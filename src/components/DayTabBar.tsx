@@ -20,10 +20,11 @@ interface TabInfo {
 interface Props {
   tabs: TabInfo[];
   onTabPress: (key: string) => void;
+  onFocusedTabPress?: () => void;
   onAddDay: () => void;
 }
 
-export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
+export default function DayTabBar({ tabs, onTabPress, onFocusedTabPress, onAddDay }: Props) {
   const { colors } = useSettings();
   const scrollViewRef = useRef<ScrollView>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -137,7 +138,7 @@ export default function DayTabBar({ tabs, onTabPress, onAddDay }: Props) {
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, { width: tabWidth }, tab.isFocused && [styles.tabActive, { borderBottomColor: colors.accent }]]}
-            onPress={() => onTabPress(tab.key)}
+            onPress={() => tab.isFocused ? onFocusedTabPress?.() : onTabPress(tab.key)}
             activeOpacity={0.7}
           >
             <Text style={[styles.tabDayOfWeek, { color: colors.textPrimary }, tab.isFocused && { color: colors.accent }]}>{tab.dayOfWeek}</Text>

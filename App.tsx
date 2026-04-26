@@ -87,6 +87,7 @@ function AppContent() {
   const [showNewDayDialog, setShowNewDayDialog] = useState(false);
   const [isEditingActivity, setIsEditingActivity] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [scrollToTopTrigger, setScrollToTopTrigger] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -615,6 +616,7 @@ function AppContent() {
                           const idx = props.state.routes.findIndex((r) => r.name === key);
                           if (idx >= 0) props.navigation.navigate(props.state.routes[idx].name);
                         }}
+                        onFocusedTabPress={() => setScrollToTopTrigger((n) => n + 1)}
                         onAddDay={handleAddDay}
                       />
                     );
@@ -640,6 +642,7 @@ function AppContent() {
                           onRemoveDay={handleRemoveDay}
                           onUpdateDayTheme={handleUpdateDayTheme}
                           onEditingChange={setIsEditingActivity}
+                          scrollToTopTrigger={scrollToTopTrigger}
                         />
                       )}
                     />
