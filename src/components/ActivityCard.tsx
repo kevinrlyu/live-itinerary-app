@@ -80,7 +80,7 @@ function buildMapsUrl(query: string, provider: MapsProvider): string {
       return `maps:?q=${encoded}`;
     case 'amap':
       // iosamap: scheme opens Amap app directly with a POI search
-      return `iosamap://poi?keyword=${encoded}&dev=0`;
+      return `iosamap://poi?sourceApplication=Trotter&keywords=${encoded}&dev=0`;
     case 'google':
     default:
       return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
