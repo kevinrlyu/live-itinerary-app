@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
     textAlign: 'center',
   },
@@ -121,6 +121,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   btnBold: {
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

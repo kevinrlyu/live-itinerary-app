@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   tabDayOfWeek: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   tabMonthDay: {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   addLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
 });

@@ -209,7 +209,7 @@ function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c
                   <Text style={[
                     pickerStyles.itemText,
                     { color: colors.textPrimary },
-                    i === centeredIdx && { color: colors.accent, fontWeight: '700' },
+                    i === centeredIdx && { color: colors.accent, fontWeight: '600' },
                     { opacity: getItemOpacity(i) },
                   ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
                 </TouchableOpacity>
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   totalAmount: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   emptyText: {
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
     marginBottom: 10,
   },
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   categoryAmounts: {
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   },
   dayTotalText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   expenseRow: {
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   currencyValueText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   exportButton: {
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   exportButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });
 
@@ -577,6 +577,6 @@ const pickerStyles = StyleSheet.create({
   },
   itemTextSelected: {
     color: '#007AFF',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

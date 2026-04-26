@@ -9,6 +9,7 @@ import {
   DisplayMode,
   TimeFormat,
   MapsProvider,
+  TempUnit,
 } from '../contexts/SettingsContext';
 
 interface Props {
@@ -108,23 +109,8 @@ export default function SettingsScreen({ onClose }: Props) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Display Mode */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Display Mode</Text>
-        <SegmentedControl<DisplayMode>
-          options={[
-            { label: 'Light', value: 'light' },
-            { label: 'Dark', value: 'dark' },
-            { label: 'System', value: 'system' },
-          ]}
-          value={settings.displayMode}
-          onChange={(v) => updateSettings({ displayMode: v })}
-          accentColor={colors.accent}
-          bgColor={colors.pillBackground}
-          textColor={colors.textTertiary}
-        />
-
         {/* Theme Colors */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 28 }]}>Theme Color</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Theme Color</Text>
         <View style={[styles.colorSection, { backgroundColor: colors.cardBackground }]}>
           <ColorRow
             label="Primary"
@@ -146,6 +132,35 @@ export default function SettingsScreen({ onClose }: Props) {
             colors={colors}
           />
         </View>
+
+        {/* Display Mode */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 28 }]}>Display Mode</Text>
+        <SegmentedControl<DisplayMode>
+          options={[
+            { label: 'Light', value: 'light' },
+            { label: 'Dark', value: 'dark' },
+            { label: 'System', value: 'system' },
+          ]}
+          value={settings.displayMode}
+          onChange={(v) => updateSettings({ displayMode: v })}
+          accentColor={colors.accent}
+          bgColor={colors.pillBackground}
+          textColor={colors.textTertiary}
+        />
+
+        {/* Temperature Unit */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 28 }]}>Temperature Unit</Text>
+        <SegmentedControl<TempUnit>
+          options={[
+            { label: 'Celsius', value: 'C' },
+            { label: 'Fahrenheit', value: 'F' },
+          ]}
+          value={settings.tempUnit}
+          onChange={(v) => updateSettings({ tempUnit: v })}
+          accentColor={colors.accent}
+          bgColor={colors.pillBackground}
+          textColor={colors.textTertiary}
+        />
 
         {/* Time Format */}
         <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 28 }]}>Time Format</Text>
@@ -277,6 +292,6 @@ const rowStyles = StyleSheet.create({
   check: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

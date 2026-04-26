@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(8) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
-  tabDow: { fontSize: s(12), lineHeight: s(16), fontWeight: '700', color: '#1a1a1a' },
+  tabDow: { fontSize: s(12), lineHeight: s(16), fontWeight: '600', color: '#1a1a1a' },
   tabDate: { fontSize: s(12), lineHeight: s(16), color: '#888', marginTop: 1 },
   tabDowActive: { color: '#007AFF' },
   tabDateActive: { color: '#007AFF' },
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     paddingBottom: s(12),
     fontSize: s(16),
     lineHeight: s(20),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
   },
   insertBtn: {
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   },
   sheetHeading: {
     fontSize: s(16), lineHeight: s(20),
-    fontWeight: '700', color: '#1a1a1a',
+    fontWeight: '600', color: '#1a1a1a',
   },
   sheetDelete: {
     fontSize: s(14),

@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   tabDow: {
     fontSize: s(12),
     lineHeight: s(16),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   tabDate: {
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   addLabel: {
     fontSize: s(12),
     lineHeight: s(15),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
     marginTop: s(4),
   },
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
   theme: {
     fontSize: s(16),
     lineHeight: s(20),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
     paddingHorizontal: s(16),
     paddingTop: s(12),
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   holdLabel: {
     fontSize: s(14),
     lineHeight: s(18),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
     marginTop: s(6),
   },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
   dialogTitle: {
     fontSize: s(16),
     lineHeight: s(18),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
     textAlign: 'center',
     height: DIALOG_TITLE_H - s(14),
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   dialogBtnBold: {
-    fontWeight: '700',
+    fontWeight: '600',
   },
   bottomTabBar: {
     position: 'absolute',

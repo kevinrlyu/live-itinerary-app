@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
   },
   editBannerText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   doneBtnBanner: {
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   },
   doneBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   scrollContent: {
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   deleteSectionText: {
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   },
   holdLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
 });

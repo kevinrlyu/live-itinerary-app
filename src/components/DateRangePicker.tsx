@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   dayHeaders: {
     flexDirection: 'row',
@@ -169,6 +169,6 @@ const styles = StyleSheet.create({
   },
   cellTextSelected: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

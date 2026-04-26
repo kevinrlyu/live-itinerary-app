@@ -270,7 +270,7 @@ export default function ExpenseInput({ target, onSave, onClose }: Props) {
                   <Text style={[
                     pickerStyles.itemText,
                     { color: colors.textPrimary },
-                    i === centeredIdx && { color: colors.accent, fontWeight: '700' },
+                    i === centeredIdx && { color: colors.accent, fontWeight: '600' },
                     { opacity: getItemOpacity(i) },
                   ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
                 </TouchableOpacity>
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
     marginBottom: 16,
   },
@@ -323,13 +323,13 @@ const styles = StyleSheet.create({
   },
   currencyButtonText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   amountDisplay: {
     flex: 1,
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
     textAlign: 'left',
   },
@@ -425,6 +425,6 @@ const pickerStyles = StyleSheet.create({
   },
   itemTextSelected: {
     color: '#007AFF',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

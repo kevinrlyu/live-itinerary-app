@@ -454,7 +454,7 @@ const cardStyles = StyleSheet.create({
   },
   iconBtnAmount: {
     fontSize: s(14),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
 });
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   tab: { width: W / 5, alignItems: 'center', justifyContent: 'center', paddingVertical: s(8) },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
-  tabDow: { fontSize: s(12), lineHeight: s(16), fontWeight: '700', color: '#1a1a1a' },
+  tabDow: { fontSize: s(12), lineHeight: s(16), fontWeight: '600', color: '#1a1a1a' },
   tabDate: { fontSize: s(12), lineHeight: s(16), color: '#888', marginTop: 1 },
   tabDowActive: { color: '#007AFF' },
   tabDateActive: { color: '#007AFF' },
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     paddingBottom: s(12),
     fontSize: s(16),
     lineHeight: s(20),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
   },
   modalOverlay: {
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: s(16),
     lineHeight: s(20),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
     marginBottom: s(16),
   },
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     fontSize: s(28),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#ccc',
   },
   modalAmountTyped: {
@@ -543,17 +543,17 @@ const styles = StyleSheet.create({
   },
   modalAmountSymInactive: {
     fontSize: s(28),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#ccc',
   },
   modalAmountSym: {
     fontSize: s(28),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   modalAmountDigit: {
     fontSize: s(28),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   modalCurrencyBtn: {
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   },
   modalCurrencyText: {
     fontSize: s(14),
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   modalPad: {
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
     shadowRadius: s(10),
     shadowOffset: { width: 0, height: -3 },
   },
-  mapPlaceName: { fontSize: s(17), fontWeight: '700', color: '#1a1a1a' },
+  mapPlaceName: { fontSize: s(17), fontWeight: '600', color: '#1a1a1a' },
   mapPlaceSub: { fontSize: s(13), color: '#666', marginTop: s(2) },
   mapDirectionsBtn: {
     backgroundColor: '#1a73e8',
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: s(12),
   },
-  mapDirectionsText: { fontSize: s(14), fontWeight: '700', color: '#fff' },
+  mapDirectionsText: { fontSize: s(14), fontWeight: '600', color: '#fff' },
   bottomTabBar: {
     position: 'absolute',
     left: 0, right: 0,

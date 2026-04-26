@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   refreshText: {
     fontSize: s(14),
     color: '#34C759',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   deleteText: {
     fontSize: s(14),
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: s(14),
     lineHeight: s(18),
-    fontWeight: '700',
+    fontWeight: '600',
   },
   createButton: {
     backgroundColor: '#007AFF',
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: s(14),
     lineHeight: s(18),
-    fontWeight: '700',
+    fontWeight: '600',
   },
   settingsButton: {
     alignItems: 'center',

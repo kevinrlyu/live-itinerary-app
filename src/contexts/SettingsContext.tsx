@@ -7,6 +7,7 @@ import { loadSettings, saveSettings } from '../utils/storage';
 export type DisplayMode = 'light' | 'dark' | 'system';
 export type TimeFormat = '12h' | '24h';
 export type MapsProvider = 'google' | 'apple' | 'amap';
+export type TempUnit = 'C' | 'F';
 
 export interface AppSettings {
   displayMode: DisplayMode;
@@ -15,6 +16,7 @@ export interface AppSettings {
   foodAccentColor: string;
   timeFormat: TimeFormat;
   mapsProvider: MapsProvider;
+  tempUnit: TempUnit;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   foodAccentColor: '#E53935',
   timeFormat: '12h',
   mapsProvider: 'google',
+  tempUnit: 'C',
 };
 
 export const ACCENT_PALETTE = [

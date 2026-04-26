@@ -208,8 +208,8 @@ const pickerStyles = StyleSheet.create({
   slotsContainer: { height: SLOT_H * 5, marginTop: -SLOT_H },
   slot: { height: SLOT_H, alignItems: 'center', justifyContent: 'center' },
   slotText: { fontSize: 14, color: '#888' },
-  slotTextActive: { color: '#1a1a1a', fontWeight: '700' },
-  colon: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginHorizontal: 1 },
+  slotTextActive: { color: '#1a1a1a', fontWeight: '600' },
+  colon: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginHorizontal: 1 },
 });
 
 // Convert stored 24h "HH:MM" to display "H:MMam/pm", or pass through if already in 12h
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1a1a1a',
   },
   deleteText: {
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   },
   timeClearText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     lineHeight: 14,
     textAlign: 'center',

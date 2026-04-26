@@ -201,5 +201,5 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
   },
-  nextText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  nextText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });

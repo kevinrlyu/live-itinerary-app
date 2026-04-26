@@ -238,7 +238,7 @@ export default function CreateTripScreen({ defaultCurrency, onCreateTrip, onCanc
                   <Text style={[
                     pickerStyles.itemText,
                     { color: colors.textPrimary },
-                    i === centeredIdx && { color: colors.accent, fontWeight: '700' },
+                    i === centeredIdx && { color: colors.accent, fontWeight: '600' },
                     { opacity: getItemOpacity(i) },
                   ]}>{CURRENCY_FLAGS[cur] || ''} {cur}</Text>
                 </TouchableOpacity>
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   currencyButtonText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   actions: {
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   },
   createText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
 });
@@ -403,6 +403,6 @@ const pickerStyles = StyleSheet.create({
   },
   itemTextSelected: {
     color: '#007AFF',
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

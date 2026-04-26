@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF', borderRadius: 12,
     padding: 16, alignItems: 'center', marginBottom: 12,
   },
-  buttonText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  buttonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   progressText: { color: '#fff', fontSize: 14, marginLeft: 10 },
   cancel: { color: '#007AFF', fontSize: 14, textAlign: 'center', marginBottom: 16 },

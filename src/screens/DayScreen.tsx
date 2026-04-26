@@ -11,6 +11,8 @@ import ActivityEditSheet from '../components/ActivityEditSheet';
 import InsertActivityButton from '../components/InsertActivityButton';
 import { getCurrentActivityIndex } from '../utils/tracking';
 import { useStepCount } from '../hooks/useStepCount';
+import { useWeather } from '../hooks/useWeather';
+import FootstepsIcon from '../components/icons/FootstepsIcon';
 
 const PULL_THRESHOLD = 15;     // negative contentOffset.y needed to start hold
 const PULL_MAX = 70;           // max visual pull distance (with resistance)
@@ -35,7 +37,9 @@ export default function DayScreen({
   onEditingChange, scrollToTopTrigger,
 }: Props) {
   const [now, setNow] = useState(new Date());
+  const { colors, settings } = useSettings();
   const steps = useStepCount(day.date);
+  const weather = useWeather(day, settings.tempUnit);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
   const [editingTheme, setEditingTheme] = useState(false);
@@ -43,8 +47,8 @@ export default function DayScreen({
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
   const [isNewActivity, setIsNewActivity] = useState(false);
-  const { colors } = useSettings();
   const showSteps = steps !== null && !editMode;
+  const showWeather = !editMode && weather.locations.length > 0;
 
   useEffect(() => {
     onEditingChange?.(editingActivity !== null);
@@ -342,13 +346,52 @@ export default function DayScreen({
             <Text style={[styles.theme, { color: colors.textPrimary }]}>{day.theme || 'Tap to add title'}</Text>
           </TouchableOpacity>
         ) : !editMode && day.theme ? (
-          <Text style={[styles.theme, { color: colors.textPrimary }, showSteps && styles.themeWithSteps]}>{day.theme}</Text>
+          <Text style={[styles.theme, { color: colors.textPrimary }, (showSteps || showWeather || weather.pending) && styles.themeWithSteps]}>{day.theme}</Text>
         ) : null}
 
-        {showSteps && (
-          <Text style={[styles.stepCount, { color: colors.textSecondary }, !day.theme && { paddingTop: 12 }]}>
-            {steps.toLocaleString()} steps
-          </Text>
+        {(showSteps || showWeather || weather.pending) && !editMode && (
+          <View style={[styles.infoSection, !day.theme && { paddingTop: 12 }]}>
+            {showWeather && weather.locations.map((loc, i) => (
+              <View key={i} style={styles.infoRow}>
+                <Text style={[styles.infoText, { color: colors.accent }]}>
+                  {loc.city}{loc.timeLabel ? ` (${loc.timeLabel})` : ''}: {loc.temp}, {loc.condition}
+                </Text>
+                {i === 0 && showSteps && (
+                  <View style={styles.stepBadge}>
+                    <FootstepsIcon size={14} color={colors.accent} />
+                    <Text style={[styles.infoText, { color: colors.accent }]}>
+                      {steps.toLocaleString()} steps
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+            {!showWeather && weather.pending && (
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoText, { color: colors.textTertiary }]}>
+                  Weather forecast pending
+                </Text>
+                {showSteps && (
+                  <View style={styles.stepBadge}>
+                    <FootstepsIcon size={14} color={colors.accent} />
+                    <Text style={[styles.infoText, { color: colors.accent }]}>
+                      {steps.toLocaleString()} steps
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+            {!showWeather && !weather.pending && showSteps && (
+              <View style={styles.infoRow}>
+                <View style={styles.stepBadge}>
+                  <FootstepsIcon size={14} color={colors.accent} />
+                  <Text style={[styles.infoText, { color: colors.accent }]}>
+                    {steps.toLocaleString()} steps
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
         )}
         {editMode && (
           <InsertActivityButton onPress={() => handleInsertPress(-1)} />
@@ -425,7 +468,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   theme: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -434,15 +477,31 @@ const styles = StyleSheet.create({
   themeWithSteps: {
     paddingBottom: 4,
   },
-  stepCount: {
-    fontSize: 12,
-    color: '#888',
+  infoSection: {
     paddingHorizontal: 16,
     paddingBottom: 12,
+    gap: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  infoText: {
+    fontSize: 12,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  stepBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+    flexShrink: 0,
   },
   themeInput: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -518,7 +577,7 @@ const styles = StyleSheet.create({
   },
   holdLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   // Edit mode banner
@@ -532,7 +591,7 @@ const styles = StyleSheet.create({
   },
   editBannerText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#007AFF',
   },
   removeDayText: {
