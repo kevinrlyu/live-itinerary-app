@@ -18,6 +18,7 @@
         "LSApplicationQueriesSchemes": [
           "iosamap"
         ],
+        "LSSupportsOpeningDocumentsInPlace": true,
         "CFBundleDocumentTypes": [
           {
             "CFBundleTypeName": "Trotter Itinerary",
