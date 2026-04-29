@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
 import ReceiptIcon from './icons/ReceiptIcon';
 import { useSettings, ThemeColors, MapsProvider } from '../contexts/SettingsContext';
+import { geocodeLocation } from '../utils/geocode';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
@@ -72,14 +73,21 @@ function convertTimesIn(text: string, format: '12h' | '24h'): string {
   });
 }
 
-function buildMapsUrl(query: string, provider: MapsProvider): string {
+function buildMapsUrl(
+  query: string,
+  provider: MapsProvider,
+  coords?: { lat: number; lng: number },
+): string {
   const encoded = encodeURIComponent(query);
   switch (provider) {
     case 'apple':
-      // maps: scheme opens Apple Maps app directly; ll=0,0 forces a place search rather than address
+      // sll centers the map near the coordinates so the text search for q resolves
+      // to the right place/business, rather than showing ambiguous results
+      if (coords) return `maps:?q=${encoded}&sll=${coords.lat},${coords.lng}`;
       return `maps:?q=${encoded}`;
     case 'amap':
-      // iosamap: scheme opens Amap app directly with a POI search
+      // POI keyword search near the coordinates — keeps business page resolution
+      if (coords) return `iosamap://poi?sourceApplication=Trotter&keywords=${encoded}&lat=${coords.lat}&lon=${coords.lng}&dev=0`;
       return `iosamap://poi?sourceApplication=Trotter&keywords=${encoded}&dev=0`;
     case 'google':
     default:
@@ -98,12 +106,18 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
 
   const openDirections = async () => {
     const query = activity.location || activity.title || '';
-    const url = buildMapsUrl(query, settings.mapsProvider);
+    // Geocode to get coordinates (uses cached results from weather feature)
+    const geo = await geocodeLocation(query);
+    const coords = geo ? { lat: geo.lat, lng: geo.lng } : undefined;
+    const url = buildMapsUrl(query, settings.mapsProvider, coords);
     if (settings.mapsProvider === 'amap') {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        // Fall back to Amap web search if app not installed
-        Linking.openURL(`https://uri.amap.com/search?keyword=${encodeURIComponent(query)}`);
+        // Fall back to Amap web search near coordinates if available
+        const fallback = coords
+          ? `https://uri.amap.com/search?keyword=${encodeURIComponent(query)}&center=${coords.lng},${coords.lat}`
+          : `https://uri.amap.com/search?keyword=${encodeURIComponent(query)}`;
+        Linking.openURL(fallback);
         return;
       }
     }

@@ -153,23 +153,15 @@ export async function fetchWeather(
 
   try {
     const url = `${WORKER_URL}?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}&startDate=${fetchStart}&endDate=${fetchEnd}`;
-    console.log('[weather] fetching URL:', url);
     const res = await fetch(url);
-    console.log('[weather] response status:', res.status);
-    if (!res.ok) {
-      const body = await res.text();
-      console.log('[weather] error body:', body);
-      return result;
-    }
+    if (!res.ok) return result;
 
     const data = await res.json();
-    console.log('[weather] response keys:', Object.keys(data));
 
     // Parse daily forecasts
     const dailyForecasts = data.forecastDaily?.days || [];
     const historyDays = data.weatherHistory?.dailySummary?.days || [];
     const allDays = [...historyDays, ...dailyForecasts];
-    console.log('[weather] allDays count:', allDays.length, 'dailyForecasts:', dailyForecasts.length, 'historyDays:', historyDays.length);
 
     // Parse hourly data
     const hourlyForecasts = data.forecastHourly?.hours || [];
@@ -192,7 +184,6 @@ export async function fetchWeather(
     for (const day of allDays) {
       const dt = new Date(day.forecastStart);
       const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-      console.log('[weather] day forecastStart:', day.forecastStart, '-> parsed date:', ds, 'looking for:', datesToFetch);
 
       if (!datesToFetch.includes(ds)) continue;
 
@@ -206,9 +197,7 @@ export async function fetchWeather(
       result[ds] = weather;
       await setCache(cacheKey(lat, lng, ds), weather);
     }
-  } catch (err) {
-    console.log('[weather] fetch error:', err);
-  }
+  } catch {}
 
   return result;
 }

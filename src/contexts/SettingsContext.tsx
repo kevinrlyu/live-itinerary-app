@@ -70,7 +70,7 @@ export interface ThemeColors {
 function buildColors(mode: 'light' | 'dark', settings: AppSettings): ThemeColors {
   if (mode === 'dark') {
     return {
-      background: '#000',
+      background: '#000000',
       cardBackground: '#1c1c1e',
       textPrimary: '#f5f5f5',
       textSecondary: '#8e8e93',

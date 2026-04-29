@@ -40,7 +40,7 @@ function SegmentedControl<T extends string>({
             key={opt.value}
             style={[segStyles.option, active && { backgroundColor: accentColor }]}
             onPress={() => onChange(opt.value)}
-            activeOpacity={0.7}
+            activeOpacity={1}
           >
             <Text style={[segStyles.optionText, { color: textColor }, active && segStyles.optionTextActive]}>
               {opt.label}
@@ -82,7 +82,7 @@ function ColorRow({
                 { backgroundColor: c.hex },
                 selected && rowStyles.circleSelected,
               ]}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               {selected && <Text style={rowStyles.check}>✓</Text>}
             </TouchableOpacity>

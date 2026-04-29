@@ -10,7 +10,7 @@ interface Props {
 export default function TripHeader({ title, onOpenDrawer }: Props) {
   const { colors } = useSettings();
   return (
-    <View style={[styles.container, { backgroundColor: colors.headerBackground, borderBottomColor: colors.borderMedium }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: colors.borderMedium }]}>
       <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
       <TouchableOpacity onPress={onOpenDrawer} style={styles.menuButton} testID="menu-button">
         <View style={styles.menuIconContainer}>

@@ -49,6 +49,7 @@ export default function DayScreen({
   const [isNewActivity, setIsNewActivity] = useState(false);
   const showSteps = steps !== null && !editMode;
   const showWeather = !editMode && weather.locations.length > 0;
+  const stepColor = steps === 0 ? colors.textTertiary : colors.accent;
 
   useEffect(() => {
     onEditingChange?.(editingActivity !== null);
@@ -358,8 +359,8 @@ export default function DayScreen({
                 </Text>
                 {i === 0 && showSteps && (
                   <View style={styles.stepBadge}>
-                    <FootstepsIcon size={14} color={colors.accent} />
-                    <Text style={[styles.infoText, { color: colors.accent }]}>
+                    <FootstepsIcon size={14} color={stepColor} />
+                    <Text style={[styles.infoText, { color: stepColor }]}>
                       {steps.toLocaleString()} steps
                     </Text>
                   </View>
@@ -373,8 +374,8 @@ export default function DayScreen({
                 </Text>
                 {showSteps && (
                   <View style={styles.stepBadge}>
-                    <FootstepsIcon size={14} color={colors.accent} />
-                    <Text style={[styles.infoText, { color: colors.accent }]}>
+                    <FootstepsIcon size={14} color={stepColor} />
+                    <Text style={[styles.infoText, { color: stepColor }]}>
                       {steps.toLocaleString()} steps
                     </Text>
                   </View>
@@ -384,8 +385,8 @@ export default function DayScreen({
             {!showWeather && !weather.pending && showSteps && (
               <View style={styles.infoRow}>
                 <View style={styles.stepBadge}>
-                  <FootstepsIcon size={14} color={colors.accent} />
-                  <Text style={[styles.infoText, { color: colors.accent }]}>
+                  <FootstepsIcon size={14} color={stepColor} />
+                  <Text style={[styles.infoText, { color: stepColor }]}>
                     {steps.toLocaleString()} steps
                   </Text>
                 </View>

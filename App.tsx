@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { Modal, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Modal, StatusBar, StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -73,7 +73,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { colors } = useSettings();
+  const { colors, resolvedTheme } = useSettings();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [tripList, setTripList] = useState<TripMeta[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -557,6 +557,7 @@ function AppContent() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar barStyle={resolvedTheme === 'dark' ? 'light-content' : 'dark-content'} />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         <TripHeader
           title={activeBottomTab === 'Culinary' ? 'Local Cuisine' : activeBottomTab === 'Expenses' ? 'Trip Expenses' : trip.title}

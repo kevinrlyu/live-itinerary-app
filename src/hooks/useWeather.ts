@@ -61,8 +61,6 @@ export function useWeather(day: Day, tempUnit: 'C' | 'F'): DayWeatherResult {
         items.push({ location: a.location, time: a.time });
       }
 
-      console.log('[weather] items for', day.date, items);
-
       if (items.length === 0) {
         if (!cancelled) setResult({ locations: [], pending: false, loading: false });
         return;
@@ -72,21 +70,18 @@ export function useWeather(day: Day, tempUnit: 'C' | 'F'): DayWeatherResult {
       const geocoded: { geo: GeoResult; time: string | null }[] = [];
       for (const item of items) {
         const geo = await geocodeLocation(item.location);
-        console.log('[weather] geocode', item.location, '->', geo);
         if (geo && !cancelled) {
           geocoded.push({ geo, time: item.time });
         }
       }
 
       if (cancelled || geocoded.length === 0) {
-        console.log('[weather] no geocoded results, cancelled=', cancelled);
         if (!cancelled) setResult({ locations: [], pending: false, loading: false });
         return;
       }
 
       // Cluster by proximity
       const clusters = clusterLocations(geocoded);
-      console.log('[weather] clusters', clusters);
 
       // Fetch weather for each cluster
       const locationWeathers: LocationWeather[] = [];
@@ -94,14 +89,10 @@ export function useWeather(day: Day, tempUnit: 'C' | 'F'): DayWeatherResult {
 
       for (const cluster of clusters) {
         const weatherMap = await fetchWeather(cluster.geo.lat, cluster.geo.lng, [day.date]);
-        console.log('[weather] fetchWeather for', cluster.city, day.date, '->', Object.keys(weatherMap));
         if (cancelled) return;
 
         const dayWeather = weatherMap[day.date];
-        if (!dayWeather) {
-          console.log('[weather] no dayWeather for', day.date, 'in map keys:', Object.keys(weatherMap));
-          continue;
-        }
+        if (!dayWeather) continue;
 
         const startHour = cluster.startTime ? timeToHour(cluster.startTime) : null;
         // endTime is the last activity's start time, so add 3h buffer for its duration
@@ -123,7 +114,6 @@ export function useWeather(day: Day, tempUnit: 'C' | 'F'): DayWeatherResult {
         });
       }
 
-      console.log('[weather] final result', locationWeathers);
       if (!cancelled) {
         setResult({ locations: locationWeathers, pending: false, loading: false });
       }
