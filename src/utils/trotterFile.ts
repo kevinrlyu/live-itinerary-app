@@ -1,0 +1,101 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
+import { Trip, Day, Activity, CulinaryRegion } from '../types';
+
+const TROTTER_VERSION = 1;
+
+interface TrotterFile {
+  version: number;
+  title: string;
+  days: Day[];
+  defaultCurrency: string;
+  culinarySpecialties?: CulinaryRegion[];
+}
+
+/**
+ * Strip personal data and serialize a Trip to a shareable format.
+ * Removes: expenses, trip ID, doc URL.
+ * Resets: completed states to false.
+ */
+function tripToTrotterData(trip: Trip): TrotterFile {
+  return {
+    version: TROTTER_VERSION,
+    title: trip.title,
+    defaultCurrency: trip.defaultCurrency,
+    days: trip.days.map((day) => ({
+      ...day,
+      activities: day.activities.map((a) => {
+        const { expense, ...rest } = a;
+        return { ...rest, completed: false };
+      }),
+    })),
+    culinarySpecialties: trip.culinarySpecialties?.map((region) => ({
+      ...region,
+      items: region.items.map((item) => ({ ...item, checked: false })),
+    })),
+  };
+}
+
+/**
+ * Export a trip as a .trotter file and open the iOS share sheet.
+ */
+export async function exportTrotterFile(trip: Trip): Promise<void> {
+  const data = tripToTrotterData(trip);
+  const json = JSON.stringify(data, null, 2);
+  const safeName = trip.title.replace(/[^a-zA-Z0-9_\- ]/g, '').trim() || 'trip';
+  const filePath = `${FileSystem.cacheDirectory}${safeName}.trotter`;
+
+  await FileSystem.writeAsStringAsync(filePath, json, {
+    encoding: FileSystem.EncodingType.UTF8,
+  });
+
+  await Sharing.shareAsync(filePath, {
+    mimeType: 'application/json',
+    UTI: 'public.json',
+  });
+}
+
+/**
+ * Open the document picker for .trotter files and parse the selected file.
+ * Returns null if the user cancels.
+ */
+export async function pickAndImportTrotterFile(): Promise<Trip | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: '*/*',
+    copyToCacheDirectory: true,
+  });
+
+  if (result.canceled || !result.assets || result.assets.length === 0) {
+    return null;
+  }
+
+  const asset = result.assets[0];
+  return importTrotterFileFromUri(asset.uri);
+}
+
+/**
+ * Import a .trotter file from a file URI (used by both picker and deep link).
+ */
+export async function importTrotterFileFromUri(uri: string): Promise<Trip> {
+  const json = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.UTF8,
+  });
+
+  const data: TrotterFile = JSON.parse(json);
+
+  if (!data.title || !data.days || !Array.isArray(data.days)) {
+    throw new Error('Invalid .trotter file: missing title or days');
+  }
+
+  const id = `trip_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  return {
+    id,
+    docUrl: '',
+    title: data.title,
+    days: data.days,
+    defaultCurrency: data.defaultCurrency || 'USD',
+    culinarySpecialties: data.culinarySpecialties,
+  };
+}

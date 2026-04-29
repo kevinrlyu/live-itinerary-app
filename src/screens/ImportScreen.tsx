@@ -12,6 +12,7 @@ import { useSettings } from '../contexts/SettingsContext';
 interface Props {
   onImport: (trip: Trip) => void;
   onCancel?: () => void;
+  onImportFromFile?: () => void;
 }
 
 function buildDateRange(trip: Trip): string {
@@ -25,7 +26,7 @@ function buildDateRange(trip: Trip): string {
   return first === last ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
 }
 
-export default function ImportScreen({ onImport, onCancel }: Props) {
+export default function ImportScreen({ onImport, onCancel, onImportFromFile }: Props) {
   const { colors } = useSettings();
   const [url, setUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -126,6 +127,15 @@ export default function ImportScreen({ onImport, onCancel }: Props) {
           <Text style={styles.buttonText}>Import Itinerary</Text>
         )}
       </TouchableOpacity>
+      {onImportFromFile && (
+        <TouchableOpacity
+          style={[styles.fileButton, { borderColor: colors.accent }]}
+          onPress={onImportFromFile}
+          disabled={loading}
+        >
+          <Text style={[styles.fileButtonText, { color: colors.accent }]}>Import from File</Text>
+        </TouchableOpacity>
+      )}
       {onCancel && (
         <TouchableOpacity onPress={onCancel} disabled={loading}>
           <Text style={[styles.cancel, { color: colors.accent }]}>Cancel</Text>
@@ -156,4 +166,15 @@ const styles = StyleSheet.create({
   progressText: { color: '#fff', fontSize: 14, marginLeft: 10 },
   cancel: { color: '#007AFF', fontSize: 14, textAlign: 'center', marginBottom: 16 },
   hint: { fontSize: 12, color: '#888', marginBottom: 6 },
+  fileButton: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  fileButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

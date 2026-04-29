@@ -22,6 +22,7 @@ interface Props {
   onCreateNew?: () => void;
   onReimportTrip: (id: string) => void;
   onDeleteTrip: (id: string) => void;
+  onShareTrip: (id: string) => void;
   onReorderTrips?: (fromIndex: number, toIndex: number) => void;
   reimportingTripId?: string | null;
   reimportProgress?: string;
@@ -41,12 +42,13 @@ interface DraggableListProps {
   onSelectTrip: (id: string) => void;
   onReimportPress: (trip: TripMeta) => void;
   onDeletePress: (trip: TripMeta) => void;
+  onSharePress: (trip: TripMeta) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
 }
 
 function DraggableTripList({
   trips, activeTripId, reimportingTripId, reimportProgress,
-  onSelectTrip, onReimportPress, onDeletePress, onReorder,
+  onSelectTrip, onReimportPress, onDeletePress, onSharePress, onReorder,
 }: DraggableListProps) {
   const { colors } = useSettings();
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -98,6 +100,7 @@ function DraggableTripList({
               onSelectTrip={onSelectTrip}
               onReimportPress={onReimportPress}
               onDeletePress={onDeletePress}
+              onSharePress={onSharePress}
               onDragStart={(startIdx) => {
                 draggingIdxRef.current = startIdx;
                 setDraggingId(item.id);
@@ -142,6 +145,7 @@ interface TripRowProps {
   onSelectTrip: (id: string) => void;
   onReimportPress: (trip: TripMeta) => void;
   onDeletePress: (trip: TripMeta) => void;
+  onSharePress: (trip: TripMeta) => void;
   onDragStart: (index: number) => void;
   onDragMove: (dy: number) => void;
   onDragEnd: () => void;
@@ -149,7 +153,7 @@ interface TripRowProps {
 
 function TripRow({
   item, index, top, isDragging, isActive, isReimporting, reimportProgress,
-  disableActions, dragY, onSelectTrip, onReimportPress, onDeletePress,
+  disableActions, dragY, onSelectTrip, onReimportPress, onDeletePress, onSharePress,
   onDragStart, onDragMove, onDragEnd,
 }: TripRowProps) {
   const { colors } = useSettings();
@@ -271,6 +275,13 @@ function TripRow({
         </Text>
       </View>
       <View style={styles.tripActions}>
+        <TouchableOpacity
+          onPress={() => onSharePress(item)}
+          style={styles.refreshButton}
+          disabled={disableActions || isDragging}
+        >
+          <Text style={[styles.refreshText, { color: colors.accent }, disableActions && styles.refreshTextDisabled]}>↗</Text>
+        </TouchableOpacity>
         {!!item.docUrl && (
           <TouchableOpacity
             onPress={() => onReimportPress(item)}
@@ -294,7 +305,7 @@ function TripRow({
 
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
-  onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, reimportingTripId, reimportProgress,
+  onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, onShareTrip, reimportingTripId, reimportProgress,
   onViewCulinary, onViewExpenses, onReorderTrips, onShowHelp, onShowSettings,
 }: Props) {
   const { colors } = useSettings();
@@ -382,6 +393,7 @@ export default function TripDrawer({
           onSelectTrip={onSelectTrip}
           onReimportPress={confirmReimport}
           onDeletePress={confirmDelete}
+          onSharePress={(trip) => onShareTrip(trip.id)}
           onReorder={onReorderTrips}
         />
 

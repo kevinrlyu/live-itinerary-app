@@ -17,6 +17,15 @@
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
           "iosamap"
+        ],
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Trotter Itinerary",
+            "CFBundleTypeRole": "Viewer",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": ["public.json"],
+            "CFBundleTypeExtensions": ["trotter"]
+          }
         ]
       }
     },

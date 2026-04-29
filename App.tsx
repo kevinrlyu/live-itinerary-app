@@ -17,6 +17,8 @@ import {
   loadHasSeenWalkthrough, saveHasSeenWalkthrough,
 } from './src/utils/storage';
 import { createBlankDay, generateActivityId } from './src/utils/tripBuilder';
+import { exportTrotterFile, pickAndImportTrotterFile, importTrotterFileFromUri } from './src/utils/trotterFile';
+import * as Linking from 'expo-linking';
 import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
 import ImportScreen from './src/screens/ImportScreen';
@@ -105,6 +107,37 @@ function AppContent() {
       setLoaded(true);
       if (!seen) setShowWalkthrough(true);
     })();
+
+    const handleUrl = async (event: { url: string }) => {
+      if (!event.url) return;
+      const url = event.url;
+      if (url.endsWith('.trotter') || url.includes('.trotter')) {
+        try {
+          const imported = await importTrotterFileFromUri(url);
+          await saveTripFull(imported);
+          const meta: TripMeta = {
+            id: imported.id,
+            title: imported.title,
+            dateRange: buildDateRange(imported),
+            docUrl: '',
+          };
+          const list = await loadTripList();
+          await saveTripList([...list, meta]);
+          setTripList([...list, meta]);
+          await saveActiveTripId(imported.id);
+          setTrip(imported);
+        } catch (err: any) {
+          Alert.alert('Import Failed', err.message || 'Invalid .trotter file.');
+        }
+      }
+    };
+
+    Linking.getInitialURL().then((url: string | null) => {
+      if (url) handleUrl({ url });
+    });
+
+    const subscription = Linking.addEventListener('url', handleUrl);
+    return () => subscription.remove();
   }, []);
 
   const handleCloseWalkthrough = useCallback(() => {
@@ -479,6 +512,39 @@ function AppContent() {
     await saveTripList(newList);
   }, [tripList]);
 
+  const handleShareTrip = useCallback(async (tripId: string) => {
+    const tripToShare = tripId === trip?.id ? trip : await loadTripFull(tripId);
+    if (!tripToShare) return;
+    try {
+      await exportTrotterFile(tripToShare);
+    } catch (err: any) {
+      Alert.alert('Share Failed', err.message || 'Something went wrong.');
+    }
+  }, [trip]);
+
+  const handleImportFromFile = useCallback(async () => {
+    try {
+      const imported = await pickAndImportTrotterFile();
+      if (!imported) return;
+      await saveTripFull(imported);
+      const meta: TripMeta = {
+        id: imported.id,
+        title: imported.title,
+        dateRange: buildDateRange(imported),
+        docUrl: '',
+      };
+      const list = await loadTripList();
+      await saveTripList([...list, meta]);
+      setTripList([...list, meta]);
+      await saveActiveTripId(imported.id);
+      setTrip(imported);
+      setShowImport(false);
+      setDrawerOpen(false);
+    } catch (err: any) {
+      Alert.alert('Import Failed', err.message || 'Invalid .trotter file.');
+    }
+  }, []);
+
   const navigationRef = useRef<any>(null);
   const [activeBottomTab, setActiveBottomTab] = useState('Itinerary');
 
@@ -540,7 +606,7 @@ function AppContent() {
             />
           ) : (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
-              <ImportScreen onImport={handleImport} />
+              <ImportScreen onImport={handleImport} onImportFromFile={handleImportFromFile} />
               <TouchableOpacity
                 style={styles.createFromEmptyBtn}
                 onPress={() => setShowCreateTrip(true)}
@@ -703,6 +769,7 @@ function AppContent() {
           reimportingTripId={reimportingTripId}
           reimportProgress={reimportProgress}
           onReorderTrips={handleReorderTrips}
+          onShareTrip={handleShareTrip}
           onShowHelp={handleShowHelp}
           onShowSettings={handleShowSettings}
         />
@@ -711,6 +778,7 @@ function AppContent() {
           <SafeAreaView style={styles.container}>
             <ImportScreen
               onImport={handleImport}
+              onImportFromFile={handleImportFromFile}
               onCancel={() => setShowImport(false)}
             />
           </SafeAreaView>
