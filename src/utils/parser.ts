@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { fetch as expoFetch } from "expo/fetch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Day, Trip, CulinaryRegion } from "../types";
+import { Day, Trip, ChecklistGroup } from "../types";
 import { loadApiKey } from "./storage";
 
 let cachedClient: Anthropic | null = null;
@@ -106,25 +106,31 @@ function detectYearFromText(text: string): number | null {
   return null;
 }
 
-// Keywords that signal the start of a culinary/food section (case-insensitive).
-// Used to detect a food list appended after the last day of the itinerary.
-const CULINARY_SECTION_KEYWORDS = [
+// Keywords that signal the start of a checklist section (case-insensitive).
+// Used to detect lists appended before or after the day-by-day itinerary.
+const CHECKLIST_SECTION_KEYWORDS = [
+  // Food / culinary
   'local cuisine', 'local specialties', 'local food',
   'culinary', 'food guide', 'food list',
   'what to eat', 'what to try', 'must.?eat', 'must.?try',
   'regional (dishes|specialties|cuisine|food)',
   'food recommendations', 'dining guide',
   'dishes to try', 'foods to try',
+  // Packing / shopping / general
+  'packing list', 'shopping list', 'to.?do list',
+  'checklist', 'things to (bring|pack|buy|do|remember)',
+  'preparation', 'before (the|you|your) trip',
+  'essentials', 'supplies',
 ];
-const CULINARY_SECTION_PATTERN = new RegExp(
-  `^\\s*(?:#{1,3}\\s*)?(?:${CULINARY_SECTION_KEYWORDS.join('|')})`,
+const CHECKLIST_SECTION_PATTERN = new RegExp(
+  `^\\s*(?:#{1,3}\\s*)?(?:${CHECKLIST_SECTION_KEYWORDS.join('|')})`,
   'im'
 );
 
 // Split raw document text into per-day chunks.
 // Looks for day header patterns like "December 10 (Wednesday)" or "Day 1 — December 10".
 // Returns { preamble, dayChunks, postamble } where preamble is text before the first day
-// header and postamble is a culinary section found after the last day.
+// header and postamble is a checklist section found after the last day.
 function splitTextByDay(text: string): { preamble: string; dayChunks: string[]; postamble: string } {
   // Match lines that start a new day: "Month Day" possibly followed by day-of-week
   const dayHeaderPattern = new RegExp(
@@ -155,15 +161,15 @@ function splitTextByDay(text: string): { preamble: string; dayChunks: string[]; 
     if (chunk) dayChunks.push(chunk);
   }
 
-  // Check if the last day chunk contains a culinary section after the itinerary content
+  // Check if the last day chunk contains a checklist section after the itinerary content
   let postamble = '';
   if (dayChunks.length > 0) {
     const lastChunk = dayChunks[dayChunks.length - 1];
-    const culinaryMatch = CULINARY_SECTION_PATTERN.exec(lastChunk);
-    if (culinaryMatch) {
+    const checklistMatch = CHECKLIST_SECTION_PATTERN.exec(lastChunk);
+    if (checklistMatch) {
       // Split: everything before the keyword stays with the day, everything from the keyword becomes the postamble
-      const dayPart = lastChunk.slice(0, culinaryMatch.index).trim();
-      postamble = lastChunk.slice(culinaryMatch.index).trim();
+      const dayPart = lastChunk.slice(0, checklistMatch.index).trim();
+      postamble = lastChunk.slice(checklistMatch.index).trim();
       dayChunks[dayChunks.length - 1] = dayPart;
     }
   }
@@ -355,14 +361,13 @@ export async function parseItineraryText(
   // Save the new cache
   await saveDayCache(tripId, newCache);
 
-  // Extract culinary specialties from preamble and/or postamble if present
-  let culinarySpecialties: CulinaryRegion[] | undefined;
-  const culinaryText = [preamble, postamble].filter((t) => t && t.length > 50).join('\n\n');
-  console.log('[parser] culinary text length:', culinaryText.length, 'preview:', culinaryText.slice(0, 200));
-  if (culinaryText) {
+  // Extract checklists from preamble and/or postamble if present
+  let checklists: ChecklistGroup[] | undefined;
+  const checklistText = [preamble, postamble].filter((t) => t && t.length > 50).join('\n\n');
+  if (checklistText) {
     try {
-      onProgress?.("Extracting local cuisine...");
-      culinarySpecialties = await parseCulinaryPreamble(culinaryText);
+      onProgress?.("Extracting checklists...");
+      checklists = await parseChecklists(checklistText);
     } catch {
       // Non-critical — skip if extraction fails
     }
@@ -370,7 +375,7 @@ export async function parseItineraryText(
 
   onProgress?.("Done!");
 
-  return { id: tripId, docUrl, title, days, defaultCurrency: 'USD', culinarySpecialties } as Trip;
+  return { id: tripId, docUrl, title, days, defaultCurrency: 'USD', checklists } as Trip;
 }
 
 // Fallback: parse entire document in one call (for docs that can't be split by day)
@@ -471,39 +476,39 @@ async function parseFull(
   }
 }
 
-// Extract culinary specialties from document preamble
-async function parseCulinaryPreamble(preamble: string): Promise<CulinaryRegion[]> {
+// Extract checklists from document preamble/postamble
+async function parseChecklists(text: string): Promise<ChecklistGroup[]> {
   const stream = (await getClient()).messages.stream({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 4096,
     messages: [
       {
         role: "user",
-        content: `Extract culinary specialties from this text. If there are no culinary specialties or food recommendations, return an empty array [].\n\n${preamble}`,
+        content: `Extract any checklists or grouped lists from this text. This may include food/culinary lists, packing lists, shopping lists, to-do lists, or any other grouped items. If there are no lists, return an empty array [].\n\n${text}`,
       },
     ],
     system: [
       {
         type: "text",
-        text: `You extract culinary specialties from travel itinerary preambles. Return a JSON array of regions with their specialty dishes/foods.
+        text: `You extract checklists and grouped lists from travel itinerary documents. Return a JSON array of groups with their items.
 
 Format:
 [
   {
-    "region": "Region Name",
+    "title": "Clean, readable section title",
     "items": [
-      { "name": "Dish name (description in parentheses if present)" },
-      { "name": "Another dish" }
+      { "name": "Item name (description in parentheses if present)" },
+      { "name": "Another item" }
     ]
   }
 ]
 
 Rules:
-- Group items by region/city as they appear in the text
-- IMPORTANT: Copy each dish/food name EXACTLY as it appears in the original text — do not paraphrase, translate, or reword
-- If a dish has a description in parentheses, include the full text with parentheses verbatim in the "name" field
-- Include all food items, drinks, and culinary experiences mentioned
-- If no culinary content is found, return []
+- For the "title": if the original section heading is already clean and intentional (e.g. "Aomori's Culinary Specialties"), keep it as-is. If it is messy, informal, or unclear (e.g. "STUFF TO BUY!!!", "food maybe?"), lightly clean it up into a concise, readable title that preserves the user's intent.
+- IMPORTANT: Copy each item name EXACTLY as it appears in the original text — do not paraphrase, translate, or reword
+- If an item has a description in parentheses, include the full text with parentheses verbatim in the "name" field
+- Include all listed items: food, drinks, places, things to pack, things to buy, tasks, etc.
+- If no list content is found, return []
 - Return ONLY the raw JSON array. No code blocks, no extra text.`,
         cache_control: { type: "ephemeral" },
       },
@@ -523,7 +528,7 @@ Rules:
   if (!Array.isArray(parsed)) return [];
 
   return parsed.map((r: any) => ({
-    region: r.region || 'General',
+    title: r.title || r.region || 'General',
     items: (r.items || [])
       .map((item: any) => ({
         name: typeof item === 'string' ? item : (item.name || ''),

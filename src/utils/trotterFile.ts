@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { Trip, Day, Activity, CulinaryRegion } from '../types';
+import { Trip, Day, Activity, ChecklistGroup } from '../types';
 
 const TROTTER_VERSION = 1;
 
@@ -10,7 +10,7 @@ interface TrotterFile {
   title: string;
   days: Day[];
   defaultCurrency: string;
-  culinarySpecialties?: CulinaryRegion[];
+  checklists?: ChecklistGroup[];
 }
 
 /**
@@ -30,9 +30,9 @@ function tripToTrotterData(trip: Trip): TrotterFile {
         return { ...rest, completed: false };
       }),
     })),
-    culinarySpecialties: trip.culinarySpecialties?.map((region) => ({
-      ...region,
-      items: region.items.map((item) => ({ ...item, checked: false })),
+    checklists: trip.checklists?.map((group) => ({
+      ...group,
+      items: group.items.map((item) => ({ ...item, checked: false })),
     })),
   };
 }
@@ -96,6 +96,6 @@ export async function importTrotterFileFromUri(uri: string): Promise<Trip> {
     title: data.title,
     days: data.days,
     defaultCurrency: data.defaultCurrency || 'USD',
-    culinarySpecialties: data.culinarySpecialties,
+    checklists: data.checklists,
   };
 }

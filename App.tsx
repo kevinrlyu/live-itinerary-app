@@ -25,7 +25,7 @@ import ImportScreen from './src/screens/ImportScreen';
 import CreateTripScreen from './src/screens/CreateTripScreen';
 import DayScreen from './src/screens/DayScreen';
 import ExpenseSummaryScreen from './src/screens/ExpenseSummaryScreen';
-import CulinaryScreen from './src/screens/CulinaryScreen';
+import ChecklistScreen from './src/screens/ChecklistScreen';
 import TripHeader from './src/components/TripHeader';
 import TripDrawer from './src/components/TripDrawer';
 import DayTabBar from './src/components/DayTabBar';
@@ -228,18 +228,18 @@ function AppContent() {
           if (a.expense) oldExpenses[a.id] = a.expense;
         }
       }
-      // Preserve culinary checked states by region+name
+      // Preserve checklist checked states by group title+name
       const oldChecked = new Set<string>();
-      for (const region of targetTrip.culinarySpecialties ?? []) {
-        for (const item of region.items) {
-          if (item.checked) oldChecked.add(`${region.region}::${item.name}`);
+      for (const group of targetTrip.checklists ?? []) {
+        for (const item of group.items) {
+          if (item.checked) oldChecked.add(`${group.title}::${item.name}`);
         }
       }
-      const newCulinary = updated.culinarySpecialties?.map((region) => ({
-        ...region,
-        items: region.items.map((item) => ({
+      const newChecklists = updated.checklists?.map((group) => ({
+        ...group,
+        items: group.items.map((item) => ({
           ...item,
-          checked: oldChecked.has(`${region.region}::${item.name}`),
+          checked: oldChecked.has(`${group.title}::${item.name}`),
         })),
       }));
 
@@ -247,7 +247,7 @@ function AppContent() {
         ...updated,
         id: targetTrip.id,
         defaultCurrency: targetTrip.defaultCurrency,
-        culinarySpecialties: newCulinary || targetTrip.culinarySpecialties,
+        checklists: newChecklists || targetTrip.checklists,
         days: updated.days.map((day) => ({
           ...day,
           activities: day.activities.map((a) =>
@@ -311,14 +311,14 @@ function AppContent() {
     saveTripFull(updated);
   }, [trip]);
 
-  const handleToggleCulinaryItem = useCallback((regionIndex: number, itemIndex: number) => {
-    if (!trip?.culinarySpecialties) return;
+  const handleToggleChecklistItem = useCallback((groupIndex: number, itemIndex: number) => {
+    if (!trip?.checklists) return;
     const updated: Trip = {
       ...trip,
-      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
-        rIdx !== regionIndex ? region : {
-          ...region,
-          items: region.items.map((item, iIdx) =>
+      checklists: trip.checklists.map((group, gIdx) =>
+        gIdx !== groupIndex ? group : {
+          ...group,
+          items: group.items.map((item, iIdx) =>
             iIdx !== itemIndex ? item : { ...item, checked: !item.checked }
           ),
         }
@@ -328,14 +328,14 @@ function AppContent() {
     saveTripFull(updated);
   }, [trip]);
 
-  const handleAddCulinaryItem = useCallback((regionIndex: number, name: string) => {
-    if (!trip?.culinarySpecialties) return;
+  const handleAddChecklistItem = useCallback((groupIndex: number, name: string) => {
+    if (!trip?.checklists) return;
     const updated: Trip = {
       ...trip,
-      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
-        rIdx !== regionIndex ? region : {
-          ...region,
-          items: [...region.items, { name, checked: false }],
+      checklists: trip.checklists.map((group, gIdx) =>
+        gIdx !== groupIndex ? group : {
+          ...group,
+          items: [...group.items, { name, checked: false }],
         }
       ),
     };
@@ -343,25 +343,25 @@ function AppContent() {
     saveTripFull(updated);
   }, [trip]);
 
-  const handleAddCulinaryRegion = useCallback((regionName: string) => {
+  const handleAddChecklistGroup = useCallback((groupTitle: string) => {
     if (!trip) return;
-    const newRegion = { region: regionName, items: [] };
+    const newGroup = { title: groupTitle, items: [] };
     const updated: Trip = {
       ...trip,
-      culinarySpecialties: [...(trip.culinarySpecialties ?? []), newRegion],
+      checklists: [...(trip.checklists ?? []), newGroup],
     };
     setTrip(updated);
     saveTripFull(updated);
   }, [trip]);
 
-  const handleDeleteCulinaryItem = useCallback((regionIndex: number, itemIndex: number) => {
-    if (!trip?.culinarySpecialties) return;
+  const handleDeleteChecklistItem = useCallback((groupIndex: number, itemIndex: number) => {
+    if (!trip?.checklists) return;
     const updated: Trip = {
       ...trip,
-      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
-        rIdx !== regionIndex ? region : {
-          ...region,
-          items: region.items.filter((_, iIdx) => iIdx !== itemIndex),
+      checklists: trip.checklists.map((group, gIdx) =>
+        gIdx !== groupIndex ? group : {
+          ...group,
+          items: group.items.filter((_, iIdx) => iIdx !== itemIndex),
         }
       ),
     };
@@ -369,14 +369,14 @@ function AppContent() {
     saveTripFull(updated);
   }, [trip]);
 
-  const handleEditCulinaryItem = useCallback((regionIndex: number, itemIndex: number, name: string) => {
-    if (!trip?.culinarySpecialties) return;
+  const handleEditChecklistItem = useCallback((groupIndex: number, itemIndex: number, name: string) => {
+    if (!trip?.checklists) return;
     const updated: Trip = {
       ...trip,
-      culinarySpecialties: trip.culinarySpecialties.map((region, rIdx) =>
-        rIdx !== regionIndex ? region : {
-          ...region,
-          items: region.items.map((item, iIdx) =>
+      checklists: trip.checklists.map((group, gIdx) =>
+        gIdx !== groupIndex ? group : {
+          ...group,
+          items: group.items.map((item, iIdx) =>
             iIdx === itemIndex ? { ...item, name } : item
           ),
         }
@@ -386,11 +386,11 @@ function AppContent() {
     saveTripFull(updated);
   }, [trip]);
 
-  const handleDeleteCulinaryRegion = useCallback((regionIndex: number) => {
-    if (!trip?.culinarySpecialties) return;
+  const handleDeleteChecklistGroup = useCallback((groupIndex: number) => {
+    if (!trip?.checklists) return;
     const updated: Trip = {
       ...trip,
-      culinarySpecialties: trip.culinarySpecialties.filter((_, rIdx) => rIdx !== regionIndex),
+      checklists: trip.checklists.filter((_, gIdx) => gIdx !== groupIndex),
     };
     setTrip(updated);
     saveTripFull(updated);
@@ -626,7 +626,7 @@ function AppContent() {
       <StatusBar barStyle={resolvedTheme === 'dark' ? 'light-content' : 'dark-content'} />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         <TripHeader
-          title={activeBottomTab === 'Culinary' ? 'Local Cuisine' : activeBottomTab === 'Expenses' ? 'Trip Expenses' : trip.title}
+          title={activeBottomTab === 'Checklists' ? 'Trip Checklists' : activeBottomTab === 'Expenses' ? 'Trip Expenses' : trip.title}
           onOpenDrawer={() => setDrawerOpen(true)}
         />
         <NavigationContainer key={trip.id} ref={navigationRef}>
@@ -718,22 +718,22 @@ function AppContent() {
               )}
             </BottomTab.Screen>
             <BottomTab.Screen
-              name="Culinary"
+              name="Checklists"
               options={{
                 tabBarIcon: ({ color, size }) => (
-                  <Ionicons name="restaurant-outline" size={size} color={color} />
+                  <Ionicons name="checkmark-circle-outline" size={Math.round(size * 1.25)} color={color} style={{ marginTop: -1.5 }} />
                 ),
               }}
             >
               {() => (
-                <CulinaryScreen
-                  regions={trip!.culinarySpecialties ?? []}
-                  onToggle={handleToggleCulinaryItem}
-                  onAddItem={handleAddCulinaryItem}
-                  onEditItem={handleEditCulinaryItem}
-                  onAddRegion={handleAddCulinaryRegion}
-                  onDeleteItem={handleDeleteCulinaryItem}
-                  onDeleteRegion={handleDeleteCulinaryRegion}
+                <ChecklistScreen
+                  groups={trip!.checklists ?? []}
+                  onToggle={handleToggleChecklistItem}
+                  onAddItem={handleAddChecklistItem}
+                  onEditItem={handleEditChecklistItem}
+                  onAddGroup={handleAddChecklistGroup}
+                  onDeleteItem={handleDeleteChecklistItem}
+                  onDeleteGroup={handleDeleteChecklistGroup}
                 />
               )}
             </BottomTab.Screen>

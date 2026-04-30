@@ -26,7 +26,7 @@ interface Props {
   onReorderTrips?: (fromIndex: number, toIndex: number) => void;
   reimportingTripId?: string | null;
   reimportProgress?: string;
-  onViewCulinary?: () => void;
+  onViewChecklists?: () => void;
   onViewExpenses?: () => void;
   onShowHelp?: () => void;
   onShowSettings?: () => void;
@@ -275,13 +275,6 @@ function TripRow({
         </Text>
       </View>
       <View style={styles.tripActions}>
-        <TouchableOpacity
-          onPress={() => onSharePress(item)}
-          style={styles.refreshButton}
-          disabled={disableActions || isDragging}
-        >
-          <Text style={[styles.refreshText, { color: colors.accent }, disableActions && styles.refreshTextDisabled]}>↗</Text>
-        </TouchableOpacity>
         {!!item.docUrl && (
           <TouchableOpacity
             onPress={() => onReimportPress(item)}
@@ -291,6 +284,13 @@ function TripRow({
             <Text style={[styles.refreshText, { color: colors.success }, disableActions && styles.refreshTextDisabled]}>↻</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          onPress={() => onSharePress(item)}
+          style={styles.refreshButton}
+          disabled={disableActions || isDragging}
+        >
+          <Text style={[styles.refreshText, { color: colors.accent }, disableActions && styles.refreshTextDisabled]}>↗</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => onDeletePress(item)}
           style={styles.deleteButton}
@@ -306,7 +306,7 @@ function TripRow({
 export default function TripDrawer({
   visible, trips, activeTripId, onClose,
   onSelectTrip, onImportNew, onCreateNew, onReimportTrip, onDeleteTrip, onShareTrip, reimportingTripId, reimportProgress,
-  onViewCulinary, onViewExpenses, onReorderTrips, onShowHelp, onShowSettings,
+  onViewChecklists, onViewExpenses, onReorderTrips, onShowHelp, onShowSettings,
 }: Props) {
   const { colors } = useSettings();
   const insets = useSafeAreaInsets();

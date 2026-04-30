@@ -134,6 +134,7 @@ export default function Demo1Drawer({ active }: Props) {
               </View>
               <View style={styles.tripActions}>
                 <Text style={styles.refreshText}>↻</Text>
+                <Text style={styles.shareText}>↗</Text>
                 <Text style={styles.deleteText}>✕</Text>
               </View>
             </View>
@@ -153,6 +154,7 @@ export default function Demo1Drawer({ active }: Props) {
               </View>
               <View style={styles.tripActions}>
                 <Text style={styles.refreshText}>↻</Text>
+                <Text style={styles.shareText}>↗</Text>
                 <Text style={styles.deleteText}>✕</Text>
               </View>
             </Animated.View>
@@ -168,6 +170,7 @@ export default function Demo1Drawer({ active }: Props) {
               </View>
               <View style={styles.tripActions}>
                 <Text style={styles.refreshText}>↻</Text>
+                <Text style={styles.shareText}>↗</Text>
                 <Text style={styles.deleteText}>✕</Text>
               </View>
             </Animated.View>
@@ -313,6 +316,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: s(8),
+  },
+  shareText: {
+    fontSize: s(14),
+    color: '#007AFF',
+    fontWeight: '600',
   },
   refreshText: {
     fontSize: s(14),

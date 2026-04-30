@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CulinaryRegion } from '../types';
+import { ChecklistGroup } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 
 const PULL_THRESHOLD = 15;
@@ -13,17 +13,17 @@ const PULL_MAX = 70;
 const HOLD_DURATION = 1000;
 
 interface Props {
-  regions: CulinaryRegion[];
-  onToggle: (regionIndex: number, itemIndex: number) => void;
-  onAddItem: (regionIndex: number, name: string) => void;
-  onEditItem: (regionIndex: number, itemIndex: number, name: string) => void;
-  onAddRegion: (regionName: string) => void;
-  onDeleteItem: (regionIndex: number, itemIndex: number) => void;
-  onDeleteRegion: (regionIndex: number) => void;
+  groups: ChecklistGroup[];
+  onToggle: (groupIndex: number, itemIndex: number) => void;
+  onAddItem: (groupIndex: number, name: string) => void;
+  onEditItem: (groupIndex: number, itemIndex: number, name: string) => void;
+  onAddGroup: (title: string) => void;
+  onDeleteItem: (groupIndex: number, itemIndex: number) => void;
+  onDeleteGroup: (groupIndex: number) => void;
   onClose?: () => void;
 }
 
-export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditItem, onAddRegion, onDeleteItem, onDeleteRegion, onClose }: Props) {
+export default function ChecklistScreen({ groups, onToggle, onAddItem, onEditItem, onAddGroup, onDeleteItem, onDeleteGroup, onClose }: Props) {
   const { colors } = useSettings();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -147,7 +147,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
   const handleAddSection = () => {
     const name = sectionName.trim();
     if (!name) return;
-    onAddRegion(name);
+    onAddGroup(name);
     setSectionName('');
     setAddingSection(false);
   };
@@ -165,7 +165,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
 
   // Edit existing item
   const startEditItem = (rIdx: number, iIdx: number) => {
-    const item = regions[rIdx]?.items[iIdx];
+    const item = groups[rIdx]?.items[iIdx];
     if (!item) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     cancelAddItem();
@@ -231,7 +231,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
         <>
           <View style={[styles.safeTop, { height: insets.top, backgroundColor: colors.background }]} />
           <View style={[styles.header, { backgroundColor: colors.headerBackground, borderBottomColor: colors.border }]}>
-            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Local Cuisine</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Trip Checklists</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={[styles.closeText, { color: colors.accent }]}>Close</Text>
             </TouchableOpacity>
@@ -260,22 +260,22 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
         >
-          {regions.length === 0 && !addingSection ? null : (
-            regions.map((region, rIdx) => (
+          {groups.length === 0 && !addingSection ? null : (
+            groups.map((group, rIdx) => (
               <View
-                key={region.region}
+                key={group.title}
                 style={[styles.section, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}
               >
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{region.region}</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{group.title}</Text>
                   {editMode && (
                     <TouchableOpacity
                       onPress={() => Alert.alert(
                         'Delete Section',
-                        `Remove "${region.region}" and all its items?`,
+                        `Remove "${group.title}" and all its items?`,
                         [
                           { text: 'Cancel', style: 'cancel' },
-                          { text: 'Delete', style: 'destructive', onPress: () => onDeleteRegion(rIdx) },
+                          { text: 'Delete', style: 'destructive', onPress: () => onDeleteGroup(rIdx) },
                         ]
                       )}
                     >
@@ -283,12 +283,12 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                     </TouchableOpacity>
                   )}
                 </View>
-                {region.items.map((item, iIdx) => {
+                {group.items.map((item, iIdx) => {
                   const isEditing = editingItem?.rIdx === rIdx && editingItem?.iIdx === iIdx;
 
                   if (isEditing) {
                     return (
-                      <View key={`${region.region}-${item.name}-${iIdx}`} style={[styles.editItemForm, { borderTopColor: colors.borderLight }]}>
+                      <View key={`${group.title}-${item.name}-${iIdx}`} style={[styles.editItemForm, { borderTopColor: colors.borderLight }]}>
                         <TextInput
                           style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                           value={editItemName}
@@ -318,7 +318,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
 
                   return (
                     <TouchableOpacity
-                      key={`${region.region}-${item.name}-${iIdx}`}
+                      key={`${group.title}-${item.name}-${iIdx}`}
                       style={[styles.itemRow, { borderTopColor: colors.borderLight }]}
                       onPress={() => editMode ? undefined : handleToggle(rIdx, iIdx)}
                       onLongPress={editMode ? () => startEditItem(rIdx, iIdx) : undefined}
@@ -404,7 +404,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                   style={[styles.addInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={sectionName}
                   onChangeText={setSectionName}
-                  placeholder="Section name (e.g. region or cuisine)"
+                  placeholder="Section name"
                   placeholderTextColor={colors.textTertiary}
                   autoFocus
                 />
@@ -424,7 +424,7 @@ export default function CulinaryScreen({ regions, onToggle, onAddItem, onEditIte
                   cancelAddItem();
                   cancelEditItem();
                   setAddingSection(true);
-                  if (regions.length > 0) {
+                  if (groups.length > 0) {
                     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
                     const kbListener = Keyboard.addListener('keyboardDidShow', () => {
                       kbListener.remove();

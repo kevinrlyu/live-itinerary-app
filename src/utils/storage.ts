@@ -17,11 +17,17 @@ export async function loadTripFull(id: string): Promise<Trip | null> {
   if (!json) return null;
   const trip = JSON.parse(json) as Trip;
   if (!trip.defaultCurrency) trip.defaultCurrency = 'USD';
-  // Sanitize culinary data — filter out items with missing names
-  if (trip.culinarySpecialties) {
-    trip.culinarySpecialties = trip.culinarySpecialties.map((region) => ({
-      ...region,
-      items: (region.items || []).filter((item) => item && item.name),
+  // Migrate old culinarySpecialties → checklists
+  const raw = trip as any;
+  if (raw.culinarySpecialties && !trip.checklists) {
+    trip.checklists = raw.culinarySpecialties;
+    delete raw.culinarySpecialties;
+  }
+  // Sanitize checklist data — filter out items with missing names, migrate region → title
+  if (trip.checklists) {
+    trip.checklists = trip.checklists.map((group: any) => ({
+      title: group.title || group.region || 'General',
+      items: (group.items || []).filter((item: any) => item && item.name),
     }));
   }
   return trip;

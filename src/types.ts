@@ -21,14 +21,14 @@ export interface Day {
   activities: Activity[];
 }
 
-export interface CulinaryItem {
+export interface ChecklistItem {
   name: string;
   checked: boolean;
 }
 
-export interface CulinaryRegion {
-  region: string;
-  items: CulinaryItem[];
+export interface ChecklistGroup {
+  title: string;
+  items: ChecklistItem[];
 }
 
 export interface Trip {
@@ -37,7 +37,7 @@ export interface Trip {
   title: string;
   days: Day[];
   defaultCurrency: string;  // e.g. "JPY", "CNY", "USD"
-  culinarySpecialties?: CulinaryRegion[];
+  checklists?: ChecklistGroup[];
 }
 
 export interface TripMeta {
