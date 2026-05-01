@@ -18,7 +18,7 @@ import {
   loadLastLLMConfig, loadProviderApiKey,
 } from './src/utils/storage';
 import { createBlankDay, generateActivityId } from './src/utils/tripBuilder';
-import { exportTrotterFile, pickAndImportTrotterFile, importTrotterFileFromUri } from './src/utils/trotterFile';
+import { exportTrotterFile, pickAndImportTrotterFile, importTrotterFileFromIncomingUrl } from './src/utils/trotterFile';
 import * as Linking from 'expo-linking';
 import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
@@ -115,7 +115,7 @@ function AppContent() {
       const url = event.url;
       if (url.endsWith('.trotter') || url.includes('.trotter')) {
         try {
-          const imported = await importTrotterFileFromUri(url);
+          const imported = await importTrotterFileFromIncomingUrl(url);
           await saveTripFull(imported);
           const meta: TripMeta = {
             id: imported.id,
@@ -129,7 +129,10 @@ function AppContent() {
           await saveActiveTripId(imported.id);
           setTrip(imported);
         } catch (err: any) {
-          Alert.alert('Import Failed', err.message || 'Invalid .trotter file.');
+          Alert.alert(
+            'Import Failed',
+            `${err?.message || 'Could not read the shared file.'}\n\nTry saving the file to the Files app first, then opening it from there.`
+          );
         }
       }
     };
@@ -623,7 +626,7 @@ function AppContent() {
             />
           ) : (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
-              <ImportScreen onImport={handleImport} onImportFromFile={handleImportFromFile} />
+              <ImportScreen onImport={handleImport} />
               <TouchableOpacity
                 style={styles.createFromEmptyBtn}
                 onPress={() => setShowCreateTrip(true)}
@@ -795,7 +798,6 @@ function AppContent() {
           <SafeAreaView style={styles.container}>
             <ImportScreen
               onImport={handleImport}
-              onImportFromFile={handleImportFromFile}
               onCancel={() => setShowImport(false)}
             />
           </SafeAreaView>

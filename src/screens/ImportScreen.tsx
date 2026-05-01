@@ -434,7 +434,7 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
           onPress={onImportFromFile}
           disabled={loading}
         >
-          <Text style={[styles.fileButtonText, { color: colors.accent }]}>Import from File</Text>
+          <Text style={[styles.fileButtonText, { color: colors.accent }]}>Import .trotter File</Text>
         </TouchableOpacity>
       )}
       {onCancel && (

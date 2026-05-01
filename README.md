@@ -8,7 +8,7 @@ A mobile app that turns Google Docs travel itineraries into a live, interactive 
 2. Choose your AI provider (Anthropic, OpenAI, Google, Deepseek, and more) and model to parse the document into structured activities, transport steps, meals, and hotels
 3. Browse your trip day-by-day with swipeable tabs, check off activities as you go, log expenses, and tap for maps directions
 
-**Sharing:** Export any trip as a `.trotter` file and share it with other users via the iOS share sheet. Recipients can import by tapping the file or using the in-app file picker.
+**Sharing:** Export any trip as a `.trotter` file and share it with other users via the iOS share sheet. Recipients import by opening the file in Trotter (via AirDrop, the Files app, or the share sheet on a received attachment).
 
 ---
 
@@ -22,7 +22,7 @@ src/
 ├── contexts/
 │   └── SettingsContext.tsx     — Theme (light/dark/system), accent colors, time format, maps provider.
 ├── screens/
-│   ├── ImportScreen.tsx        — Google Doc URL input, import flow, and file import fallback.
+│   ├── ImportScreen.tsx        — Google Doc URL input and AI provider/model picker.
 │   ├── CreateTripScreen.tsx    — Manual trip creation with date range picker.
 │   ├── DayScreen.tsx           — Single-day view with grouped/collapsible activities.
 │   ├── ExpenseSummaryScreen.tsx — Trip expense breakdown by day and category, CSV export.
@@ -63,7 +63,7 @@ Provides app-wide settings: display mode (light/dark/system), theme accent color
 
 ### `ImportScreen.tsx`
 
-Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. Also supports importing from `.trotter` files via an "Import from File" button.
+Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. (`.trotter` file import is handled outside this screen via the iOS share sheet / Files app deep link.)
 
 ### `CreateTripScreen.tsx`
 
@@ -126,7 +126,7 @@ Persists trips, settings, per-provider API keys, and last-used LLM config to Asy
 
 ### `trotterFile.ts`
 
-Exports trips as `.trotter` files (JSON with personal data stripped: no expenses, trip ID, or doc URL; completed/checked states reset) via the iOS share sheet. Imports `.trotter` files from both the document picker and deep link URIs.
+Exports trips as `.trotter` files (JSON with personal data stripped: no expenses, trip ID, or doc URL; completed/checked states reset) via the iOS share sheet. Imports `.trotter` files from deep link URIs by first copying the incoming file into the app's cache directory (`importTrotterFileFromIncomingUrl`) — necessary because share-sheet URLs often point into security-scoped AppGroup containers that direct reads can't access.
 
 ### `tracking.ts`
 

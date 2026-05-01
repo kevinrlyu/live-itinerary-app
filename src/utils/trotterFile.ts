@@ -43,7 +43,8 @@ function tripToTrotterData(trip: Trip): TrotterFile {
 export async function exportTrotterFile(trip: Trip): Promise<void> {
   const data = tripToTrotterData(trip);
   const json = JSON.stringify(data, null, 2);
-  const safeName = trip.title.replace(/[^a-zA-Z0-9_\- ]/g, '').trim() || 'trip';
+  const safeName =
+    trip.title.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, ' ').trim() || 'trip';
   const filePath = `${FileSystem.cacheDirectory}${safeName}.trotter`;
 
   await FileSystem.writeAsStringAsync(filePath, json, {
@@ -72,6 +73,21 @@ export async function pickAndImportTrotterFile(): Promise<Trip | null> {
 
   const asset = result.assets[0];
   return importTrotterFileFromUri(asset.uri);
+}
+
+/**
+ * Import a .trotter file delivered via Linking (share sheet / "Open in").
+ *
+ * The incoming URL may point into another app's sandbox or a security-scoped
+ * AppGroup container, where readAsStringAsync cannot reach. Copy it into our
+ * own cache first — copyAsync runs natively and tolerates these URLs better
+ * than direct reads. decodeURI handles percent-encoded paths (spaces, &, etc).
+ */
+export async function importTrotterFileFromIncomingUrl(rawUrl: string): Promise<Trip> {
+  const decoded = decodeURI(rawUrl);
+  const dest = `${FileSystem.cacheDirectory}imported_${Date.now()}.trotter`;
+  await FileSystem.copyAsync({ from: decoded, to: dest });
+  return importTrotterFileFromUri(dest);
 }
 
 /**
