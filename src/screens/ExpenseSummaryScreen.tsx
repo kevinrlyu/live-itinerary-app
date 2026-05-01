@@ -113,11 +113,12 @@ function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c
 
   const openPicker = () => {
     buttonRef.current?.measureInWindow((x, y, w, h) => {
-      // Position picker so its center slot aligns with the button center
       const buttonMidY = y + h / 2;
       const screenWidth = Dimensions.get('window').width;
+      // Align center slot (1 row padding + half item) with button center
+      const centerSlotOffset = PICKER_ITEM_H + PICKER_ITEM_H / 2;
       setPickerPos({
-        top: buttonMidY - PICKER_H / 2,
+        top: buttonMidY - centerSlotOffset,
         right: screenWidth - (x + w),
       });
       setOpen(true);

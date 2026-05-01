@@ -1,24 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { fetch as expoFetch } from "expo/fetch";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Day, Trip, ChecklistGroup } from "../types";
-import { loadApiKey } from "./storage";
-
-let cachedClient: Anthropic | null = null;
-let cachedApiKey: string | null = null;
-
-async function getClient(): Promise<Anthropic> {
-  const apiKey = await loadApiKey();
-  if (!apiKey) throw new Error('No API key set. Please enter your Anthropic API key in settings.');
-  if (cachedClient && cachedApiKey === apiKey) return cachedClient;
-  cachedClient = new Anthropic({
-    apiKey,
-    dangerouslyAllowBrowser: true,
-    fetch: expoFetch as unknown as typeof globalThis.fetch,
-  });
-  cachedApiKey = apiKey;
-  return cachedClient;
-}
+import { callLLM, LLMConfig } from "./llm";
 
 // System prompt for parsing a SINGLE day's text into a day object.
 // Kept as a constant so prompt caching works across calls.
@@ -188,43 +170,30 @@ function simpleHash(str: string): string {
   return hash.toString(36);
 }
 
+/** Extract JSON from a response that may be wrapped in code blocks or extra text. */
+function extractJSON(text: string): string {
+  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (codeBlock) return codeBlock[1].trim();
+  if (text.trimStart().startsWith("```")) {
+    return text.replace(/^[\s]*```(?:json)?[\s]*/, "").trim();
+  }
+  return (text.match(/\{[\s\S]*\}/) ?? [""])[0];
+}
+
 // Parse a single day's text chunk into a Day object
 async function parseSingleDay(
   dayText: string,
   yearHint: string,
+  llmConfig: LLMConfig,
 ): Promise<Day> {
-  const stream = (await getClient()).messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 8192,
-    messages: [
-      {
-        role: "user",
-        content: `${yearHint}Parse this single day of a travel itinerary into JSON:\n\n${dayText}`,
-      },
-    ],
-    system: [
-      {
-        type: "text",
-        text: DAY_SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
+  const responseText = await callLLM({
+    config: llmConfig,
+    systemPrompt: DAY_SYSTEM_PROMPT,
+    userMessage: `${yearHint}Parse this single day of a travel itinerary into JSON:\n\n${dayText}`,
+    maxTokens: 8192,
   });
-  const message = await stream.finalMessage();
 
-  const content = message.content[0];
-  if (content.type !== "text") throw new Error("Unexpected response from AI");
-
-  let jsonText = "";
-  const codeBlock = content.text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (codeBlock) {
-    jsonText = codeBlock[1].trim();
-  } else if (content.text.trimStart().startsWith("```")) {
-    jsonText = content.text.replace(/^[\s]*```(?:json)?[\s]*/, "").trim();
-  } else {
-    jsonText = (content.text.match(/\{[\s\S]*\}/) ?? [""])[0];
-  }
-
+  const jsonText = extractJSON(responseText);
   const parsed = JSON.parse(jsonText);
 
   // Post-process: infer type/category, fix child locations
@@ -271,7 +240,11 @@ export async function parseItineraryText(
   docTitle?: string,
   onProgress?: (status: string) => void,
   existingTripId?: string,
+  llmConfig?: LLMConfig,
 ): Promise<Trip> {
+  if (!llmConfig) throw new Error('No AI model configured. Please select a provider and enter an API key.');
+
+  const config = llmConfig;
   const detectedYear = detectYearFromText(text);
   const yearHint = detectedYear
     ? `IMPORTANT: The dates in this itinerary are from the year ${detectedYear}. Use ${detectedYear} for all dates.\n\n`
@@ -282,7 +255,7 @@ export async function parseItineraryText(
   // If we couldn't split into multiple days, fall back to single-call parsing
   if (dayChunks.length <= 1) {
     onProgress?.("Parsing itinerary...");
-    return parseFull(text, docUrl, docTitle, yearHint, onProgress);
+    return parseFull(text, docUrl, docTitle, yearHint, config, onProgress);
   }
 
   // Start with empty cache on re-import to ensure latest prompt is used
@@ -317,7 +290,7 @@ export async function parseItineraryText(
             await new Promise((r) => setTimeout(r, 1000 * attempt));
             onProgress?.(`Retrying day ${i + 1}...`);
           }
-          const day = await parseSingleDay(chunk, yearHint);
+          const day = await parseSingleDay(chunk, yearHint, config);
           newCache[hash] = day;
           days[i] = day;
           onProgress?.(`Parsed day ${i + 1} of ${dayChunks.length}`);
@@ -367,7 +340,7 @@ export async function parseItineraryText(
   if (checklistText) {
     try {
       onProgress?.("Extracting checklists...");
-      checklists = await parseChecklists(checklistText);
+      checklists = await parseChecklists(checklistText, config);
     } catch {
       // Non-critical — skip if extraction fails
     }
@@ -384,6 +357,7 @@ async function parseFull(
   docUrl: string,
   docTitle: string | undefined,
   yearHint: string,
+  llmConfig: LLMConfig,
   onProgress?: (status: string) => void,
 ): Promise<Trip> {
   const titleHint = docTitle
@@ -391,7 +365,6 @@ async function parseFull(
     : "";
 
   const isLarge = text.length > 10000;
-  const model = isLarge ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
   const maxTokens = isLarge ? 32768 : 8192;
 
   // Full-doc system prompt (includes title and days[] wrapper)
@@ -403,50 +376,17 @@ async function parseFull(
     '    ]\n    }\n  ]\n}\n\nRules:\n- IDs must be globally unique across the ENTIRE trip (count up: \'a1\', \'a2\', \'a3\', ... never reuse a number)\n- IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.'
   );
 
-  const stream = (await getClient()).messages.stream({
-    model,
-    max_tokens: maxTokens,
-    messages: [
-      {
-        role: "user",
-        content: `${yearHint}${titleHint}Parse this travel itinerary into JSON:\n\n${text}`,
-      },
-    ],
-    system: [
-      {
-        type: "text",
-        text: fullSystemPrompt,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
+  onProgress?.("Parsing itinerary...");
+
+  const responseText = await callLLM({
+    config: llmConfig,
+    systemPrompt: fullSystemPrompt,
+    userMessage: `${yearHint}${titleHint}Parse this travel itinerary into JSON:\n\n${text}`,
+    maxTokens,
   });
 
-  if (onProgress) {
-    let lastDayCount = 0;
-    stream.on('text', (_delta, snapshot) => {
-      const dayCount = (snapshot.match(/"date"\s*:/g) || []).length;
-      if (dayCount > lastDayCount) {
-        lastDayCount = dayCount;
-        onProgress(`Parsing day ${dayCount}...`);
-      }
-    });
-  }
-
-  const message = await stream.finalMessage();
-
-  const content = message.content[0];
-  if (content.type !== "text") throw new Error("Unexpected response from AI");
-
   try {
-    let jsonText = "";
-    const codeBlock = content.text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (codeBlock) {
-      jsonText = codeBlock[1].trim();
-    } else if (content.text.trimStart().startsWith("```")) {
-      jsonText = content.text.replace(/^[\s]*```(?:json)?[\s]*/, "").trim();
-    } else {
-      jsonText = (content.text.match(/\{[\s\S]*\}/) ?? [""])[0];
-    }
+    const jsonText = extractJSON(responseText);
     const parsed = JSON.parse(jsonText);
     if (docTitle) parsed.title = docTitle;
 
@@ -472,25 +412,13 @@ async function parseFull(
 
     return { ...parsed, id: generateId(), docUrl, defaultCurrency: 'USD' } as Trip;
   } catch {
-    throw new Error(`AI returned invalid data: ${content.text.slice(0, 300)}`);
+    throw new Error(`AI returned invalid data: ${responseText.slice(0, 300)}`);
   }
 }
 
 // Extract checklists from document preamble/postamble
-async function parseChecklists(text: string): Promise<ChecklistGroup[]> {
-  const stream = (await getClient()).messages.stream({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: `Extract any checklists or grouped lists from this text. This may include food/culinary lists, packing lists, shopping lists, to-do lists, or any other grouped items. If there are no lists, return an empty array [].\n\n${text}`,
-      },
-    ],
-    system: [
-      {
-        type: "text",
-        text: `You extract checklists and grouped lists from travel itinerary documents. Return a JSON array of groups with their items.
+async function parseChecklists(text: string, llmConfig: LLMConfig): Promise<ChecklistGroup[]> {
+  const checklistSystemPrompt = `You extract checklists and grouped lists from travel itinerary documents. Return a JSON array of groups with their items.
 
 Format:
 [
@@ -509,16 +437,16 @@ Rules:
 - If an item has a description in parentheses, include the full text with parentheses verbatim in the "name" field
 - Include all listed items: food, drinks, places, things to pack, things to buy, tasks, etc.
 - If no list content is found, return []
-- Return ONLY the raw JSON array. No code blocks, no extra text.`,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-  });
-  const message = await stream.finalMessage();
-  const content = message.content[0];
-  if (content.type !== "text") return [];
+- Return ONLY the raw JSON array. No code blocks, no extra text.`;
 
-  let jsonText = content.text.trim();
+  const responseText = await callLLM({
+    config: llmConfig,
+    systemPrompt: checklistSystemPrompt,
+    userMessage: `Extract any checklists or grouped lists from this text. This may include food/culinary lists, packing lists, shopping lists, to-do lists, or any other grouped items. If there are no lists, return an empty array [].\n\n${text}`,
+    maxTokens: 4096,
+  });
+
+  let jsonText = responseText.trim();
   const codeBlock = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (codeBlock) jsonText = codeBlock[1].trim();
   const match = jsonText.match(/\[[\s\S]*\]/);

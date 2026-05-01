@@ -5,7 +5,7 @@ A mobile app that turns Google Docs travel itineraries into a live, interactive 
 **How it works:**
 
 1. Paste a Google Doc link or create an itinerary from scratch
-2. Claude AI parses the document into structured activities, transport steps, meals, and hotels
+2. Choose your AI provider (Anthropic, OpenAI, Google, Deepseek, and more) and model to parse the document into structured activities, transport steps, meals, and hotels
 3. Browse your trip day-by-day with swipeable tabs, check off activities as you go, log expenses, and tap for maps directions
 
 **Sharing:** Export any trip as a `.trotter` file and share it with other users via the iOS share sheet. Recipients can import by tapping the file or using the in-app file picker.
@@ -42,8 +42,10 @@ src/
 │   └── icons/                  — Custom SVG icon components (WalkIcon, ReceiptIcon).
 └── utils/
     ├── googleDocs.ts       — Fetches Google Doc text and title.
-    ├── parser.ts           — Claude AI parsing with keyword post-processing.
-    ├── storage.ts          — AsyncStorage persistence and migration.
+    ├── parser.ts           — AI parsing with keyword post-processing.
+    ├── llm.ts              — LLM abstraction (Anthropic + OpenAI-compatible providers).
+    ├── providers.ts        — AI provider registry (Anthropic, OpenAI, Google, Deepseek, etc.).
+    ├── storage.ts          — AsyncStorage persistence, per-provider keys, and migration.
     ├── tracking.ts         — Determines the current activity based on time of day.
     ├── tripBuilder.ts      — Helpers for building trips from manual input.
     ├── trotterFile.ts      — .trotter file export/import (share sheet and file picker).
@@ -61,7 +63,7 @@ Provides app-wide settings: display mode (light/dark/system), theme accent color
 
 ### `ImportScreen.tsx`
 
-Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to Claude for parsing, and saves the resulting trip. Also supports importing from `.trotter` files via an "Import from File" button.
+Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. Also supports importing from `.trotter` files via an "Import from File" button.
 
 ### `CreateTripScreen.tsx`
 
@@ -106,13 +108,21 @@ Settings page with display mode toggle (Light/Dark/System), theme accent color p
 
 Slide-in drawer for managing itineraries. Shows all saved trips with share (↗), re-import (↻), and delete (✕) buttons. Supports drag-to-reorder. Includes buttons for importing from Google Docs, creating a new trip, and accessing Settings and Help.
 
+### `providers.ts`
+
+Registry of supported AI providers. Each provider has a name, base URL, and API key placeholder. Providers using the OpenAI-compatible API format (OpenAI, Google, Deepseek, Moonshot, Minimax, Zhipu, Alibaba) share a single code path; Anthropic uses its own SDK.
+
+### `llm.ts`
+
+LLM abstraction layer. Exports `callLLM()` which routes to either the Anthropic SDK or OpenAI SDK based on the provider config, and `fetchModels()` which dynamically fetches available models from any provider's API.
+
 ### `parser.ts`
 
-Splits the Google Doc text into per-day chunks and sends each to Claude Haiku in parallel (3 concurrent, with retry logic). Extracts checklists from the document preamble using AI with light title cleanup. For documents that can't be split by day, falls back to a single-call parse with Claude Sonnet for larger documents. Post-processes the AI output to infer activity types (transport) and categories (hotel, meal) from title keywords, and fixes child activity locations that incorrectly match their parent's location. Caches parsed day results by content hash to speed up re-imports.
+Splits the Google Doc text into per-day chunks and sends each to the user's selected AI model in parallel (3 concurrent, with retry logic). Extracts checklists from the document preamble using AI with light title cleanup. For documents that can't be split by day, falls back to a single-call parse. Post-processes the AI output to infer activity types (transport) and categories (hotel, meal) from title keywords, and fixes child activity locations that incorrectly match their parent's location. Caches parsed day results by content hash to speed up re-imports.
 
 ### `storage.ts`
 
-Persists trips, settings, and metadata to AsyncStorage. Supports multiple saved itineraries with an active trip selection. Includes migration logic from older storage formats (single-trip, culinarySpecialties → checklists, region → title).
+Persists trips, settings, per-provider API keys, and last-used LLM config to AsyncStorage. Supports multiple saved itineraries with an active trip selection. Includes migration logic from older storage formats (single-trip, culinarySpecialties → checklists, region → title).
 
 ### `trotterFile.ts`
 
@@ -138,7 +148,7 @@ Create a `.env` file (or set in your Expo environment) with:
 
 | Variable                       | Description                              |
 | ------------------------------ | ---------------------------------------- |
-| `EXPO_PUBLIC_ANTHROPIC_API_KEY` | Anthropic API key for Claude AI parsing |
+| `EXPO_PUBLIC_ANTHROPIC_API_KEY` | Optional fallback Anthropic API key (users enter their own key in-app) |
 
 ---
 

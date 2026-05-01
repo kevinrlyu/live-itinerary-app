@@ -66,6 +66,38 @@ export async function saveApiKey(key: string): Promise<void> {
   }
 }
 
+const providerApiKeyKey = (providerId: string) => `api_key_${providerId}`;
+
+export async function loadProviderApiKey(providerId: string): Promise<string | null> {
+  // Migrate: if requesting anthropic key, fall back to old key
+  const key = await AsyncStorage.getItem(providerApiKeyKey(providerId));
+  if (key) return key;
+  if (providerId === 'anthropic') return loadApiKey();
+  return null;
+}
+
+export async function saveProviderApiKey(providerId: string, key: string): Promise<void> {
+  if (key) {
+    await AsyncStorage.setItem(providerApiKeyKey(providerId), key);
+    // Keep old key in sync for anthropic
+    if (providerId === 'anthropic') await AsyncStorage.setItem(API_KEY_KEY, key);
+  } else {
+    await AsyncStorage.removeItem(providerApiKeyKey(providerId));
+    if (providerId === 'anthropic') await AsyncStorage.removeItem(API_KEY_KEY);
+  }
+}
+
+const LLM_CONFIG_KEY = 'last_llm_config';
+
+export async function loadLastLLMConfig(): Promise<{ providerId: string; model: string } | null> {
+  const json = await AsyncStorage.getItem(LLM_CONFIG_KEY);
+  return json ? JSON.parse(json) : null;
+}
+
+export async function saveLastLLMConfig(providerId: string, model: string): Promise<void> {
+  await AsyncStorage.setItem(LLM_CONFIG_KEY, JSON.stringify({ providerId, model }));
+}
+
 export async function loadHasSeenWalkthrough(): Promise<boolean> {
   const v = await AsyncStorage.getItem(WALKTHROUGH_SEEN_KEY);
   return v === '1';

@@ -51,8 +51,8 @@ export async function exportTrotterFile(trip: Trip): Promise<void> {
   });
 
   await Sharing.shareAsync(filePath, {
-    mimeType: 'application/json',
-    UTI: 'public.json',
+    mimeType: 'application/x-trotter',
+    UTI: 'com.kevin.rl.yu.trotter',
   });
 }
 

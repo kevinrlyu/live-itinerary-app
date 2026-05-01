@@ -15,12 +15,14 @@ import {
   deleteTrip as deleteTripFromStorage,
   migrateOldStorage,
   loadHasSeenWalkthrough, saveHasSeenWalkthrough,
+  loadLastLLMConfig, loadProviderApiKey,
 } from './src/utils/storage';
 import { createBlankDay, generateActivityId } from './src/utils/tripBuilder';
 import { exportTrotterFile, pickAndImportTrotterFile, importTrotterFileFromUri } from './src/utils/trotterFile';
 import * as Linking from 'expo-linking';
 import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
+import { LLMConfig } from './src/utils/llm';
 import ImportScreen from './src/screens/ImportScreen';
 import CreateTripScreen from './src/screens/CreateTripScreen';
 import DayScreen from './src/screens/DayScreen';
@@ -212,6 +214,21 @@ function AppContent() {
     const targetTrip = tripId === trip?.id ? trip : await loadTripFull(tripId);
     if (!targetTrip?.docUrl) return;
 
+    // Load saved LLM config for re-import
+    const savedConfig = await loadLastLLMConfig();
+    if (!savedConfig) {
+      Alert.alert('No AI Model Configured', 'Please import an itinerary first to configure your AI provider and model.');
+      return;
+    }
+    // Handle old 'qwen' ID → new 'alibaba' ID
+    const pid = savedConfig.providerId === 'qwen' ? 'alibaba' : savedConfig.providerId;
+    const apiKey = await loadProviderApiKey(pid) || (pid === 'alibaba' ? await loadProviderApiKey('qwen') : null);
+    if (!apiKey) {
+      Alert.alert('API Key Missing', `No API key found for ${savedConfig.providerId}. Please import an itinerary to re-enter your key.`);
+      return;
+    }
+    const llmConfig: LLMConfig = { providerId: pid, apiKey, model: savedConfig.model };
+
     setReimportingTripId(tripId);
     setReimportProgress('Fetching document...');
     try {
@@ -220,7 +237,7 @@ function AppContent() {
         fetchDocTitle(targetTrip.docUrl),
       ]);
       setReimportProgress('Starting parse...');
-      const updated = await parseItineraryText(text, targetTrip.docUrl, docTitle ?? undefined, setReimportProgress, targetTrip.id);
+      const updated = await parseItineraryText(text, targetTrip.docUrl, docTitle ?? undefined, setReimportProgress, targetTrip.id, llmConfig);
       // Preserve expenses from old trip
       const oldExpenses: Record<string, { amount: number; currency: string }> = {};
       for (const day of targetTrip.days) {
