@@ -7,6 +7,8 @@ import {
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as ImagePicker from 'expo-image-picker';
+import PdfThumbnail from 'react-native-pdf-thumbnail';
 import { fetchDocText, fetchDocTitle } from '../utils/googleDocs';
 import { parseItineraryText, parseItineraryImages } from '../utils/parser';
 import { saveTripFull, saveTripList, loadTripList, saveActiveTripId, loadProviderApiKey, saveProviderApiKey, saveLastLLMConfig, loadLastLLMConfig } from '../utils/storage';
@@ -282,24 +284,8 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
     }
   };
 
-  const handleImportFromImages = async () => {
-    if (!apiKey.trim()) {
-      Alert.alert('API Key Required', `Please enter your ${provider?.name || 'AI'} API key.`);
-      return;
-    }
-    if (!selectedModel) {
-      Alert.alert('Model Required', 'Please select or enter a model name.');
-      return;
-    }
-
-    const result = await DocumentPicker.getDocumentAsync({
-      type: 'image/*',
-      multiple: true,
-      copyToCacheDirectory: true,
-    });
-
-    if (result.canceled || !result.assets || result.assets.length === 0) return;
-
+  // Shared helper: run the image-based parse pipeline given pre-encoded LLMImages.
+  const runImageImport = async (images: LLMImage[]) => {
     await saveProviderApiKey(providerId, apiKey.trim());
     await saveLastLLMConfig(providerId, selectedModel);
     const llmConfig: LLMConfig = {
@@ -308,18 +294,7 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
       model: selectedModel,
     };
 
-    setLoading(true);
-    setProgress('Encoding images...');
     try {
-      const images: LLMImage[] = [];
-      for (const asset of result.assets) {
-        const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        const mimeType = asset.mimeType || (asset.name?.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-        images.push({ mimeType, base64 });
-      }
-
       const trip = await parseItineraryImages(images, setProgress, llmConfig);
       await saveTripFull(trip);
       const meta: TripMeta = {
@@ -339,6 +314,84 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
         : '';
       Alert.alert('Import Failed', `${msg}${hint}`);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImportFromPDF = async () => {
+    if (!apiKey.trim()) {
+      Alert.alert('API Key Required', `Please enter your ${provider?.name || 'AI'} API key.`);
+      return;
+    }
+    if (!selectedModel) {
+      Alert.alert('Model Required', 'Please select or enter a model name.');
+      return;
+    }
+
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'application/pdf',
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+    setLoading(true);
+    setProgress('Reading PDF...');
+    try {
+      const asset = result.assets[0];
+      // Rasterize every page to JPEG via PDFKit (iOS) / PdfRenderer (Android).
+      // Quality 80 gives readable text at typical doc resolution without bloating
+      // the multimodal payload.
+      const pages = await PdfThumbnail.generateAllPages(asset.uri, 80);
+      if (pages.length === 0) throw new Error('PDF has no pages.');
+      setProgress(`Encoding ${pages.length} page${pages.length === 1 ? '' : 's'}...`);
+
+      const images: LLMImage[] = [];
+      for (const page of pages) {
+        const base64 = await FileSystem.readAsStringAsync(page.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        images.push({ mimeType: 'image/jpeg', base64 });
+      }
+
+      await runImageImport(images);
+    } catch (err: any) {
+      Alert.alert('Import Failed', err?.message || 'Could not read the PDF.');
+      setLoading(false);
+    }
+  };
+
+  const handleImportFromPhotos = async () => {
+    if (!apiKey.trim()) {
+      Alert.alert('API Key Required', `Please enter your ${provider?.name || 'AI'} API key.`);
+      return;
+    }
+    if (!selectedModel) {
+      Alert.alert('Model Required', 'Please select or enter a model name.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.9,
+    });
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+    setLoading(true);
+    setProgress('Encoding photos...');
+    try {
+      const images: LLMImage[] = [];
+      for (const asset of result.assets) {
+        const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const mimeType = asset.mimeType || (asset.uri.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+        images.push({ mimeType, base64 });
+      }
+
+      await runImageImport(images);
+    } catch (err: any) {
+      Alert.alert('Import Failed', err?.message || 'Could not read photos.');
       setLoading(false);
     }
   };
@@ -493,10 +546,17 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.fileButton, { borderColor: colors.accent }]}
-        onPress={handleImportFromImages}
+        onPress={handleImportFromPDF}
         disabled={loading}
       >
-        <Text style={[styles.fileButtonText, { color: colors.accent }]}>Or import from photos / screenshots</Text>
+        <Text style={[styles.fileButtonText, { color: colors.accent }]}>Import from PDF</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.fileButton, { borderColor: colors.accent }]}
+        onPress={handleImportFromPhotos}
+        disabled={loading}
+      >
+        <Text style={[styles.fileButtonText, { color: colors.accent }]}>Import from Photos</Text>
       </TouchableOpacity>
       {onImportFromFile && (
         <TouchableOpacity

@@ -54,7 +54,13 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withTrotterFileImport"
+      "./plugins/withTrotterFileImport",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Trotter needs access to your photos to import itineraries from screenshots."
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -65,7 +65,7 @@ Provides app-wide settings: display mode (light/dark/system), theme accent color
 
 ### `ImportScreen.tsx`
 
-Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Also supports importing from one or more photos/screenshots of an itinerary via the document picker — the images are base64-encoded and sent to the chosen vision-capable model in a single multimodal call. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. (`.trotter` file import is handled outside this screen via the iOS share sheet / Files app deep link.)
+Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Also supports two image-based import paths: **Import from PDF** (rasterizes every page to JPEG via `react-native-pdf-thumbnail` then routes to a vision-capable model) and **Import from Photos** (multi-select from the iOS Photos library via `expo-image-picker`). In both cases the images are base64-encoded and sent in a single multimodal call. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. (`.trotter` file import is handled outside this screen via the iOS share sheet / Files app deep link.)
 
 ### `CreateTripScreen.tsx`
 
