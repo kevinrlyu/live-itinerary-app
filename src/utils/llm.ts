@@ -9,23 +9,29 @@ export interface LLMConfig {
   model: string;
 }
 
+export interface LLMImage {
+  mimeType: string;     // e.g. "image/jpeg", "image/png"
+  base64: string;       // raw base64 (no data: prefix)
+}
+
 interface LLMCallOptions {
   config: LLMConfig;
   systemPrompt: string;
   userMessage: string;
+  images?: LLMImage[];
   maxTokens: number;
 }
 
 /** Call an LLM and return the text response. */
 export async function callLLM(options: LLMCallOptions): Promise<string> {
-  const { config, systemPrompt, userMessage, maxTokens } = options;
+  const { config, systemPrompt, userMessage, images, maxTokens } = options;
   const provider = getProvider(config.providerId);
   if (!provider) throw new Error(`Unknown provider: ${config.providerId}`);
 
   if (provider.isAnthropic) {
-    return callAnthropic(config, systemPrompt, userMessage, maxTokens);
+    return callAnthropic(config, systemPrompt, userMessage, images, maxTokens);
   } else {
-    return callOpenAICompatible(config, provider.baseURL, systemPrompt, userMessage, maxTokens);
+    return callOpenAICompatible(config, provider.baseURL, systemPrompt, userMessage, images, maxTokens);
   }
 }
 
@@ -33,6 +39,7 @@ async function callAnthropic(
   config: LLMConfig,
   systemPrompt: string,
   userMessage: string,
+  images: LLMImage[] | undefined,
   maxTokens: number,
 ): Promise<string> {
   const client = new Anthropic({
@@ -41,11 +48,25 @@ async function callAnthropic(
     fetch: expoFetch as unknown as typeof globalThis.fetch,
   });
 
+  const userContent = images && images.length > 0
+    ? [
+        ...images.map((img) => ({
+          type: 'image' as const,
+          source: {
+            type: 'base64' as const,
+            media_type: img.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+            data: img.base64,
+          },
+        })),
+        { type: 'text' as const, text: userMessage },
+      ]
+    : userMessage;
+
   const message = await client.messages.create({
     model: config.model,
     max_tokens: maxTokens,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userMessage }],
+    messages: [{ role: 'user', content: userContent }],
   });
 
   const content = message.content[0];
@@ -58,6 +79,7 @@ async function callOpenAICompatible(
   baseURL: string,
   systemPrompt: string,
   userMessage: string,
+  images: LLMImage[] | undefined,
   maxTokens: number,
 ): Promise<string> {
   const client = new OpenAI({
@@ -67,12 +89,22 @@ async function callOpenAICompatible(
     fetch: expoFetch as unknown as typeof globalThis.fetch,
   });
 
+  const userContent = images && images.length > 0
+    ? [
+        ...images.map((img) => ({
+          type: 'image_url' as const,
+          image_url: { url: `data:${img.mimeType};base64,${img.base64}` },
+        })),
+        { type: 'text' as const, text: userMessage },
+      ]
+    : userMessage;
+
   const response = await client.chat.completions.create({
     model: config.model,
     max_tokens: maxTokens,
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage },
+      { role: 'user', content: userContent as any },
     ],
   });
 

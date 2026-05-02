@@ -4,9 +4,9 @@ A mobile app that turns Google Docs travel itineraries into a live, interactive 
 
 **How it works:**
 
-1. Paste a Google Doc link or create an itinerary from scratch
-2. Choose your AI provider (Anthropic, OpenAI, Google, Deepseek, and more) and model to parse the document into structured activities, transport steps, meals, and hotels
-3. Browse your trip day-by-day with swipeable tabs, check off activities as you go, log expenses, and tap for maps directions
+1. Paste a Google Doc link, drop in photos or screenshots of an itinerary, or create one from scratch
+2. Choose your AI provider (Anthropic, OpenAI, Google, Deepseek, and more) and model to parse the source into structured activities, transport steps, meals, and hotels
+3. Browse your trip day-by-day with swipeable tabs, check off activities as you go, log expenses (with live FX conversion to your trip's default currency), and tap for maps directions
 
 **Sharing:** Export any trip as a `.trotter` file and share it with other users via the iOS share sheet. Recipients import by opening the file in Trotter (via AirDrop, the Files app, or the share sheet on a received attachment).
 
@@ -64,7 +64,7 @@ Provides app-wide settings: display mode (light/dark/system), theme accent color
 
 ### `ImportScreen.tsx`
 
-Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. (`.trotter` file import is handled outside this screen via the iOS share sheet / Files app deep link.)
+Accepts a Google Doc URL, fetches the document text and title in parallel, sends it to the user's chosen AI provider/model for parsing, and saves the resulting trip. Also supports importing from one or more photos/screenshots of an itinerary via the document picker — the images are base64-encoded and sent to the chosen vision-capable model in a single multimodal call. Includes a roller-picker UI for selecting AI provider and model (with dynamic model fetching), per-provider API key input, and a manual model ID entry option. (`.trotter` file import is handled outside this screen via the iOS share sheet / Files app deep link.)
 
 ### `CreateTripScreen.tsx`
 
@@ -115,11 +115,11 @@ Registry of supported AI providers. Each provider has a name, base URL, and API 
 
 ### `llm.ts`
 
-LLM abstraction layer. Exports `callLLM()` which routes to either the Anthropic SDK or OpenAI SDK based on the provider config, and `fetchModels()` which dynamically fetches available models from any provider's API.
+LLM abstraction layer. Exports `callLLM()` which routes to either the Anthropic SDK or OpenAI SDK based on the provider config (with optional image input for multimodal calls), and `fetchModels()` which dynamically fetches available models from any provider's API.
 
 ### `parser.ts`
 
-Splits the Google Doc text into per-day chunks and sends each to the user's selected AI model in parallel (3 concurrent, with retry logic). Extracts checklists from the document preamble using AI with light title cleanup. For documents that can't be split by day, falls back to a single-call parse. Post-processes the AI output to infer activity types (transport) and categories (hotel, meal) from title keywords, and fixes child activity locations that incorrectly match their parent's location. Caches parsed day results by content hash to speed up re-imports.
+Splits the Google Doc text into per-day chunks and sends each to the user's selected AI model in parallel (3 concurrent, with retry logic). Extracts checklists from the document preamble using AI with light title cleanup. For documents that can't be split by day, falls back to a single-call parse. Also exposes `parseItineraryImages` for parsing from one or more images (photos / screenshots) — sends all images in a single multimodal call to a vision-capable model. Post-processes the AI output to infer activity types (transport) and categories (hotel, meal) from title keywords, and fixes child activity locations that incorrectly match their parent's location. Caches parsed day results by content hash to speed up re-imports.
 
 ### `storage.ts`
 

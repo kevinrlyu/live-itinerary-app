@@ -5,13 +5,15 @@ import {
   Modal, Pressable, Dimensions,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { fetchDocText, fetchDocTitle } from '../utils/googleDocs';
-import { parseItineraryText } from '../utils/parser';
+import { parseItineraryText, parseItineraryImages } from '../utils/parser';
 import { saveTripFull, saveTripList, loadTripList, saveActiveTripId, loadProviderApiKey, saveProviderApiKey, saveLastLLMConfig, loadLastLLMConfig } from '../utils/storage';
 import { Trip, TripMeta } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 import { getProviders, getProvider, ModelProvider } from '../utils/providers';
-import { fetchModels, LLMConfig } from '../utils/llm';
+import { fetchModels, LLMConfig, LLMImage } from '../utils/llm';
 
 interface Props {
   onImport: (trip: Trip) => void;
@@ -280,6 +282,67 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
     }
   };
 
+  const handleImportFromImages = async () => {
+    if (!apiKey.trim()) {
+      Alert.alert('API Key Required', `Please enter your ${provider?.name || 'AI'} API key.`);
+      return;
+    }
+    if (!selectedModel) {
+      Alert.alert('Model Required', 'Please select or enter a model name.');
+      return;
+    }
+
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'image/*',
+      multiple: true,
+      copyToCacheDirectory: true,
+    });
+
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+    await saveProviderApiKey(providerId, apiKey.trim());
+    await saveLastLLMConfig(providerId, selectedModel);
+    const llmConfig: LLMConfig = {
+      providerId,
+      apiKey: apiKey.trim(),
+      model: selectedModel,
+    };
+
+    setLoading(true);
+    setProgress('Encoding images...');
+    try {
+      const images: LLMImage[] = [];
+      for (const asset of result.assets) {
+        const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const mimeType = asset.mimeType || (asset.name?.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+        images.push({ mimeType, base64 });
+      }
+
+      const trip = await parseItineraryImages(images, setProgress, llmConfig);
+      await saveTripFull(trip);
+      const meta: TripMeta = {
+        id: trip.id,
+        title: trip.title,
+        dateRange: buildDateRange(trip),
+        docUrl: '',
+      };
+      const list = await loadTripList();
+      await saveTripList([...list, meta]);
+      await saveActiveTripId(trip.id);
+      onImport(trip);
+    } catch (err: any) {
+      const msg = err?.message || 'Something went wrong.';
+      const hint = /vision|image|multimodal|content type/i.test(msg)
+        ? '\n\nThe selected model may not support image input. Try a vision-capable model (e.g. Claude, GPT-4o, Gemini, Grok).'
+        : '';
+      Alert.alert('Import Failed', `${msg}${hint}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Build model picker items
   const modelPickerItems = [
     ...availableModels.map((m) => ({ id: m, label: m })),
@@ -427,6 +490,13 @@ export default function ImportScreen({ onImport, onCancel, onImportFromFile }: P
         ) : (
           <Text style={styles.buttonText}>Import Itinerary</Text>
         )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.fileButton, { borderColor: colors.accent }]}
+        onPress={handleImportFromImages}
+        disabled={loading}
+      >
+        <Text style={[styles.fileButtonText, { color: colors.accent }]}>Or import from photos / screenshots</Text>
       </TouchableOpacity>
       {onImportFromFile && (
         <TouchableOpacity

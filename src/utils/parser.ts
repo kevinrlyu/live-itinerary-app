@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Day, Trip, ChecklistGroup } from "../types";
-import { callLLM, LLMConfig } from "./llm";
+import { callLLM, LLMConfig, LLMImage } from "./llm";
 
 // System prompt for parsing a SINGLE day's text into a day object.
 // Kept as a constant so prompt caching works across calls.
@@ -351,6 +351,87 @@ export async function parseItineraryText(
   return { id: tripId, docUrl, title, days, defaultCurrency: 'USD', checklists } as Trip;
 }
 
+/**
+ * Parse a trip from one or more images (screenshots, photos of printed
+ * itineraries). Sends all images in a single multimodal LLM call along with
+ * the full-doc system prompt; produces the same Trip shape as text import.
+ *
+ * Caller is responsible for ensuring the chosen model supports image input —
+ * if it doesn't, the LLM call will fail with a provider-specific error that
+ * surfaces as the import failure message.
+ */
+export async function parseItineraryImages(
+  images: LLMImage[],
+  onProgress?: (status: string) => void,
+  llmConfig?: LLMConfig,
+): Promise<Trip> {
+  if (!llmConfig) throw new Error('No AI model configured. Please select a provider and enter an API key.');
+  if (images.length === 0) throw new Error('No images selected.');
+
+  onProgress?.('Reading images...');
+
+  const fullSystemPrompt = buildFullSystemPrompt();
+  const userMessage =
+    'These images contain a travel itinerary. Extract the full itinerary into the JSON format described in the system prompt. Determine the year from any dates and day-of-week markers visible in the images. Return ONLY the JSON object — no surrounding text.';
+
+  onProgress?.(`Parsing ${images.length} image${images.length === 1 ? '' : 's'}...`);
+
+  const responseText = await callLLM({
+    config: llmConfig,
+    systemPrompt: fullSystemPrompt,
+    userMessage,
+    images,
+    maxTokens: 32768,
+  });
+
+  try {
+    const jsonText = extractJSON(responseText);
+    const parsed = JSON.parse(jsonText);
+
+    for (const day of parsed.days ?? []) {
+      const actById: Record<string, any> = {};
+      for (const act of day.activities ?? []) {
+        actById[act.id] = act;
+        inferActivityFields(act);
+      }
+      for (const act of day.activities ?? []) {
+        if (act.parentId && actById[act.parentId]) {
+          const parentLoc = (actById[act.parentId].location || '').toLowerCase();
+          const childLoc = (act.location || '').toLowerCase();
+          if (childLoc && parentLoc && childLoc === parentLoc) {
+            act.location = act.title;
+          }
+        }
+        if (act.parentId && !act.location) {
+          act.location = act.title;
+        }
+      }
+    }
+
+    onProgress?.('Done!');
+    return {
+      ...parsed,
+      id: generateId(),
+      docUrl: '',
+      defaultCurrency: 'USD',
+    } as Trip;
+  } catch {
+    throw new Error(`AI returned invalid data: ${responseText.slice(0, 300)}`);
+  }
+}
+
+// Build the full-doc system prompt by adapting the per-day prompt. Used by
+// both parseFull (text) and parseItineraryImages.
+function buildFullSystemPrompt(): string {
+  return DAY_SYSTEM_PROMPT.replace(
+    'Given raw text for ONE DAY of a travel itinerary, extract all information and return it as a JSON object matching this exact structure:\n\n{\n  "date"',
+    'Given raw text from a travel itinerary document, extract all information and return it as a JSON object matching this exact structure:\n\n{\n  "title": "string (trip name or destination)",\n  "days": [\n    {\n      "date"'
+  ).replace(
+    '  ]\n}\n\nRules:',
+    '    ]\n    }\n  ]\n}\n\nRules:\n- IDs must be globally unique across the ENTIRE trip (count up: \'a1\', \'a2\', \'a3\', ... never reuse a number)\n- IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.'
+  );
+}
+
 // Fallback: parse entire document in one call (for docs that can't be split by day)
 async function parseFull(
   text: string,
@@ -367,14 +448,7 @@ async function parseFull(
   const isLarge = text.length > 10000;
   const maxTokens = isLarge ? 32768 : 8192;
 
-  // Full-doc system prompt (includes title and days[] wrapper)
-  const fullSystemPrompt = DAY_SYSTEM_PROMPT.replace(
-    'Given raw text for ONE DAY of a travel itinerary, extract all information and return it as a JSON object matching this exact structure:\n\n{\n  "date"',
-    'Given raw text from a travel itinerary document, extract all information and return it as a JSON object matching this exact structure:\n\n{\n  "title": "string (trip name or destination)",\n  "days": [\n    {\n      "date"'
-  ).replace(
-    '  ]\n}\n\nRules:',
-    '    ]\n    }\n  ]\n}\n\nRules:\n- IDs must be globally unique across the ENTIRE trip (count up: \'a1\', \'a2\', \'a3\', ... never reuse a number)\n- IMPORTANT: Determine the correct year by looking for it in the document title or body. If not explicitly stated, use the day-of-week hints in the document (e.g. "December 10 (Wednesday)") to identify the correct year — find the year where those dates match those days of the week.'
-  );
+  const fullSystemPrompt = buildFullSystemPrompt();
 
   onProgress?.("Parsing itinerary...");
 
