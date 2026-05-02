@@ -76,18 +76,15 @@ export async function pickAndImportTrotterFile(): Promise<Trip | null> {
 }
 
 /**
- * Import a .trotter file delivered via Linking (share sheet / "Open in").
+ * Import a .trotter file delivered via Linking (share sheet / "Open in" / Files).
  *
- * The incoming URL may point into another app's sandbox or a security-scoped
- * AppGroup container, where readAsStringAsync cannot reach. Copy it into our
- * own cache first — copyAsync runs natively and tolerates these URLs better
- * than direct reads. decodeURI handles percent-encoded paths (spaces, &, etc).
+ * The native iOS handler in AppDelegate.swift acquires the security scope and
+ * copies the file into our cache directory before forwarding the URL to JS,
+ * so the URL we get here is already inside our sandbox and safe to read.
+ * decodeURI handles any percent-encoding in the path.
  */
 export async function importTrotterFileFromIncomingUrl(rawUrl: string): Promise<Trip> {
-  const decoded = decodeURI(rawUrl);
-  const dest = `${FileSystem.cacheDirectory}imported_${Date.now()}.trotter`;
-  await FileSystem.copyAsync({ from: decoded, to: dest });
-  return importTrotterFileFromUri(dest);
+  return importTrotterFileFromUri(decodeURI(rawUrl));
 }
 
 /**

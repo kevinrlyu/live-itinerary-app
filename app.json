@@ -53,6 +53,9 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "./plugins/withTrotterFileImport"
+    ],
     "extra": {
       "eas": {
         "projectId": "3a8b6332-40dd-4d53-af24-7906b613aae8"
