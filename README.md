@@ -51,7 +51,8 @@ src/
     ├── trotterFile.ts      — .trotter file export/import (share sheet and file picker).
     ├── geocode.ts          — Location geocoding for maps deep links.
     ├── weather.ts          — Weather forecast fetching for trip days.
-    └── fxRates.ts          — Live FX rates via Frankfurter (ECB) for multi-currency expense conversion.
+    ├── fxRates.ts          — Live FX rates via Frankfurter (ECB) for multi-currency expense conversion.
+    └── liveActivity.ts     — JS service for iOS Live Activity / Dynamic Island (stub; native side pending).
 ```
 
 ### `App.tsx`
@@ -144,6 +145,10 @@ Fetches weather forecast data for trip days using the Open-Meteo API.
 ### `fxRates.ts`
 
 Multi-currency expense conversion via the [Frankfurter](https://frankfurter.dev) API (ECB-sourced, no API key, daily updates). Caches latest rates in AsyncStorage for 24h and historical rates indefinitely. The expense summary uses these to show a converted grand total in the trip's default currency, with a toggle between "today's rate" and "trip-day rate" (using the date of the activity that incurred each expense). Falls back to per-currency totals when any expense currency is outside Frankfurter's ~30-currency set.
+
+### `liveActivity.ts`
+
+JS service module for iOS Live Activities (Dynamic Island / lock-screen card). Exposes a stable API — `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, `isLiveActivitySupported` — over a `LiveActivityState` shape that mirrors what the Dynamic Island compact + expanded views will render. Currently a no-op stub: it looks for the `TrotterLiveActivity` native module and silently does nothing when it's absent. The native Widget Extension and Expo Module that bring it to life are planned in `docs/superpowers/plans/2026-05-02-live-activities.md` and require a session with simulator/device access to implement.
 
 ---
 
