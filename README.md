@@ -110,7 +110,7 @@ Slide-in drawer for managing itineraries. Shows all saved trips with share (↗)
 
 ### `providers.ts`
 
-Registry of supported AI providers. Each provider has a name, base URL, and API key placeholder. Providers using the OpenAI-compatible API format (OpenAI, Google, Deepseek, Moonshot, Minimax, Zhipu, Alibaba) share a single code path; Anthropic uses its own SDK.
+Registry of supported AI providers. Each provider has a name, base URL, and API key placeholder. Providers using the OpenAI-compatible API format (OpenAI, Google, xAI, Mistral, Deepseek, Moonshot, Minimax, Zhipu, Alibaba, ByteDance, Tencent, Xiaomi) share a single code path; Anthropic uses its own SDK.
 
 ### `llm.ts`
 

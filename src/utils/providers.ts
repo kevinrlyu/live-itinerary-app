@@ -23,6 +23,12 @@ const PROVIDERS: ModelProvider[] = [
     apiKeyPlaceholder: 'sk-ant-...',
   },
   {
+    id: 'bytedance',
+    name: 'ByteDance (Doubao)',
+    baseURL: 'https://ark.cn-beijing.volces.com/api/v3',
+    apiKeyPlaceholder: 'API key',
+  },
+  {
     id: 'deepseek',
     name: 'Deepseek',
     baseURL: 'https://api.deepseek.com',
@@ -41,6 +47,12 @@ const PROVIDERS: ModelProvider[] = [
     apiKeyPlaceholder: 'eyJ...',
   },
   {
+    id: 'mistral',
+    name: 'Mistral',
+    baseURL: 'https://api.mistral.ai/v1',
+    apiKeyPlaceholder: 'API key',
+  },
+  {
     id: 'moonshot',
     name: 'Moonshot (Kimi)',
     baseURL: 'https://api.moonshot.cn/v1',
@@ -51,6 +63,24 @@ const PROVIDERS: ModelProvider[] = [
     name: 'OpenAI (GPT)',
     baseURL: 'https://api.openai.com/v1',
     apiKeyPlaceholder: 'sk-...',
+  },
+  {
+    id: 'tencent',
+    name: 'Tencent (Hunyuan)',
+    baseURL: 'https://api.hunyuan.cloud.tencent.com/v1',
+    apiKeyPlaceholder: 'sk-...',
+  },
+  {
+    id: 'xai',
+    name: 'xAI (Grok)',
+    baseURL: 'https://api.x.ai/v1',
+    apiKeyPlaceholder: 'xai-...',
+  },
+  {
+    id: 'xiaomi',
+    name: 'Xiaomi (MiMo)',
+    baseURL: 'https://platform.xiaomimimo.com/v1',
+    apiKeyPlaceholder: 'API key',
   },
   {
     id: 'zhipu',
