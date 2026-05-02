@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip, Activity } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
+import { convert, getRatesForDates, isSupported as isFxSupported } from '../utils/fxRates';
 
 const CURRENCY_FLAGS: Record<string, string> = {
   AED: '\u{1F1E6}\u{1F1EA}', AFN: '\u{1F1E6}\u{1F1EB}', ALL: '\u{1F1E6}\u{1F1F1}',
@@ -223,9 +224,17 @@ function CurrencyRollerPicker({ value, onChange }: { value: string; onChange: (c
   );
 }
 
+type FxMode = 'today' | 'tripDay';
+
 export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, onSetCurrency }: Props) {
   const { colors } = useSettings();
   const insets = useSafeAreaInsets();
+  const tripBase = (defaultCurrency || trip.defaultCurrency || 'USD').toUpperCase();
+  const [fxMode, setFxMode] = useState<FxMode>('today');
+  const [latestRates, setLatestRates] = useState<Record<string, number> | null>(null);
+  const [historicalRates, setHistoricalRates] =
+    useState<Record<string, Record<string, number> | null>>({});
+
   // Collect all activities with expenses
   const allExpenses: { activity: Activity; dayLabel: string; dayDate: string }[] = [];
   for (const day of trip.days) {
@@ -236,11 +245,69 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
     }
   }
 
+  // Distinct expense currencies + day dates that need rate lookups
+  const expenseCurrencies = new Set(allExpenses.map((e) => e.activity.expense!.currency.toUpperCase()));
+  const expenseDates = Array.from(new Set(allExpenses.map((e) => e.dayDate))).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+
+  // Conversion is possible only when the trip default currency and every
+  // expense currency are all in Frankfurter's set.
+  const fxAvailable =
+    isFxSupported(tripBase) &&
+    Array.from(expenseCurrencies).every((c) => isFxSupported(c)) &&
+    expenseCurrencies.size > 1;
+
+  useEffect(() => {
+    if (!fxAvailable) return;
+    let cancelled = false;
+    (async () => {
+      const { latest, historical } = await getRatesForDates(expenseDates, tripBase);
+      if (cancelled) return;
+      setLatestRates(latest);
+      setHistoricalRates(historical);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // tripBase + a stable signature of expenseDates is the dependency surface;
+    // join the dates to keep the array reference comparison meaningful.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tripBase, expenseDates.join('|'), fxAvailable]);
+
+  function ratesForDate(date: string): Record<string, number> | null {
+    if (fxMode === 'today') return latestRates;
+    return historicalRates[date] ?? latestRates;
+  }
+
+  function convertedAmount(amount: number, currency: string, date: string): number | null {
+    const rates = ratesForDate(date);
+    if (!rates) return null;
+    return convert(amount, currency.toUpperCase(), tripBase, rates);
+  }
+
   // Grand totals per currency
   const grandTotals: Record<string, number> = {};
   for (const { activity } of allExpenses) {
     const e = activity.expense!;
     grandTotals[e.currency] = (grandTotals[e.currency] || 0) + e.amount;
+  }
+
+  // Converted grand total in tripBase, summed across all expenses.
+  // Returns null if any expense couldn't be converted (incomplete picture is
+  // worse than no picture).
+  let convertedGrandTotal: number | null = null;
+  if (fxAvailable && latestRates) {
+    let sum = 0;
+    let allConverted = true;
+    for (const { activity, dayDate } of allExpenses) {
+      const e = activity.expense!;
+      const c = convertedAmount(e.amount, e.currency, dayDate);
+      if (c === null) {
+        allConverted = false;
+        break;
+      }
+      sum += c;
+    }
+    convertedGrandTotal = allConverted ? sum : null;
   }
 
   // Category totals per currency
@@ -250,6 +317,21 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
     const e = activity.expense!;
     if (!categoryTotals[cat]) categoryTotals[cat] = {};
     categoryTotals[cat][e.currency] = (categoryTotals[cat][e.currency] || 0) + e.amount;
+  }
+
+  // Per-category converted totals (same fall-back semantics as grand total).
+  const categoryConverted: Record<string, number | null> = {};
+  if (fxAvailable && latestRates) {
+    for (const { activity, dayDate } of allExpenses) {
+      const cat = categoryOf(activity);
+      const e = activity.expense!;
+      const c = convertedAmount(e.amount, e.currency, dayDate);
+      if (c === null) {
+        categoryConverted[cat] = null;
+      } else if (categoryConverted[cat] !== null) {
+        categoryConverted[cat] = (categoryConverted[cat] ?? 0) + c;
+      }
+    }
   }
 
   // Day breakdown
@@ -302,6 +384,27 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
           <Text style={[styles.totalsLabel, { color: colors.textSecondary }]}>Total</Text>
           {Object.keys(grandTotals).length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No expenses yet</Text>
+          ) : convertedGrandTotal !== null ? (
+            <>
+              <Text style={[styles.totalAmount, { color: colors.textPrimary }]}>
+                {formatAmount(convertedGrandTotal, tripBase)}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setFxMode((m) => (m === 'today' ? 'tripDay' : 'today'))}
+                style={styles.fxToggle}
+              >
+                <Text style={[styles.fxToggleText, { color: colors.accent }]}>
+                  {fxMode === 'today' ? "at today's rate" : 'at trip-day rate'} ⇄
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.fxBreakdown}>
+                {Object.entries(grandTotals).map(([cur, amt]) => (
+                  <Text key={cur} style={[styles.fxBreakdownText, { color: colors.textSecondary }]}>
+                    {formatAmount(amt, cur)}
+                  </Text>
+                ))}
+              </View>
+            </>
           ) : (
             Object.entries(grandTotals).map(([cur, amt]) => (
               <Text key={cur} style={[styles.totalAmount, { color: colors.textPrimary }]}>{formatAmount(amt, cur)}</Text>
@@ -312,16 +415,36 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
         {/* Category breakdown */}
         {Object.keys(categoryTotals).length > 0 && (
           <View style={[styles.section, { backgroundColor: colors.cardBackground, shadowColor: colors.shadow }]}>
-            {Object.entries(categoryTotals).map(([cat, currencies]) => (
-              <View key={cat} style={styles.categoryRow}>
-                <Text style={[styles.categoryName, { color: colors.textPrimary }]}>{cat}</Text>
-                <View style={styles.categoryAmounts}>
-                  {Object.entries(currencies).map(([cur, amt]) => (
-                    <Text key={cur} style={[styles.categoryAmount, { color: colors.textPrimary }]}>{formatAmount(amt, cur)}</Text>
-                  ))}
+            {Object.entries(categoryTotals).map(([cat, currencies]) => {
+              const converted = categoryConverted[cat];
+              return (
+                <View key={cat} style={styles.categoryRow}>
+                  <Text style={[styles.categoryName, { color: colors.textPrimary }]}>{cat}</Text>
+                  <View style={styles.categoryAmounts}>
+                    {fxAvailable && converted !== null && converted !== undefined ? (
+                      <>
+                        <Text style={[styles.categoryAmount, { color: colors.textPrimary }]}>
+                          {formatAmount(converted, tripBase)}
+                        </Text>
+                        {Object.keys(currencies).length > 1 && (
+                          <Text style={[styles.fxBreakdownText, { color: colors.textSecondary, marginTop: 2 }]}>
+                            {Object.entries(currencies)
+                              .map(([cur, amt]) => formatAmount(amt, cur))
+                              .join(' · ')}
+                          </Text>
+                        )}
+                      </>
+                    ) : (
+                      Object.entries(currencies).map(([cur, amt]) => (
+                        <Text key={cur} style={[styles.categoryAmount, { color: colors.textPrimary }]}>
+                          {formatAmount(amt, cur)}
+                        </Text>
+                      ))
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -435,6 +558,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     marginTop: 4,
+  },
+  fxToggle: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginTop: 4,
+  },
+  fxToggleText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  fxBreakdown: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 6,
+    gap: 8,
+  },
+  fxBreakdownText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   section: {
     backgroundColor: '#fff',
