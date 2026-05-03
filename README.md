@@ -96,7 +96,7 @@ A non-modal overlay for entering per-activity expenses. Uses a custom number pad
 
 ### `ExpenseSummaryScreen.tsx`
 
-Full-screen view showing all logged expenses with grand totals, category breakdown (Hotels/Meals/Other), and day-by-day line items. Supports CSV export via the system share sheet.
+Full-screen view showing all logged expenses with grand totals (with optional FX conversion to the trip's default currency, toggleable between today's rate and trip-day rate), category breakdown (Hotels/Meals/Other), and day-by-day line items. Multi-currency subtotals are rendered inline separated by `·`. Supports CSV export — written to a real `<Trip Title> (Expenses).csv` file in the cache directory and shared via `expo-sharing`, so the filename survives into Files / Mail attachments rather than being treated as untitled text.
 
 ### `ChecklistScreen.tsx`
 

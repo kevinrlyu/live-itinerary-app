@@ -104,7 +104,7 @@ function getActivityAccent(category: string | null, colors: ThemeColors): string
 export default function ActivityCard({ activity, isCurrent, onToggle, isChild, isGroupHeader, onOpenExpense, isEditMode, onLongPress }: Props) {
   const { settings, colors } = useSettings();
 
-  const openDirections = async () => {
+  const openInMaps = async () => {
     const query = activity.location || activity.title || '';
     // Geocode to get coordinates (uses cached results from weather feature)
     const geo = await geocodeLocation(query);
@@ -147,7 +147,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
     return (
       <Pressable
         style={[styles.transportRow, isEditMode && [styles.editModeHighlight, { borderColor: colors.accent + '44' }]]}
-        onPress={isEditMode ? undefined : openDirections}
+        onPress={isEditMode ? undefined : openInMaps}
         onLongPress={isEditMode ? handleLongPress : undefined}
         delayLongPress={400}
       >
@@ -205,7 +205,7 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            onPress={isEditMode ? undefined : openDirections}
+            onPress={isEditMode ? undefined : openInMaps}
             activeOpacity={isEditMode ? 1 : 0.2}
             style={[styles.iconButton, { backgroundColor: accent }, isEditMode && styles.buttonDisabled]}
           >

@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Pressable, Modal, Dimensions,
-  StyleSheet, Share, NativeSyntheticEvent, NativeScrollEvent,
+  StyleSheet, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Trip, Activity } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
@@ -356,10 +358,20 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
     });
     const csv = [header, ...rows].join('\n');
 
+    // Write to a real file so the iOS share sheet / Files app picks up the
+    // filename instead of treating it as a generic text payload.
+    const safeTitle =
+      trip.title.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, ' ').trim() || 'Trip';
+    const fileName = `${safeTitle} (Expenses).csv`;
+    const filePath = `${FileSystem.cacheDirectory}${fileName}`;
+
     try {
-      await Share.share({
-        message: csv,
-        title: `${trip.title} Expenses`,
+      await FileSystem.writeAsStringAsync(filePath, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      await Sharing.shareAsync(filePath, {
+        mimeType: 'text/csv',
+        UTI: 'public.comma-separated-values-text',
       });
     } catch {}
   };
@@ -397,13 +409,11 @@ export default function ExpenseSummaryScreen({ trip, onClose, defaultCurrency, o
                   {fxMode === 'today' ? "at today's rate" : 'at trip-day rate'} ⇄
                 </Text>
               </TouchableOpacity>
-              <View style={styles.fxBreakdown}>
-                {Object.entries(grandTotals).map(([cur, amt]) => (
-                  <Text key={cur} style={[styles.fxBreakdownText, { color: colors.textSecondary }]}>
-                    {formatAmount(amt, cur)}
-                  </Text>
-                ))}
-              </View>
+              <Text style={[styles.fxBreakdownText, { color: colors.textSecondary, marginTop: 6 }]}>
+                {Object.entries(grandTotals)
+                  .map(([cur, amt]) => formatAmount(amt, cur))
+                  .join(' · ')}
+              </Text>
             </>
           ) : (
             Object.entries(grandTotals).map(([cur, amt]) => (
@@ -567,13 +577,6 @@ const styles = StyleSheet.create({
   fxToggleText: {
     fontSize: 12,
     fontWeight: '500',
-  },
-  fxBreakdown: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 6,
-    gap: 8,
   },
   fxBreakdownText: {
     fontSize: 12,
