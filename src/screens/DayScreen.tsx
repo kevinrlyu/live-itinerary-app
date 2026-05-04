@@ -383,7 +383,7 @@ export default function DayScreen({
               </View>
             )}
             {!showWeather && !weather.pending && showSteps && (
-              <View style={styles.infoRow}>
+              <View style={[styles.infoRow, { justifyContent: 'flex-end' }]}>
                 <View style={styles.stepBadge}>
                   <FootstepsIcon size={14} color={stepColor} />
                   <Text style={[styles.infoText, { color: stepColor }]}>
