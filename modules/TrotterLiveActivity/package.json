@@ -1,0 +1,8 @@
+{
+  "name": "trotter-live-activity",
+  "version": "0.1.0",
+  "description": "Local Expo Module bridging JS to iOS ActivityKit for Trotter Live Activities.",
+  "main": "index.ts",
+  "types": "index.ts",
+  "private": true
+}

@@ -7,7 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import WalkIcon from './src/components/icons/WalkIcon';
 import ReceiptIcon from './src/components/icons/ReceiptIcon';
-import { Trip, TripMeta, Activity } from './src/types';
+import { Trip, TripMeta, Activity, Day } from './src/types';
 import {
   loadTripFull, saveTripFull,
   loadTripList, saveTripList,
@@ -23,6 +23,11 @@ import * as Linking from 'expo-linking';
 import { fetchDocText, fetchDocTitle } from './src/utils/googleDocs';
 import { parseItineraryText } from './src/utils/parser';
 import { LLMConfig } from './src/utils/llm';
+import {
+  startLiveActivity, updateLiveActivity, endLiveActivity,
+  LiveActivityState,
+} from './src/utils/liveActivity';
+import { getCurrentActivityIndex } from './src/utils/tracking';
 import ImportScreen from './src/screens/ImportScreen';
 import CreateTripScreen from './src/screens/CreateTripScreen';
 import DayScreen from './src/screens/DayScreen';
@@ -55,6 +60,46 @@ function getTodayTabName(trip: Trip): string {
   const today = new Date().toISOString().split('T')[0];
   const day = trip.days.find((d) => d.date === today) ?? trip.days[0];
   return day?.date ?? '';
+}
+
+function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// Build a LiveActivityState snapshot from `trip` for `day` at the given moment.
+// "Current" follows tracking.ts semantics; "next" is the first timed,
+// non-transport, incomplete activity that hasn't started yet.
+function buildLiveActivityState(trip: Trip, day: Day, now: Date): LiveActivityState {
+  const idx = getCurrentActivityIndex(day.activities, now);
+  const current = idx >= 0 ? day.activities[idx] : null;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let next: Activity | null = null;
+  for (let i = idx >= 0 ? idx + 1 : 0; i < day.activities.length; i++) {
+    const a = day.activities[i];
+    if (a.completed || !a.time || a.type === 'transport') continue;
+    if (toMinutes(a.time) <= currentMinutes && current) continue;
+    next = a;
+    break;
+  }
+
+  return {
+    tripTitle: trip.title,
+    current: current
+      ? {
+          title: current.title,
+          location: current.location ?? null,
+          startTime: current.time,
+          endTime: current.timeEnd ?? null,
+          category: current.category ?? null,
+          isTransport: current.type === 'transport',
+        }
+      : null,
+    next: next
+      ? { title: next.title, startTime: next.time }
+      : null,
+  };
 }
 
 function buildDateRange(trip: Trip): string {
@@ -144,6 +189,47 @@ function AppContent() {
     const subscription = Linking.addEventListener('url', handleUrl);
     return () => subscription.remove();
   }, []);
+
+  // Drive the iOS Live Activity from the active trip + the day matching today.
+  // Starts an activity when there's a relevant day, refreshes its state every
+  // minute, and ends it when the trip changes or there's no longer a today.
+  const liveActivityIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayDay = trip?.days.find((d) => d.date === today) ?? null;
+
+    if (!trip || !todayDay) {
+      // No active trip OR the active trip has no day for today — end any
+      // running activity and bail.
+      if (liveActivityIdRef.current) {
+        const oldId = liveActivityIdRef.current;
+        liveActivityIdRef.current = null;
+        endLiveActivity(oldId);
+      }
+      return;
+    }
+
+    const sync = async () => {
+      const state = buildLiveActivityState(trip, todayDay, new Date());
+      if (cancelled) return;
+      if (liveActivityIdRef.current) {
+        await updateLiveActivity(liveActivityIdRef.current, state);
+      } else {
+        const id = await startLiveActivity(state);
+        if (!cancelled && id) liveActivityIdRef.current = id;
+      }
+    };
+
+    sync();
+    const interval = setInterval(sync, 60_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [trip]);
 
   const handleCloseWalkthrough = useCallback(() => {
     setShowWalkthrough(false);
