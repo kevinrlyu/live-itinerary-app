@@ -15,6 +15,7 @@ public struct TrotterLiveActivityAttributes: ActivityAttributes {
     public var currentLocation: String?
     public var currentStartTime: String?
     public var currentEndTime: String?
+    public var currentTimeRange: String?
     public var currentCategory: String?
     public var currentIsTransport: Bool
 
@@ -26,6 +27,7 @@ public struct TrotterLiveActivityAttributes: ActivityAttributes {
       currentLocation: String? = nil,
       currentStartTime: String? = nil,
       currentEndTime: String? = nil,
+      currentTimeRange: String? = nil,
       currentCategory: String? = nil,
       currentIsTransport: Bool = false,
       nextTitle: String? = nil,
@@ -35,6 +37,7 @@ public struct TrotterLiveActivityAttributes: ActivityAttributes {
       self.currentLocation = currentLocation
       self.currentStartTime = currentStartTime
       self.currentEndTime = currentEndTime
+      self.currentTimeRange = currentTimeRange
       self.currentCategory = currentCategory
       self.currentIsTransport = currentIsTransport
       self.nextTitle = nextTitle

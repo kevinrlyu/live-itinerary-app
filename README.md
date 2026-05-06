@@ -1,6 +1,6 @@
 # Live Itinerary App
 
-A mobile app that turns Google Docs travel itineraries into a live, interactive day-by-day guide with activity tracking, expense logging, checklists, maps directions, weather forecasts, and step counting.
+A mobile app that turns Google Docs travel itineraries into a live, interactive day-by-day guide with activity tracking, expense logging, checklists, maps directions, weather forecasts, step counting, and iOS Live Activity / Dynamic Island integration.
 
 **How it works:**
 
@@ -52,7 +52,13 @@ src/
     ├── geocode.ts          — Location geocoding for maps deep links.
     ├── weather.ts          — Weather forecast fetching for trip days.
     ├── fxRates.ts          — Live FX rates via Frankfurter (ECB) for multi-currency expense conversion.
-    └── liveActivity.ts     — JS service for iOS Live Activity / Dynamic Island (stub; native side pending).
+    └── liveActivity.ts     — JS bridge for iOS Live Activity / Dynamic Island.
+
+modules/
+└── TrotterLiveActivity/   — Expo Module bridging JS calls to ActivityKit (start/update/end).
+
+targets/
+└── TrotterLiveActivity/   — Widget Extension (SwiftUI views for lock screen + Dynamic Island).
 ```
 
 ### `App.tsx`
@@ -148,7 +154,11 @@ Multi-currency expense conversion via the [Frankfurter](https://frankfurter.dev)
 
 ### `liveActivity.ts`
 
-JS service module for iOS Live Activities (Dynamic Island / lock-screen card). Exposes a stable API — `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, `isLiveActivitySupported` — over a `LiveActivityState` shape that mirrors what the Dynamic Island compact + expanded views will render. Currently a no-op stub: it looks for the `TrotterLiveActivity` native module and silently does nothing when it's absent. The native Widget Extension and Expo Module that bring it to life are planned in `docs/superpowers/plans/2026-05-02-live-activities.md` and require a session with simulator/device access to implement.
+JS bridge for iOS Live Activities (Dynamic Island / lock-screen card). Exposes `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, and `isLiveActivitySupported` over a `LiveActivityState` shape. Uses `requireNativeModule` from `expo-modules-core` to communicate with the native `TrotterLiveActivity` Expo Module. The app automatically starts a Live Activity when a trip has a day matching today, updates it every 60 seconds to track the current activity, and ends it when the trip changes or no relevant day exists.
+
+### Widget Extension (`targets/TrotterLiveActivity/`)
+
+SwiftUI views for the iOS Live Activity. The lock-screen card shows the current activity's time range, the Trotter app icon alongside the title, and the next upcoming activity. The Dynamic Island compact state shows only the Trotter icon; the expanded state mirrors the lock-screen layout. Built via `@bacons/apple-targets`.
 
 ---
 

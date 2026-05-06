@@ -67,22 +67,38 @@ function toMinutes(time: string): number {
   return h * 60 + m;
 }
 
-// Build a LiveActivityState snapshot from `trip` for `day` at the given moment.
-// "Current" follows tracking.ts semantics; "next" is the first timed,
-// non-transport, incomplete activity that hasn't started yet.
-function buildLiveActivityState(trip: Trip, day: Day, now: Date): LiveActivityState {
+function formatTimeForLA(time: string | null | undefined, format: '12h' | '24h'): string | null {
+  if (!time) return null;
+  if (format === '24h') return time;
+  const [hStr, mStr] = time.split(':');
+  let h = parseInt(hStr, 10);
+  const m = mStr || '00';
+  const suffix = h >= 12 ? 'pm' : 'am';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${m}${suffix}`;
+}
+
+function buildLiveActivityState(trip: Trip, day: Day, now: Date, timeFormat: '12h' | '24h'): LiveActivityState {
   const idx = getCurrentActivityIndex(day.activities, now);
   const current = idx >= 0 ? day.activities[idx] : null;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  console.log('[LiveActivity] now:', now.toISOString(), 'currentMinutes:', currentMinutes);
+  console.log('[LiveActivity] day.date:', day.date, 'activities:', day.activities.length);
+  day.activities.forEach((a, i) => console.log(`[LiveActivity]   [${i}] "${a.title}" time=${a.time} timeEnd=${a.timeEnd} type=${a.type} completed=${a.completed}`));
+  console.log('[LiveActivity] getCurrentActivityIndex returned:', idx);
 
   let next: Activity | null = null;
   for (let i = idx >= 0 ? idx + 1 : 0; i < day.activities.length; i++) {
     const a = day.activities[i];
     if (a.completed || !a.time || a.type === 'transport') continue;
-    if (toMinutes(a.time) <= currentMinutes && current) continue;
+    if (toMinutes(a.time) <= currentMinutes) continue;
     next = a;
     break;
   }
+
+  console.log('[LiveActivity] current:', current?.title ?? 'null', 'next:', next?.title ?? 'null');
 
   return {
     tripTitle: trip.title,
@@ -90,14 +106,19 @@ function buildLiveActivityState(trip: Trip, day: Day, now: Date): LiveActivitySt
       ? {
           title: current.title,
           location: current.location ?? null,
-          startTime: current.time,
-          endTime: current.timeEnd ?? null,
+          startTime: formatTimeForLA(current.time, timeFormat),
+          endTime: formatTimeForLA(current.timeEnd, timeFormat),
+          timeRange: current.time
+            ? current.timeEnd
+              ? `${formatTimeForLA(current.time, timeFormat)} – ${formatTimeForLA(current.timeEnd, timeFormat)}`
+              : formatTimeForLA(current.time, timeFormat)
+            : null,
           category: current.category ?? null,
           isTransport: current.type === 'transport',
         }
       : null,
     next: next
-      ? { title: next.title, startTime: next.time }
+      ? { title: next.title, startTime: formatTimeForLA(next.time, timeFormat) }
       : null,
   };
 }
@@ -122,7 +143,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { colors, resolvedTheme } = useSettings();
+  const { colors, resolvedTheme, settings } = useSettings();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [tripList, setTripList] = useState<TripMeta[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -191,28 +212,27 @@ function AppContent() {
   }, []);
 
   // Drive the iOS Live Activity from the active trip + the day matching today.
-  // Starts an activity when there's a relevant day, refreshes its state every
-  // minute, and ends it when the trip changes or there's no longer a today.
+  // Ends the old activity and starts a fresh one whenever trip state changes,
+  // then refreshes every minute so the "current activity" tracks real time.
   const liveActivityIdRef = useRef<string | null>(null);
   useEffect(() => {
     let cancelled = false;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const todayDay = trip?.days.find((d) => d.date === today) ?? null;
 
-    if (!trip || !todayDay) {
-      // No active trip OR the active trip has no day for today — end any
-      // running activity and bail.
-      if (liveActivityIdRef.current) {
-        const oldId = liveActivityIdRef.current;
-        liveActivityIdRef.current = null;
-        endLiveActivity(oldId);
-      }
-      return;
+    // End any previous activity before starting/updating — this handles hot
+    // reloads and trip switches cleanly.
+    if (liveActivityIdRef.current) {
+      endLiveActivity(liveActivityIdRef.current);
+      liveActivityIdRef.current = null;
     }
 
+    if (!trip || !todayDay) return;
+
     const sync = async () => {
-      const state = buildLiveActivityState(trip, todayDay, new Date());
+      const state = buildLiveActivityState(trip, todayDay, new Date(), settings.timeFormat);
       if (cancelled) return;
       if (liveActivityIdRef.current) {
         await updateLiveActivity(liveActivityIdRef.current, state);
@@ -229,7 +249,7 @@ function AppContent() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [trip]);
+  }, [trip, settings.timeFormat]);
 
   const handleCloseWalkthrough = useCallback(() => {
     setShowWalkthrough(false);

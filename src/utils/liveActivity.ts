@@ -11,7 +11,8 @@
 // against a stable contract, and switch over to the real implementation in
 // a single place when the native side ships.
 
-import { NativeModules, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import { requireNativeModule } from 'expo-modules-core';
 
 /**
  * Snapshot of "what's happening now" + "what's next" for the active trip.
@@ -23,8 +24,9 @@ export interface LiveActivityState {
   current: {
     title: string;
     location: string | null;
-    startTime: string | null;     // HH:MM, 24h
-    endTime: string | null;       // HH:MM, 24h, optional
+    startTime: string | null;     // formatted per user pref
+    endTime: string | null;       // formatted per user pref
+    timeRange: string | null;     // e.g. "6:00pm - 7:00pm"
     category: 'hotel' | 'meal' | null;
     isTransport: boolean;
   } | null;
@@ -44,8 +46,11 @@ interface NativeLiveActivityModule {
 
 function getNativeModule(): NativeLiveActivityModule | null {
   if (Platform.OS !== 'ios') return null;
-  const mod = (NativeModules as Record<string, NativeLiveActivityModule | undefined>).TrotterLiveActivity;
-  return mod ?? null;
+  try {
+    return requireNativeModule<NativeLiveActivityModule>('TrotterLiveActivity');
+  } catch {
+    return null;
+  }
 }
 
 /**

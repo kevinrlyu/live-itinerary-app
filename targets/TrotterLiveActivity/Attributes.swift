@@ -9,8 +9,9 @@ public struct TrotterLiveActivityAttributes: ActivityAttributes {
     // Current activity (nil if there's nothing happening "now")
     public var currentTitle: String?
     public var currentLocation: String?
-    public var currentStartTime: String?     // "HH:MM" 24h
+    public var currentStartTime: String?
     public var currentEndTime: String?
+    public var currentTimeRange: String?     // e.g. "6:00pm – 7:00pm"
     public var currentCategory: String?      // "hotel" | "meal" | nil
     public var currentIsTransport: Bool
 
@@ -23,6 +24,7 @@ public struct TrotterLiveActivityAttributes: ActivityAttributes {
       currentLocation: String? = nil,
       currentStartTime: String? = nil,
       currentEndTime: String? = nil,
+      currentTimeRange: String? = nil,
       currentCategory: String? = nil,
       currentIsTransport: Bool = false,
       nextTitle: String? = nil,
@@ -32,6 +34,7 @@ public struct TrotterLiveActivityAttributes: ActivityAttributes {
       self.currentLocation = currentLocation
       self.currentStartTime = currentStartTime
       self.currentEndTime = currentEndTime
+      self.currentTimeRange = currentTimeRange
       self.currentCategory = currentCategory
       self.currentIsTransport = currentIsTransport
       self.nextTitle = nextTitle

@@ -14,17 +14,41 @@ public class TrotterLiveActivityModule: Module {
       return false
     }
 
+    AsyncFunction("endAll") { () -> Void in
+      guard #available(iOS 16.2, *) else { return }
+      for activity in Activity<TrotterLiveActivityAttributes>.activities {
+        await activity.end(nil, dismissalPolicy: .immediate)
+      }
+    }
+
     AsyncFunction("start") { (state: [String: Any]) -> String? in
       guard #available(iOS 16.2, *) else { return nil }
+      // Clean up any orphaned activities from previous sessions
+      for activity in Activity<TrotterLiveActivityAttributes>.activities {
+        await activity.end(nil, dismissalPolicy: .immediate)
+      }
+      NSLog("TrotterLiveActivity: start called with state keys: \(Array(state.keys))")
+      if let current = state["current"] as? [String: Any] {
+        NSLog("TrotterLiveActivity: current = \(current)")
+      } else {
+        NSLog("TrotterLiveActivity: current is nil, raw value: \(String(describing: state["current"]))")
+      }
+      if let next = state["next"] as? [String: Any] {
+        NSLog("TrotterLiveActivity: next = \(next)")
+      } else {
+        NSLog("TrotterLiveActivity: next is nil, raw value: \(String(describing: state["next"]))")
+      }
       let tripTitle = (state["tripTitle"] as? String) ?? "Trip"
       let attributes = TrotterLiveActivityAttributes(tripTitle: tripTitle)
       let contentState = makeContentState(from: state)
+      NSLog("TrotterLiveActivity: contentState currentTitle=\(contentState.currentTitle ?? "nil") nextTitle=\(contentState.nextTitle ?? "nil")")
       do {
         let activity = try Activity.request(
           attributes: attributes,
           content: ActivityContent(state: contentState, staleDate: nil),
           pushType: nil
         )
+        NSLog("TrotterLiveActivity: started with id \(activity.id)")
         return activity.id
       } catch {
         NSLog("TrotterLiveActivity: start failed: \(error.localizedDescription)")
@@ -59,6 +83,7 @@ public class TrotterLiveActivityModule: Module {
       currentLocation: current?["location"] as? String,
       currentStartTime: current?["startTime"] as? String,
       currentEndTime: current?["endTime"] as? String,
+      currentTimeRange: current?["timeRange"] as? String,
       currentCategory: current?["category"] as? String,
       currentIsTransport: (current?["isTransport"] as? Bool) ?? false,
       nextTitle: next?["title"] as? String,

@@ -19,29 +19,25 @@ struct TrotterLiveActivity: Widget {
         .activitySystemActionForegroundColor(Color.white)
     } dynamicIsland: { context in
       DynamicIsland {
-        // Expanded (long-press) regions
         DynamicIslandExpandedRegion(.leading) {
-          ExpandedLeading(state: context.state)
+          EmptyView()
         }
         DynamicIslandExpandedRegion(.trailing) {
-          ExpandedTrailing(state: context.state)
+          EmptyView()
         }
         DynamicIslandExpandedRegion(.center) {
-          ExpandedCenter(attributes: context.attributes, state: context.state)
+          ExpandedContent(attributes: context.attributes, state: context.state)
         }
         DynamicIslandExpandedRegion(.bottom) {
           ExpandedBottom(state: context.state)
         }
       } compactLeading: {
-        Text(iconForState(context.state))
-          .font(.system(size: 14))
+        TrotterIconView(size: 22)
+          .padding(.leading, 2)
       } compactTrailing: {
-        Text(compactTrailingLabel(context.state))
-          .font(.system(size: 12, weight: .semibold))
-          .foregroundColor(.white)
+        EmptyView()
       } minimal: {
-        Text(iconForState(context.state))
-          .font(.system(size: 14))
+        TrotterIconView(size: 16)
       }
     }
   }
@@ -55,24 +51,25 @@ private struct LockScreenView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      Text(attributes.tripTitle)
-        .font(.caption2)
-        .foregroundColor(.white.opacity(0.6))
-        .textCase(.uppercase)
+      if let range = state.currentTimeRange {
+        Text(range)
+          .font(.caption2)
+          .foregroundColor(.white.opacity(0.6))
+          .textCase(.uppercase)
+      }
 
       if let title = state.currentTitle {
-        HStack(spacing: 6) {
-          Text(iconForState(state))
-            .font(.system(size: 16))
-          Text("Now: \(title)")
+        HStack(spacing: 8) {
+          if let uiImage = UIImage(named: "TrotterIcon") {
+            Image(uiImage: uiImage)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 24, height: 24)
+              .clipShape(RoundedRectangle(cornerRadius: 6))
+          }
+          Text(title)
             .font(.headline)
             .foregroundColor(.white)
-            .lineLimit(1)
-        }
-        if let loc = state.currentLocation, !loc.isEmpty {
-          Text(loc)
-            .font(.caption)
-            .foregroundColor(.white.opacity(0.7))
             .lineLimit(1)
         }
       }
@@ -93,68 +90,51 @@ private struct LockScreenView: View {
   }
 }
 
-// MARK: - Dynamic Island expanded regions
+// MARK: - Trotter icon helper
 
-private struct ExpandedLeading: View {
-  let state: TrotterLiveActivityAttributes.ContentState
+private struct TrotterIconView: View {
+  var size: CGFloat
   var body: some View {
-    Text(iconForState(state))
-      .font(.system(size: 28))
-      .padding(.leading, 4)
-  }
-}
-
-private struct ExpandedTrailing: View {
-  let state: TrotterLiveActivityAttributes.ContentState
-  var body: some View {
-    if let end = state.currentEndTime {
-      VStack(alignment: .trailing, spacing: 0) {
-        Text("until")
-          .font(.caption2)
-          .foregroundColor(.white.opacity(0.5))
-        Text(end)
-          .font(.system(size: 14, weight: .semibold))
-          .foregroundColor(.white)
-      }
-      .padding(.trailing, 4)
-    } else if let nextStart = state.nextStartTime {
-      VStack(alignment: .trailing, spacing: 0) {
-        Text("next")
-          .font(.caption2)
-          .foregroundColor(.white.opacity(0.5))
-        Text(nextStart)
-          .font(.system(size: 14, weight: .semibold))
-          .foregroundColor(.white)
-      }
-      .padding(.trailing, 4)
-    } else {
-      EmptyView()
+    if let uiImage = UIImage(named: "TrotterIcon") {
+      Image(uiImage: uiImage)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.2237, style: .continuous))
     }
   }
 }
 
-private struct ExpandedCenter: View {
+// MARK: - Dynamic Island expanded content
+
+private struct ExpandedContent: View {
   let attributes: TrotterLiveActivityAttributes
   let state: TrotterLiveActivityAttributes.ContentState
   var body: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(state.currentTitle ?? "—")
-        .font(.headline)
-        .foregroundColor(.white)
-        .lineLimit(1)
-      if let loc = state.currentLocation, !loc.isEmpty {
-        Text(loc)
-          .font(.caption)
+    VStack(alignment: .leading, spacing: 4) {
+      if let range = state.currentTimeRange {
+        Text(range)
+          .font(.caption2)
           .foregroundColor(.white.opacity(0.6))
-          .lineLimit(1)
+          .textCase(.uppercase)
+      }
+
+      if let title = state.currentTitle {
+        HStack(spacing: 8) {
+          TrotterIconView(size: 24)
+          Text(title)
+            .font(.headline)
+            .foregroundColor(.white)
+            .lineLimit(1)
+        }
       } else {
         Text(attributes.tripTitle)
-          .font(.caption)
-          .foregroundColor(.white.opacity(0.5))
-          .lineLimit(1)
+          .font(.subheadline)
+          .foregroundColor(.white.opacity(0.7))
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .offset(y: -8)
   }
 }
 
@@ -178,19 +158,3 @@ private struct ExpandedBottom: View {
   }
 }
 
-// MARK: - Helpers
-
-private func iconForState(_ state: TrotterLiveActivityAttributes.ContentState) -> String {
-  if state.currentIsTransport { return "🚆" }
-  switch state.currentCategory {
-  case "hotel": return "🏨"
-  case "meal": return "🍴"
-  default: return "📍"
-  }
-}
-
-private func compactTrailingLabel(_ state: TrotterLiveActivityAttributes.ContentState) -> String {
-  if let end = state.currentEndTime { return end }
-  if let nextStart = state.nextStartTime { return "→\(nextStart)" }
-  return "—"
-}
