@@ -1,17 +1,20 @@
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Pressable,
   ScrollView, Alert, StyleSheet, Keyboard, PanResponder, Animated,
+  ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Activity } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
+import { fetchPlaceSuggestions, PlaceSuggestion } from '../utils/placeAutocomplete';
 
 // Legacy accent color map removed — now using colors from SettingsContext
 
 interface Props {
   activity: Activity;
   dayActivities: Activity[];
+  biasCoordinate?: { latitude: number; longitude: number };
   isNew: boolean;
   onSave: (activity: Activity) => void;
   onDelete?: (activityId: string) => void;
@@ -241,7 +244,7 @@ function to24h(time: string): string {
   return `${String(h).padStart(2, '0')}:${m}`;
 }
 
-export default function ActivityEditSheet({ activity, dayActivities, isNew, onSave, onDelete, onClose }: Props) {
+export default function ActivityEditSheet({ activity, dayActivities, biasCoordinate, isNew, onSave, onDelete, onClose }: Props) {
   const { colors, settings } = useSettings();
   const scrollRef = React.useRef<ScrollView>(null);
   const fieldRefs = React.useRef<Record<string, View | null>>({});
@@ -308,6 +311,65 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
   const [category, setCategory] = useState<CategoryValue>(activity.category || 'none');
   const [parentId, setParentId] = useState<string | null>(activity.parentId || null);
   const [activeTimeField, setActiveTimeField] = useState<'start' | 'end' | null>(null);
+  const [lat, setLat] = useState<number | null>(activity.latitude ?? null);
+  const [lng, setLng] = useState<number | null>(activity.longitude ?? null);
+
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const locationFocusedRef = useRef(false);
+
+  const handleLocationChange = useCallback((text: string) => {
+    setLocation(text);
+    setLat(null);
+    setLng(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (text.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setSuggestionsLoading(true);
+    setShowSuggestions(true);
+    debounceRef.current = setTimeout(async () => {
+      const results = await fetchPlaceSuggestions(text, 5, biasCoordinate);
+      if (locationFocusedRef.current) {
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+        if (results.length > 0) {
+          setTimeout(() => {
+            const fieldView = fieldRefs.current['location'];
+            if (!fieldView || !scrollRef.current || !keyboardVisibleRef.current) return;
+            fieldView.measureInWindow((_x: number, y: number, _w: number, h: number) => {
+              const dropdownHeight = results.length * 42 + 12;
+              const fieldBottom = y + h + dropdownHeight + 8;
+              const kbTop = keyboardTopRef.current;
+              if (kbTop && fieldBottom > kbTop) {
+                scrollRef.current?.scrollTo({
+                  y: scrollOffsetRef.current + (fieldBottom - kbTop),
+                  animated: true,
+                });
+              }
+            });
+          }, 50);
+        }
+      }
+      setSuggestionsLoading(false);
+    }, 300);
+  }, [biasCoordinate]);
+
+  const handleSuggestionSelect = useCallback((suggestion: PlaceSuggestion) => {
+    const display = suggestion.address
+      ? `${suggestion.name}, ${suggestion.address}`
+      : suggestion.name;
+    setLocation(display);
+    setLat(suggestion.latitude);
+    setLng(suggestion.longitude);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    Keyboard.dismiss();
+  }, []);
 
   const parentOptions = dayActivities.filter(
     (a) => a.id !== activity.id && !a.parentId && a.type !== 'transport'
@@ -328,6 +390,8 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
       time: to24h(startTime.trim()) || null,
       timeEnd: to24h(endTime.trim()) || null,
       location: location.trim() || null,
+      latitude: lat,
+      longitude: lng,
       description: description.trim() || null,
       hours: hours.trim() || null,
       notes: notes.trim() || null,
@@ -525,11 +589,40 @@ export default function ActivityEditSheet({ activity, dayActivities, isNew, onSa
               <TextInput
                 style={[styles.input, styles.fieldSpacing, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={location}
-                onChangeText={setLocation}
+                onChangeText={handleLocationChange}
                 placeholder="Location / Address"
                 placeholderTextColor={colors.textTertiary}
-                onFocus={() => { setActiveTimeField(null); scrollToField('location'); }}
+                onFocus={() => {
+                  locationFocusedRef.current = true;
+                  setActiveTimeField(null);
+                  scrollToField('location');
+                  if (suggestions.length > 0) setShowSuggestions(true);
+                }}
+                onBlur={() => {
+                  locationFocusedRef.current = false;
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
               />
+              {showSuggestions && (
+                <View style={[styles.suggestionsDropdown, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                  {suggestionsLoading && suggestions.length === 0 ? (
+                    <View style={styles.suggestionsLoading}>
+                      <ActivityIndicator size="small" color={colors.textTertiary} />
+                    </View>
+                  ) : (
+                    suggestions.map((s, i) => (
+                      <TouchableOpacity
+                        key={`${s.latitude}-${s.longitude}-${i}`}
+                        style={[styles.suggestionRow, i < suggestions.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
+                        onPress={() => handleSuggestionSelect(s)}
+                      >
+                        <Text style={[styles.suggestionName, { color: colors.textPrimary }]} numberOfLines={1}>{s.name}</Text>
+                        {s.address ? <Text style={[styles.suggestionAddress, { color: colors.textSecondary }]} numberOfLines={1}>{s.address}</Text> : null}
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </View>
+              )}
             </View>
 
           </ScrollView>
@@ -729,5 +822,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  suggestionsDropdown: {
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  suggestionsLoading: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  suggestionRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  suggestionName: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  suggestionAddress: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

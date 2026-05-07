@@ -106,9 +106,9 @@ export default function ActivityCard({ activity, isCurrent, onToggle, isChild, i
 
   const openInMaps = async () => {
     const query = activity.location || activity.title || '';
-    // Geocode to get coordinates (uses cached results from weather feature)
-    const geo = await geocodeLocation(query);
-    const coords = geo ? { lat: geo.lat, lng: geo.lng } : undefined;
+    const coords = activity.latitude != null && activity.longitude != null
+      ? { lat: activity.latitude, lng: activity.longitude }
+      : (await geocodeLocation(query)) ?? undefined;
     const url = buildMapsUrl(query, settings.mapsProvider, coords);
     if (settings.mapsProvider === 'amap') {
       const supported = await Linking.canOpenURL(url);

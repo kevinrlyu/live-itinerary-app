@@ -20,6 +20,7 @@ const HOLD_DURATION = 1000;    // ms to hold before edit mode activates
 
 interface Props {
   day: Day;
+  allDays?: Day[];
   onToggle: (dayDate: string, activityId: string) => void;
   onOpenExpense?: (dayDate: string, activity: Activity) => void;
   onUpdateActivity?: (dayDate: string, activity: Activity) => void;
@@ -31,8 +32,35 @@ interface Props {
   scrollToTopTrigger?: number;
 }
 
+function computeBiasCoordinate(day: Day, allDays?: Day[]): { latitude: number; longitude: number } | undefined {
+  const coordsFromActivities = (activities: Activity[]): { latitude: number; longitude: number }[] =>
+    activities
+      .filter((a) => a.latitude != null && a.longitude != null)
+      .map((a) => ({ latitude: a.latitude!, longitude: a.longitude! }));
+
+  const centroid = (coords: { latitude: number; longitude: number }[]) => {
+    if (coords.length === 0) return undefined;
+    const sumLat = coords.reduce((s, c) => s + c.latitude, 0);
+    const sumLng = coords.reduce((s, c) => s + c.longitude, 0);
+    return { latitude: sumLat / coords.length, longitude: sumLng / coords.length };
+  };
+
+  const current = coordsFromActivities(day.activities);
+  if (current.length > 0) return centroid(current);
+
+  if (allDays) {
+    const dayIdx = allDays.findIndex((d) => d.date === day.date);
+    for (let i = dayIdx - 1; i >= 0; i--) {
+      const prev = coordsFromActivities(allDays[i].activities);
+      if (prev.length > 0) return centroid(prev);
+    }
+  }
+
+  return undefined;
+}
+
 export default function DayScreen({
-  day, onToggle, onOpenExpense,
+  day, allDays, onToggle, onOpenExpense,
   onUpdateActivity, onInsertActivity, onDeleteActivity, onRemoveDay, onUpdateDayTheme,
   onEditingChange, scrollToTopTrigger,
 }: Props) {
@@ -455,6 +483,7 @@ export default function DayScreen({
         <ActivityEditSheet
           activity={editingActivity}
           dayActivities={day.activities}
+          biasCoordinate={computeBiasCoordinate(day, allDays)}
           isNew={isNewActivity}
           onSave={handleSheetSave}
           onDelete={!isNewActivity ? handleSheetDelete : undefined}

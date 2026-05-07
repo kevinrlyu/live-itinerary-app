@@ -6,6 +6,8 @@ export interface Activity {
   timeEnd?: string | null;          // HH:MM end time (for group headers with a time range)
   title: string;
   location: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   description?: string | null;      // short description from sub-bullets
   hours?: string | null;            // hours of operation from sub-bullets
   notes: string | null;

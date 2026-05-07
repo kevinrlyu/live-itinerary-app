@@ -33,7 +33,8 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "react-native-tab-view": "^4.2.2",
-    "trotter-live-activity": "file:modules/TrotterLiveActivity"
+    "trotter-live-activity": "file:modules/TrotterLiveActivity",
+    "trotter-map-search": "file:modules/TrotterMapSearch"
   },
   "devDependencies": {
     "@bacons/apple-targets": "^4.0.6",

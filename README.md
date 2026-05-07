@@ -50,12 +50,14 @@ src/
     ├── tripBuilder.ts      — Helpers for building trips from manual input.
     ├── trotterFile.ts      — .trotter file export/import (share sheet and file picker).
     ├── geocode.ts          — Location geocoding for maps deep links.
+    ├── placeAutocomplete.ts — Location autocomplete via native Apple MapKit MKLocalSearch.
     ├── weather.ts          — Weather forecast fetching for trip days.
     ├── fxRates.ts          — Live FX rates via Frankfurter (ECB) for multi-currency expense conversion.
     └── liveActivity.ts     — JS bridge for iOS Live Activity / Dynamic Island.
 
 modules/
-└── TrotterLiveActivity/   — Expo Module bridging JS calls to ActivityKit (start/update/end).
+├── TrotterLiveActivity/   — Expo Module bridging JS calls to ActivityKit (start/update/end).
+└── TrotterMapSearch/      — Expo Module wrapping Apple MapKit MKLocalSearch for place autocomplete.
 
 targets/
 └── TrotterLiveActivity/   — Widget Extension (SwiftUI views for lock screen + Dynamic Island).
@@ -90,11 +92,11 @@ Renders individual activities with category-specific styling:
 - **Hotels** — Pink accent color on checkbox and buttons
 - **Meals** — Red accent color on checkbox and buttons
 
-Displays time (12h or 24h per settings), italic descriptions, hours of operation, and notes. The expense button shows a bill icon (no expense logged) or the amount (expense logged). The directions button opens the user's configured maps provider (Google Maps, Apple Maps, or Amap) with geocoded coordinates.
+Displays time (12h or 24h per settings), italic descriptions, hours of operation, and notes. The expense button shows a bill icon (no expense logged) or the amount (expense logged). The directions button opens the user's configured maps provider (Google Maps, Apple Maps, or Amap) — using stored coordinates from autocomplete selection when available, falling back to on-demand geocoding.
 
 ### `ActivityEditSheet.tsx`
 
-Bottom sheet for creating or editing activities. Includes type (Place/Transit), category (Default/Stay/Food), parent activity selector, time pickers, and text fields for title, description, hours, notes, and location.
+Bottom sheet for creating or editing activities. Includes type (Place/Transit), category (Default/Stay/Food), parent activity selector, time pickers, and text fields for title, description, hours, notes, and location. The location field features autocomplete powered by Apple MapKit — as the user types, a dropdown shows up to 5 place suggestions with name and address. Selecting a suggestion stores coordinates on the activity for use by the directions button and future map view. Results are biased toward the current day's existing activity locations, falling back to previous days.
 
 ### `ExpenseInput.tsx`
 
@@ -143,6 +145,10 @@ Determines which activity to highlight as "current" based on the time of day. Fi
 ### `geocode.ts`
 
 Geocodes location strings to coordinates for maps deep links. Supports constructing deep links for Google Maps, Apple Maps, and Amap.
+
+### `placeAutocomplete.ts`
+
+Location autocomplete for the activity edit sheet. Calls the native `TrotterMapSearch` Expo Module (Apple MapKit `MKLocalSearch`) to return place suggestions with name, address, and coordinates. Supports optional coordinate bias to prioritize results near the trip's current location.
 
 ### `weather.ts`
 

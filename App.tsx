@@ -827,6 +827,7 @@ function AppContent() {
                       children={() => (
                         <DayScreen
                           day={day}
+                          allDays={trip.days}
                           onToggle={handleToggle}
                           onOpenExpense={handleOpenExpense}
                           onUpdateActivity={handleUpdateActivity}

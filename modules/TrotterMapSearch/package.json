@@ -1,0 +1,8 @@
+{
+  "name": "trotter-map-search",
+  "version": "0.1.0",
+  "description": "Expo Module wrapping Apple MapKit MKLocalSearchCompleter for place autocomplete.",
+  "main": "index.ts",
+  "types": "index.ts",
+  "private": true
+}
