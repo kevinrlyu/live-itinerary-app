@@ -45,7 +45,7 @@ public class TrotterLiveActivityModule: Module {
       do {
         let activity = try Activity.request(
           attributes: attributes,
-          content: ActivityContent(state: contentState, staleDate: nil),
+          content: ActivityContent(state: contentState, staleDate: nil, relevanceScore: 0),
           pushType: nil
         )
         NSLog("TrotterLiveActivity: started with id \(activity.id)")
@@ -61,7 +61,7 @@ public class TrotterLiveActivityModule: Module {
       let contentState = makeContentState(from: state)
       let activities = Activity<TrotterLiveActivityAttributes>.activities
       if let activity = activities.first(where: { $0.id == activityId }) {
-        await activity.update(ActivityContent(state: contentState, staleDate: nil))
+        await activity.update(ActivityContent(state: contentState, staleDate: nil, relevanceScore: 0))
       }
     }
 

@@ -134,7 +134,7 @@ Persists trips, settings, per-provider API keys, and last-used LLM config to Asy
 
 ### `trotterFile.ts`
 
-Exports trips as `.trotter` files (JSON with personal data stripped: no expenses, trip ID, or doc URL; completed/checked states reset) via the iOS share sheet. Imports `.trotter` files delivered via Linking. Because incoming URLs from iMessage, the Files app, and the share sheet are security-scoped (pointing into another sandbox), the actual file copy happens natively in `ios/Trotter/AppDelegate.swift` — it acquires the security scope, copies the file into our app's cache directory, and forwards the sandbox URL on to JS, which then reads it normally.
+Exports trips as `.trotter` files (JSON with personal data stripped: no expenses, trip ID, or doc URL; completed/checked states reset) via the iOS share sheet. Imports `.trotter` files delivered via Linking. Because incoming URLs from iMessage, the Files app, and the share sheet are security-scoped (pointing into another sandbox), the actual file copy happens natively in `ios/Trotter/AppDelegate.swift` — it acquires the security scope, copies the file into our app's cache directory, and forwards the sandbox URL on to JS. If the native copy didn't happen (e.g. share sheet delivered the URL directly), the JS side falls back to copying the file via `expo-file-system` before reading.
 
 ### `tracking.ts`
 

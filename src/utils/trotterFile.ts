@@ -79,12 +79,19 @@ export async function pickAndImportTrotterFile(): Promise<Trip | null> {
  * Import a .trotter file delivered via Linking (share sheet / "Open in" / Files).
  *
  * The native iOS handler in AppDelegate.swift acquires the security scope and
- * copies the file into our cache directory before forwarding the URL to JS,
- * so the URL we get here is already inside our sandbox and safe to read.
- * decodeURI handles any percent-encoding in the path.
+ * copies the file into our cache directory before forwarding the URL to JS.
+ * If that copy didn't happen (e.g. the share sheet delivered the URL directly),
+ * we fall back to copying the file ourselves via expo-file-system.
  */
 export async function importTrotterFileFromIncomingUrl(rawUrl: string): Promise<Trip> {
-  return importTrotterFileFromUri(decodeURI(rawUrl));
+  const decoded = decodeURI(rawUrl);
+  try {
+    return await importTrotterFileFromUri(decoded);
+  } catch {
+    const destUri = `${FileSystem.cacheDirectory}imported_${Date.now()}.trotter`;
+    await FileSystem.copyAsync({ from: decoded, to: destUri });
+    return importTrotterFileFromUri(destUri);
+  }
 }
 
 /**

@@ -37,7 +37,7 @@ struct TrotterLiveActivity: Widget {
       } compactTrailing: {
         EmptyView()
       } minimal: {
-        TrotterIconView(size: 16)
+        TrotterIconView(size: 22)
       }
     }
   }
@@ -100,7 +100,7 @@ private struct TrotterIconView: View {
         .resizable()
         .aspectRatio(contentMode: .fit)
         .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: size * 0.2237, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.25, style: .continuous))
     }
   }
 }

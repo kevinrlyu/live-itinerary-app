@@ -137,9 +137,9 @@ export default function SettingsScreen({ onClose }: Props) {
         <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 28 }]}>Display Mode</Text>
         <SegmentedControl<DisplayMode>
           options={[
+            { label: 'System', value: 'system' },
             { label: 'Light', value: 'light' },
             { label: 'Dark', value: 'dark' },
-            { label: 'System', value: 'system' },
           ]}
           value={settings.displayMode}
           onChange={(v) => updateSettings({ displayMode: v })}

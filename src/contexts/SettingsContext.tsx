@@ -22,8 +22,8 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   displayMode: 'system',
   accentColor: '#007AFF',
-  stayAccentColor: '#E91E63',
-  foodAccentColor: '#E53935',
+  stayAccentColor: '#FC7368',
+  foodAccentColor: '#FF9500',
   timeFormat: '12h',
   mapsProvider: 'google',
   tempUnit: 'C',
