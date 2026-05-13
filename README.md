@@ -160,7 +160,7 @@ Multi-currency expense conversion via the [Frankfurter](https://frankfurter.dev)
 
 ### `liveActivity.ts`
 
-JS bridge for iOS Live Activities (Dynamic Island / lock-screen card). Exposes `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, and `isLiveActivitySupported` over a `LiveActivityState` shape. Uses `requireNativeModule` from `expo-modules-core` to communicate with the native `TrotterLiveActivity` Expo Module. The app automatically starts a Live Activity when a trip has a day matching today, updates it every 60 seconds to track the current activity, and ends it when the trip changes or no relevant day exists.
+JS bridge for iOS Live Activities (Dynamic Island / lock-screen card). Exposes `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, and `isLiveActivitySupported` over a `LiveActivityState` shape. Uses `requireNativeModule` from `expo-modules-core` to communicate with the native `TrotterLiveActivity` Expo Module. The app automatically starts a Live Activity when a trip has a day matching today, updates it every 60 seconds to track the current activity, and ends it when the trip changes, no relevant day exists, or the day's activities are all finished.
 
 ### Widget Extension (`targets/TrotterLiveActivity/`)
 

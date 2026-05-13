@@ -234,6 +234,13 @@ function AppContent() {
     const sync = async () => {
       const state = buildLiveActivityState(trip, todayDay, new Date(), settings.timeFormat);
       if (cancelled) return;
+      if (!state.current && !state.next) {
+        if (liveActivityIdRef.current) {
+          endLiveActivity(liveActivityIdRef.current);
+          liveActivityIdRef.current = null;
+        }
+        return;
+      }
       if (liveActivityIdRef.current) {
         await updateLiveActivity(liveActivityIdRef.current, state);
       } else {

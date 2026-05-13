@@ -29,7 +29,7 @@ struct TrotterLiveActivity: Widget {
           ExpandedContent(attributes: context.attributes, state: context.state)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          ExpandedBottom(state: context.state)
+          EmptyView()
         }
       } compactLeading: {
         TrotterIconView(size: 22)
@@ -132,9 +132,20 @@ private struct ExpandedContent: View {
           .font(.subheadline)
           .foregroundColor(.white.opacity(0.7))
       }
+
+      if let next = state.nextTitle {
+        HStack(spacing: 4) {
+          Text("Next:")
+            .font(.caption)
+            .foregroundColor(.white.opacity(0.5))
+          Text(next + (state.nextStartTime.map { " · \($0)" } ?? ""))
+            .font(.caption)
+            .foregroundColor(.white.opacity(0.7))
+            .lineLimit(1)
+        }
+      }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.top, -4)
   }
 }
 

@@ -342,8 +342,7 @@ export default function ActivityEditSheet({ activity, dayActivities, biasCoordin
             const fieldView = fieldRefs.current['location'];
             if (!fieldView || !scrollRef.current || !keyboardVisibleRef.current) return;
             fieldView.measureInWindow((_x: number, y: number, _w: number, h: number) => {
-              const dropdownHeight = results.length * 42 + 12;
-              const fieldBottom = y + h + dropdownHeight + 8;
+              const fieldBottom = y + h + 8;
               const kbTop = keyboardTopRef.current;
               if (kbTop && fieldBottom > kbTop) {
                 scrollRef.current?.scrollTo({
