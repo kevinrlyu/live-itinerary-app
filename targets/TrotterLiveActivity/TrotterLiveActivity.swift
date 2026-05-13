@@ -134,7 +134,7 @@ private struct ExpandedContent: View {
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .offset(y: -8)
+    .padding(.top, -4)
   }
 }
 
