@@ -53,8 +53,8 @@ private struct LockScreenView: View {
     VStack(alignment: .leading, spacing: 6) {
       if let range = state.currentTimeRange {
         Text(range)
-          .font(.caption2)
-          .foregroundColor(.white.opacity(0.6))
+          .font(.caption)
+          .foregroundColor(.white.opacity(0.5))
           .textCase(.uppercase)
       }
 
@@ -81,7 +81,7 @@ private struct LockScreenView: View {
             .foregroundColor(.white.opacity(0.5))
           Text(next + (state.nextStartTime.map { " · \($0)" } ?? ""))
             .font(.caption)
-            .foregroundColor(.white.opacity(0.7))
+            .foregroundColor(.white.opacity(0.5))
             .lineLimit(1)
         }
       }
@@ -114,8 +114,8 @@ private struct ExpandedContent: View {
     VStack(alignment: .leading, spacing: 4) {
       if let range = state.currentTimeRange {
         Text(range)
-          .font(.caption2)
-          .foregroundColor(.white.opacity(0.6))
+          .font(.caption)
+          .foregroundColor(.white.opacity(0.5))
           .textCase(.uppercase)
       }
 
@@ -140,12 +140,13 @@ private struct ExpandedContent: View {
             .foregroundColor(.white.opacity(0.5))
           Text(next + (state.nextStartTime.map { " · \($0)" } ?? ""))
             .font(.caption)
-            .foregroundColor(.white.opacity(0.7))
+            .foregroundColor(.white.opacity(0.5))
             .lineLimit(1)
         }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.bottom, 10)
   }
 }
 

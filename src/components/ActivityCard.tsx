@@ -46,12 +46,12 @@ interface Props {
   onLongPress?: (activity: Activity) => void;
 }
 
-// Convert "HH:MM" (24h) to "h:mmam/pm" (12h)
+// Convert "HH:MM" (24h) to "h:mmAM/PM" (12h)
 function to12h(time: string): string {
   const [hStr, mStr] = time.split(':');
   let h = parseInt(hStr, 10);
   const m = mStr || '00';
-  const suffix = h >= 12 ? 'pm' : 'am';
+  const suffix = h >= 12 ? 'PM' : 'AM';
   if (h === 0) h = 12;
   else if (h > 12) h -= 12;
   return `${h}:${m}${suffix}`;
@@ -67,7 +67,7 @@ function convertTimesIn(text: string, format: '12h' | '24h'): string {
   return text.replace(/\b(\d{1,2}):(\d{2})\b/g, (match, hStr, m) => {
     const h = parseInt(hStr, 10);
     if (h > 23) return match; // not a valid time
-    const suffix = h >= 12 ? 'pm' : 'am';
+    const suffix = h >= 12 ? 'PM' : 'AM';
     const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
     return `${h12}:${m}${suffix}`;
   });

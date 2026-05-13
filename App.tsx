@@ -73,7 +73,7 @@ function formatTimeForLA(time: string | null | undefined, format: '12h' | '24h')
   const [hStr, mStr] = time.split(':');
   let h = parseInt(hStr, 10);
   const m = mStr || '00';
-  const suffix = h >= 12 ? 'pm' : 'am';
+  const suffix = h >= 12 ? 'PM' : 'AM';
   if (h === 0) h = 12;
   else if (h > 12) h -= 12;
   return `${h}:${m}${suffix}`;

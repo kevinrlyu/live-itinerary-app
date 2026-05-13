@@ -62,13 +62,14 @@ async function callAnthropic(
       ]
     : userMessage;
 
-  const message = await client.messages.create({
+  const stream = client.messages.stream({
     model: config.model,
     max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: userContent }],
   });
 
+  const message = await stream.finalMessage();
   const content = message.content[0];
   if (content.type !== 'text') throw new Error('Unexpected response from AI');
   return content.text;

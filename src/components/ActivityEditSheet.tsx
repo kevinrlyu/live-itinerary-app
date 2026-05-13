@@ -183,7 +183,7 @@ function ScrollTimePicker({ value, onChange, colors }: { value: string; onChange
   useEffect(() => {
     const h = HOUR_ITEMS[hourIdx];
     const m = MIN_ITEMS[minIdx];
-    const p = PERIOD_ITEMS[periodIdx].toLowerCase();
+    const p = PERIOD_ITEMS[periodIdx];
     onChange(`${h}:${m}${p}`);
   }, [hourIdx, minIdx, periodIdx]);
 
@@ -225,7 +225,7 @@ function to12hDisplay(time: string): string {
   let h = parseInt(parts[0], 10);
   const m = parts[1];
   if (isNaN(h)) return time;
-  const suffix = h >= 12 ? 'pm' : 'am';
+  const suffix = h >= 12 ? 'PM' : 'AM';
   if (h === 0) h = 12;
   else if (h > 12) h -= 12;
   return `${h}:${m}${suffix}`;

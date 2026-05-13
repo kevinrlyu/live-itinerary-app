@@ -124,7 +124,7 @@ Registry of supported AI providers. Each provider has a name, base URL, and API 
 
 ### `llm.ts`
 
-LLM abstraction layer. Exports `callLLM()` which routes to either the Anthropic SDK or OpenAI SDK based on the provider config (with optional image input for multimodal calls), and `fetchModels()` which dynamically fetches available models from any provider's API.
+LLM abstraction layer. Exports `callLLM()` which routes to either the Anthropic SDK or OpenAI SDK based on the provider config (with optional image input for multimodal calls), and `fetchModels()` which dynamically fetches available models from any provider's API. Anthropic calls use streaming to avoid timeout errors on large multimodal requests (e.g. multi-page PDF imports).
 
 ### `parser.ts`
 
