@@ -385,7 +385,7 @@ export default function Demo2Day({ active }: { active: boolean }) {
           <Animated.Text style={[styles.theme, { opacity: themeNaraOpacity }]}>
             Nara
           </Animated.Text>
-          <Animated.View style={[styles.insertRow, { opacity: themeNaraOpacity }]}>
+          <Animated.View style={[styles.insertRow, { opacity: editBannerOpacity }]}>
             <Text style={styles.insertText}>+</Text>
           </Animated.View>
         </Animated.View>

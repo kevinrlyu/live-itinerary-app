@@ -33,7 +33,7 @@ struct TrotterLiveActivity: Widget {
         }
       } compactLeading: {
         TrotterIconView(size: 22)
-          .padding(.leading, 2)
+          .padding(.leading, 1)
       } compactTrailing: {
         EmptyView()
       } minimal: {
