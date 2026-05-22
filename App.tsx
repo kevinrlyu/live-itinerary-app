@@ -307,6 +307,16 @@ function AppContent() {
     setDrawerOpen(false);
   }, []);
 
+  const handleRenameTrip = useCallback(async (newTitle: string) => {
+    if (!trip) return;
+    const updated = { ...trip, title: newTitle };
+    setTrip(updated);
+    saveTripFull(updated);
+    const newList = tripList.map((t) => t.id === trip.id ? { ...t, title: newTitle } : t);
+    setTripList(newList);
+    saveTripList(newList);
+  }, [trip, tripList]);
+
   const handleDeleteTrip = useCallback(async (id: string) => {
     await deleteTripFromStorage(id);
     const newList = tripList.filter((t) => t.id !== id);
@@ -761,6 +771,7 @@ function AppContent() {
         <TripHeader
           title={activeBottomTab === 'Checklists' ? 'Trip Checklists' : activeBottomTab === 'Expenses' ? 'Trip Expenses' : trip.title}
           onOpenDrawer={() => setDrawerOpen(true)}
+          onRenameTrip={activeBottomTab === 'Itinerary' ? handleRenameTrip : undefined}
         />
         <NavigationContainer key={trip.id} ref={navigationRef}>
           <BottomTab.Navigator

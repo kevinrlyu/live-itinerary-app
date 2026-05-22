@@ -69,22 +69,69 @@ const MONTH_NAMES = [
   'july', 'august', 'september', 'october', 'november', 'december',
 ];
 
-// Scan raw text for "Month Day (Dayname)" patterns and return the year that
-// makes those date+day-of-week pairs consistent.
 function detectYearFromText(text: string): number | null {
-  const pattern =
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const today = new Date(currentYear, now.getMonth(), now.getDate());
+
+  // Explicit year: "Month Day, Year" or "Month Day Year" (e.g. "December 10, 2025")
+  const explicitPattern = new RegExp(
+    `(${MONTH_NAMES.join('|')})\\s+\\d{1,2}[,\\s]+\\s*(20\\d{2})`, 'gi'
+  );
+  const explicitMatch = explicitPattern.exec(text);
+  if (explicitMatch) return parseInt(explicitMatch[2]);
+
+  // Case 1: look for "Month Day (Weekday)" patterns
+  const dowPattern =
     /(\w+)\s+(\d{1,2})\s*[\(,]\s*(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/gi;
-  const currentYear = new Date().getFullYear();
-  for (const m of text.matchAll(pattern)) {
+  const pairs: { month: number; day: number; dow: number }[] = [];
+  for (const m of text.matchAll(dowPattern)) {
     const month = MONTH_MAP[m[1].toLowerCase()];
     const day = parseInt(m[2]);
     const dow = DOW_MAP[m[3].toLowerCase()];
     if (month === undefined || isNaN(day) || dow === undefined) continue;
-    for (let year = currentYear - 2; year <= currentYear + 5; year++) {
-      const d = new Date(year, month, day);
-      if (d.getMonth() === month && d.getDay() === dow) return year;
+    pairs.push({ month, day, dow });
+  }
+
+  if (pairs.length > 0) {
+    const earliest = pairs.reduce((a, b) =>
+      a.month < b.month || (a.month === b.month && a.day < b.day) ? a : b
+    );
+    for (let year = currentYear; year <= currentYear + 5; year++) {
+      if (year === currentYear) {
+        const firstDate = new Date(year, earliest.month, earliest.day);
+        if (firstDate < today) continue;
+      }
+      const allMatch = pairs.every(p => {
+        const d = new Date(year, p.month, p.day);
+        return d.getMonth() === p.month && d.getDay() === p.dow;
+      });
+      if (allMatch) return year;
+    }
+    // No year matched weekdays — fall through to Case 2
+  }
+
+  // Case 2: dates without weekdays — find the earliest month/day mentioned
+  const datePattern = new RegExp(
+    `(${MONTH_NAMES.join('|')})\\s+(\\d{1,2})`, 'gi'
+  );
+  let earliestMonth: number | null = null;
+  let earliestDay: number | null = null;
+  for (const m of text.matchAll(datePattern)) {
+    const month = MONTH_MAP[m[1].toLowerCase()];
+    const day = parseInt(m[2]);
+    if (month === undefined || isNaN(day)) continue;
+    if (earliestMonth === null || month < earliestMonth || (month === earliestMonth && day < earliestDay!)) {
+      earliestMonth = month;
+      earliestDay = day;
     }
   }
+
+  if (earliestMonth !== null && earliestDay !== null) {
+    const candidate = new Date(currentYear, earliestMonth, earliestDay);
+    return candidate >= today ? currentYear : currentYear + 1;
+  }
+
   return null;
 }
 
