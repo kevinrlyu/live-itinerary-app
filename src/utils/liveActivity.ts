@@ -13,29 +13,13 @@
 
 import { Platform } from 'react-native';
 import { requireNativeModule } from 'expo-modules-core';
+import { LiveActivityState } from './liveActivityState';
 
-/**
- * Snapshot of "what's happening now" + "what's next" for the active trip.
- * Mirrors what the Dynamic Island compact + expanded views will render.
- */
-export interface LiveActivityState {
-  tripTitle: string;
-  // Current activity (may be null if there's no scheduled activity for now)
-  current: {
-    title: string;
-    location: string | null;
-    startTime: string | null;     // formatted per user pref
-    endTime: string | null;       // formatted per user pref
-    timeRange: string | null;     // e.g. "6:00pm - 7:00pm"
-    category: 'hotel' | 'meal' | null;
-    isTransport: boolean;
-  } | null;
-  // Next upcoming activity — what fills the trailing slot when nothing is "now"
-  next: {
-    title: string;
-    startTime: string | null;
-  } | null;
-}
+// The state shape and the logic that derives it live in liveActivityState.ts,
+// which stays free of native imports so it can be unit tested. Re-exported here
+// so callers can keep importing both from one place.
+export type { LiveActivityState } from './liveActivityState';
+export { buildLiveActivityState } from './liveActivityState';
 
 interface NativeLiveActivityModule {
   start(state: LiveActivityState): Promise<string | null>;     // returns activityId, or null on failure

@@ -10,6 +10,7 @@ import ActivityCard from '../components/ActivityCard';
 import ActivityEditSheet from '../components/ActivityEditSheet';
 import InsertActivityButton from '../components/InsertActivityButton';
 import { getCurrentActivityIndex } from '../utils/tracking';
+import { localDateString } from '../utils/dates';
 import { useStepCount } from '../hooks/useStepCount';
 import { useWeather } from '../hooks/useWeather';
 import FootstepsIcon from '../components/icons/FootstepsIcon';
@@ -104,7 +105,7 @@ export default function DayScreen({
     }
   }, [scrollToTopTrigger]);
 
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayStr = localDateString(now);
   const isToday = day.date === todayStr;
   const currentIndex = isToday ? getCurrentActivityIndex(day.activities, now) : -1;
 

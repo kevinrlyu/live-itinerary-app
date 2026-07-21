@@ -53,6 +53,8 @@ src/
     ├── placeAutocomplete.ts — Location autocomplete via native Apple MapKit MKLocalSearch.
     ├── weather.ts          — Weather forecast fetching for trip days.
     ├── fxRates.ts          — Live FX rates via Frankfurter (ECB) for multi-currency expense conversion.
+    ├── dates.ts            — Local-timezone date helpers.
+    ├── liveActivityState.ts — Derives the Live Activity snapshot from a trip day + current time.
     └── liveActivity.ts     — JS bridge for iOS Live Activity / Dynamic Island.
 
 modules/
@@ -158,9 +160,19 @@ Fetches weather forecast data for trip days using the Open-Meteo API.
 
 Multi-currency expense conversion via the [Frankfurter](https://frankfurter.dev) API (ECB-sourced, no API key, daily updates). Caches latest rates in AsyncStorage for 24h and historical rates indefinitely. The expense summary uses these to show a converted grand total in the trip's default currency, with a toggle between "today's rate" and "trip-day rate" (using the date of the activity that incurred each expense). Falls back to per-currency totals when any expense currency is outside Frankfurter's ~30-currency set.
 
+### `dates.ts`
+
+Local-timezone date helpers. `localDateString(date)` formats a `Date` as `YYYY-MM-DD` from local calendar parts. Trip days are keyed by that format and activity times are bare `HH:MM` wall-clock strings, both interpreted in the device's local timezone — an itinerary written as "1pm" means 1pm wherever you are, so a 1pm activity planned in New York highlights at 1pm Tokyo time once you land. Anything asking "what is today?" must therefore build the string locally: `Date.toISOString()` converts to UTC first and reports the wrong day for as many hours as the local zone is offset from UTC (evenings west of UTC, mornings east of it).
+
+### `liveActivityState.ts`
+
+Derives the Live Activity snapshot — "what's happening now" plus "what's next" — from a trip day and the current time. Owns the `LiveActivityState` shape and `buildLiveActivityState()`. Deliberately free of react-native / expo imports so it stays a pure, unit-testable module separate from the native bridge.
+
+The current activity comes from `tracking.ts`; `next` is the following timed, incomplete, non-transport activity **within the same day** — the Live Activity never mentions tomorrow's first item once today is over. One gate applies: before the day has started, the day's first activity is withheld until it is within 60 minutes of starting, so the card doesn't sit on the lock screen overnight. Only the first activity is gated — once the day is under way, gaps between activities surface the next one immediately.
+
 ### `liveActivity.ts`
 
-JS bridge for iOS Live Activities (Dynamic Island / lock-screen card). Exposes `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, and `isLiveActivitySupported` over a `LiveActivityState` shape. Uses `requireNativeModule` from `expo-modules-core` to communicate with the native `TrotterLiveActivity` Expo Module. The app automatically starts a Live Activity when a trip has a day matching today, updates it every 60 seconds to track the current activity, and ends it when the trip changes, no relevant day exists, or the day's activities are all finished.
+JS bridge for iOS Live Activities (Dynamic Island / lock-screen card). Exposes `startLiveActivity`, `updateLiveActivity`, `endLiveActivity`, and `isLiveActivitySupported`, and re-exports `LiveActivityState` / `buildLiveActivityState` from `liveActivityState.ts` so callers can import both from one place. Uses `requireNativeModule` from `expo-modules-core` to communicate with the native `TrotterLiveActivity` Expo Module. The app automatically starts a Live Activity when a trip has a day matching today, updates it every 60 seconds to track the current activity, and ends it when the trip changes, no relevant day exists, the day's first activity is still more than an hour away, or the day's activities are all finished.
 
 ### Widget Extension (`targets/TrotterLiveActivity/`)
 

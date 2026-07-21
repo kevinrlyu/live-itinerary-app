@@ -7,7 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import WalkIcon from './src/components/icons/WalkIcon';
 import ReceiptIcon from './src/components/icons/ReceiptIcon';
-import { Trip, TripMeta, Activity, Day } from './src/types';
+import { Trip, TripMeta, Activity } from './src/types';
 import {
   loadTripFull, saveTripFull,
   loadTripList, saveTripList,
@@ -25,9 +25,9 @@ import { parseItineraryText } from './src/utils/parser';
 import { LLMConfig } from './src/utils/llm';
 import {
   startLiveActivity, updateLiveActivity, endLiveActivity,
-  LiveActivityState,
+  buildLiveActivityState,
 } from './src/utils/liveActivity';
-import { getCurrentActivityIndex } from './src/utils/tracking';
+import { localDateString } from './src/utils/dates';
 import ImportScreen from './src/screens/ImportScreen';
 import CreateTripScreen from './src/screens/CreateTripScreen';
 import DayScreen from './src/screens/DayScreen';
@@ -57,70 +57,9 @@ function formatDayLabel(dateStr: string): { dayOfWeek: string; monthDay: string 
 }
 
 function getTodayTabName(trip: Trip): string {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString(new Date());
   const day = trip.days.find((d) => d.date === today) ?? trip.days[0];
   return day?.date ?? '';
-}
-
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
-}
-
-function formatTimeForLA(time: string | null | undefined, format: '12h' | '24h'): string | null {
-  if (!time) return null;
-  if (format === '24h') return time;
-  const [hStr, mStr] = time.split(':');
-  let h = parseInt(hStr, 10);
-  const m = mStr || '00';
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  if (h === 0) h = 12;
-  else if (h > 12) h -= 12;
-  return `${h}:${m}${suffix}`;
-}
-
-function buildLiveActivityState(trip: Trip, day: Day, now: Date, timeFormat: '12h' | '24h'): LiveActivityState {
-  const idx = getCurrentActivityIndex(day.activities, now);
-  const current = idx >= 0 ? day.activities[idx] : null;
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  console.log('[LiveActivity] now:', now.toISOString(), 'currentMinutes:', currentMinutes);
-  console.log('[LiveActivity] day.date:', day.date, 'activities:', day.activities.length);
-  day.activities.forEach((a, i) => console.log(`[LiveActivity]   [${i}] "${a.title}" time=${a.time} timeEnd=${a.timeEnd} type=${a.type} completed=${a.completed}`));
-  console.log('[LiveActivity] getCurrentActivityIndex returned:', idx);
-
-  let next: Activity | null = null;
-  for (let i = idx >= 0 ? idx + 1 : 0; i < day.activities.length; i++) {
-    const a = day.activities[i];
-    if (a.completed || !a.time || a.type === 'transport') continue;
-    if (toMinutes(a.time) <= currentMinutes) continue;
-    next = a;
-    break;
-  }
-
-  console.log('[LiveActivity] current:', current?.title ?? 'null', 'next:', next?.title ?? 'null');
-
-  return {
-    tripTitle: trip.title,
-    current: current
-      ? {
-          title: current.title,
-          location: current.location ?? null,
-          startTime: formatTimeForLA(current.time, timeFormat),
-          endTime: formatTimeForLA(current.timeEnd, timeFormat),
-          timeRange: current.time
-            ? current.timeEnd
-              ? `${formatTimeForLA(current.time, timeFormat)} – ${formatTimeForLA(current.timeEnd, timeFormat)}`
-              : formatTimeForLA(current.time, timeFormat)
-            : null,
-          category: current.category ?? null,
-          isTransport: current.type === 'transport',
-        }
-      : null,
-    next: next
-      ? { title: next.title, startTime: formatTimeForLA(next.time, timeFormat) }
-      : null,
-  };
 }
 
 function buildDateRange(trip: Trip): string {
@@ -218,8 +157,7 @@ function AppContent() {
   useEffect(() => {
     let cancelled = false;
 
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const today = localDateString(new Date());
     const todayDay = trip?.days.find((d) => d.date === today) ?? null;
 
     // End any previous activity before starting/updating — this handles hot
