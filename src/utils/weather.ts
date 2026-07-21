@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { localDateString } from './dates';
 
 const WORKER_URL = 'https://trotter-weather.kevin-rl-yu.workers.dev/weather';
 const CACHE_PREFIX = 'weather:';
@@ -66,20 +67,20 @@ function cacheKey(lat: number, lng: number, dateStr: string): string {
 
 function isDatePast(dateStr: string): boolean {
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = localDateString(today);
   return dateStr < todayStr;
 }
 
 function isDateToday(dateStr: string): boolean {
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = localDateString(today);
   return dateStr === todayStr;
 }
 
 function shiftDate(dateStr: string, offset: number): string {
   const d = new Date(dateStr + 'T12:00:00'); // noon to avoid DST edge cases
   d.setDate(d.getDate() + offset);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return localDateString(d);
 }
 
 function daysBetween(dateStr: string): number {
@@ -172,7 +173,7 @@ export async function fetchWeather(
     const hourlyByDate: Record<string, HourWeather[]> = {};
     for (const h of allHours) {
       const dt = new Date(h.forecastStart);
-      const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const ds = localDateString(dt);
       if (!hourlyByDate[ds]) hourlyByDate[ds] = [];
       hourlyByDate[ds].push({
         hour: dt.getHours(),
@@ -183,7 +184,7 @@ export async function fetchWeather(
 
     for (const day of allDays) {
       const dt = new Date(day.forecastStart);
-      const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const ds = localDateString(dt);
 
       if (!datesToFetch.includes(ds)) continue;
 

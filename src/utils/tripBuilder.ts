@@ -1,4 +1,5 @@
 import { Trip, Day, Activity } from '../types';
+import { localDateString } from './dates';
 
 export function createBlankActivity(id: string): Activity {
   return {
@@ -50,7 +51,7 @@ export function createBlankTrip(title: string, startDate: string, endDate: strin
   const end = new Date(`${endDate}T12:00:00`);
 
   while (current <= end) {
-    const dateStr = current.toISOString().split('T')[0];
+    const dateStr = localDateString(current);
     days.push(createBlankDay(dateStr));
     current.setDate(current.getDate() + 1);
   }

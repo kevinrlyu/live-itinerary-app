@@ -157,9 +157,6 @@ function AppContent() {
   useEffect(() => {
     let cancelled = false;
 
-    const today = localDateString(new Date());
-    const todayDay = trip?.days.find((d) => d.date === today) ?? null;
-
     // End any previous activity before starting/updating — this handles hot
     // reloads and trip switches cleanly.
     if (liveActivityIdRef.current) {
@@ -167,12 +164,20 @@ function AppContent() {
       liveActivityIdRef.current = null;
     }
 
-    if (!trip || !todayDay) return;
+    if (!trip) return;
 
     const sync = async () => {
-      const state = buildLiveActivityState(trip, todayDay, new Date(), settings.timeFormat);
+      // Resolve "today" on every tick rather than once when the effect runs.
+      // The app can stay alive across midnight, and a day captured yesterday
+      // would strand the Live Activity on an itinerary that is entirely in the
+      // past — so it would never appear for the next day's activities.
+      const now = new Date();
+      const todayDay = trip.days.find((d) => d.date === localDateString(now)) ?? null;
+      const state = todayDay
+        ? buildLiveActivityState(trip, todayDay, now, settings.timeFormat)
+        : null;
       if (cancelled) return;
-      if (!state.current && !state.next) {
+      if (!state || (!state.current && !state.next)) {
         if (liveActivityIdRef.current) {
           endLiveActivity(liveActivityIdRef.current);
           liveActivityIdRef.current = null;
@@ -565,7 +570,7 @@ function AppContent() {
     const lastDay = trip.days[trip.days.length - 1];
     const lastDate = new Date(`${lastDay.date}T12:00:00`);
     lastDate.setDate(lastDate.getDate() + 1);
-    const newDateStr = lastDate.toISOString().split('T')[0];
+    const newDateStr = localDateString(lastDate);
     const newDay = { ...createBlankDay(newDateStr), theme: theme.trim() };
     const updated: Trip = { ...trip, days: [...trip.days, newDay] };
     setTrip(updated);
